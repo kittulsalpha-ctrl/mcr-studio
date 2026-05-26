@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dynamic Text overlays inside video
     ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
     ctx.font = '10px Fira Code';
-    ctx.fillText(`CAM-01 / contribution`, 15, 25);
+    ctx.fillText(`LiveU 1 / contribution`, 15, 25);
     ctx.fillText(`TRANSIT: US-EAST-1`, 15, 40);
     
     // Inject visual glitches if packet loss exceeds SRT recoverability
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Telemetry text overlay
     ctx.fillStyle = 'rgba(0, 210, 255, 0.8)';
     ctx.font = '10px Fira Code';
-    ctx.fillText(`CAM-02 / standby path`, 15, 25);
+    ctx.fillText(`LiveU 2 / standby path`, 15, 25);
     ctx.fillText(`TRANSIT: US-EAST-2`, 15, 40);
 
     // Moving signal vectors (sine curves)
@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
       el.recoBox.className = "recommendation-box reco-danger";
       el.recoIcon.className = "reco-icon text-red";
       el.recoIcon.textContent = "⚠";
-      el.recoText.textContent = "ALERT: Primary contribution path failed. Active-Active failover triggered. Inspect CAM-01 hardware logs.";
+      el.recoText.textContent = "ALERT: Primary contribution path failed. Active-Active failover triggered. Inspect LiveU 1 hardware logs.";
     } else if (state.isUnderflow) {
       el.recoBox.className = "recommendation-box reco-danger";
       el.recoIcon.className = "reco-icon text-red";
@@ -962,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (state.primaryFailed) { // Double check if already restored
         state.activeSource = 'cam2'; // Route backup Cam
-        el.pgmActiveSource.textContent = "SOURCE: CAM-02 (DR FAILOVER)";
+        el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
         el.txRoute.textContent = "BACKUP";
         el.txRoute.className = "badge-value text-blue";
         
@@ -1001,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (!state.primaryFailed) {
         state.activeSource = 'cam1';
-        el.pgmActiveSource.textContent = "SOURCE: CAM-01";
+        el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
         el.txRoute.textContent = "PRIMARY";
         el.txRoute.className = "badge-value text-blue";
         
@@ -1074,10 +1074,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Restore program route
     if (state.primaryFailed) {
       state.activeSource = 'cam2';
-      el.pgmActiveSource.textContent = "SOURCE: CAM-02 (DR FAILOVER)";
+      el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
     } else {
       state.activeSource = 'cam1';
-      el.pgmActiveSource.textContent = "SOURCE: CAM-01";
+      el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
     }
 
     el.pathCam1.classList.remove('link-standby');

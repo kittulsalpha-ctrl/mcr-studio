@@ -261,7 +261,7 @@ body {
 .multiviewer-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: auto;
   gap: 12px;
   flex: 1;
 }
@@ -275,6 +275,7 @@ body {
   flex-direction: column;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  aspect-ratio: 16 / 9;
 }
 
 .screen-card:hover {
@@ -330,12 +331,16 @@ body {
   flex: 1;
   background: #020408;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .canvas-wrapper canvas {
   width: 100%;
   height: 100%;
   display: block;
+  object-fit: contain;
 }
 
 /* VU Level Meter Overlay */
@@ -1163,15 +1168,18 @@ body {
   .console-logs-wrapper {
     height: 180px;
   }
+  /* Medium screens: 2 columns x 3 rows */
   .multiviewer-grid {
-    aspect-ratio: 16/10;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
   }
 }
 
 @media(max-width: 768px) {
+  /* Small screens: 1 column x 6 rows */
   .multiviewer-grid {
     grid-template-columns: 1fr;
-    aspect-ratio: auto;
+    grid-template-rows: auto;
   }
   .grid-2-col {
     grid-template-columns: 1fr;
