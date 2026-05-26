@@ -33,10 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     adIntervalId: null,
     
     // Multi-Viewer Settings
-    soloFeed: null, // null, or 'cam1', 'cam2', 'vod', 'pgm'
+    soloFeed: null, // null, or 'cam1', 'cam2', 'liveu3', 'liveu4', 'vod', 'pgm'
     mutedFeeds: {
       cam1: false,
       cam2: false,
+      liveu3: false,
+      liveu4: false,
       vod: false,
       pgm: false
     },
@@ -59,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
     tcCam2: document.getElementById('tc-cam2'),
+    tcLiveu3: document.getElementById('tc-liveu3'),
+    tcLiveu4: document.getElementById('tc-liveu4'),
     tcVod: document.getElementById('tc-vod'),
     tcPgm: document.getElementById('tc-pgm'),
     
@@ -84,6 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayCam1Rtt: document.getElementById('overlay-cam1-rtt'),
     overlayCam2Bw: document.getElementById('overlay-cam2-bw'),
     overlayCam2Rtt: document.getElementById('overlay-cam2-rtt'),
+    overlayLiveu3Bw: document.getElementById('overlay-liveu3-bw'),
+    overlayLiveu3Rtt: document.getElementById('overlay-liveu3-rtt'),
+    overlayLiveu4Bw: document.getElementById('overlay-liveu4-bw'),
+    overlayLiveu4Rtt: document.getElementById('overlay-liveu4-rtt'),
     
     recoBox: document.getElementById('reco-box'),
     recoIcon: document.getElementById('reco-icon'),
@@ -127,6 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
       cam2LPeak: document.getElementById('vu-cam2-l-peak'),
       cam2RPeak: document.getElementById('vu-cam2-r-peak'),
       
+      liveu3L: document.getElementById('vu-liveu3-l'),
+      liveu3R: document.getElementById('vu-liveu3-r'),
+      liveu3LPeak: document.getElementById('vu-liveu3-l-peak'),
+      liveu3RPeak: document.getElementById('vu-liveu3-r-peak'),
+      
+      liveu4L: document.getElementById('vu-liveu4-l'),
+      liveu4R: document.getElementById('vu-liveu4-r'),
+      liveu4LPeak: document.getElementById('vu-liveu4-l-peak'),
+      liveu4RPeak: document.getElementById('vu-liveu4-r-peak'),
+      
       vodL: document.getElementById('vu-vod-l'),
       vodR: document.getElementById('vu-vod-r'),
       vodLPeak: document.getElementById('vu-vod-l-peak'),
@@ -143,6 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const vuState = {
     cam1: { l: 0, r: 0, lp: 0, rp: 0 },
     cam2: { l: 0, r: 0, lp: 0, rp: 0 },
+    liveu3: { l: 0, r: 0, lp: 0, rp: 0 },
+    liveu4: { l: 0, r: 0, lp: 0, rp: 0 },
     vod:  { l: 0, r: 0, lp: 0, rp: 0 },
     pgm:  { l: 0, r: 0, lp: 0, rp: 0 }
   };
@@ -260,6 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvases = {
     cam1: { element: document.getElementById('canvas-cam1'), ctx: document.getElementById('canvas-cam1').getContext('2d') },
     cam2: { element: document.getElementById('canvas-cam2'), ctx: document.getElementById('canvas-cam2').getContext('2d') },
+    liveu3: { element: document.getElementById('canvas-liveu3'), ctx: document.getElementById('canvas-liveu3').getContext('2d') },
+    liveu4: { element: document.getElementById('canvas-liveu4'), ctx: document.getElementById('canvas-liveu4').getContext('2d') },
     vod:  { element: document.getElementById('canvas-vod'),  ctx: document.getElementById('canvas-vod').getContext('2d') },
     pgm:  { element: document.getElementById('canvas-pgm'),  ctx: document.getElementById('canvas-pgm').getContext('2d') }
   };
@@ -645,6 +667,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderVUChannel(el.vu.cam1L, el.vu.cam1R, el.vu.cam1LPeak, el.vu.cam1RPeak, vuState.cam1);
     renderVUChannel(el.vu.cam2L, el.vu.cam2R, el.vu.cam2LPeak, el.vu.cam2RPeak, vuState.cam2);
+    renderVUChannel(el.vu.liveu3L, el.vu.liveu3R, el.vu.liveu3LPeak, el.vu.liveu3RPeak, vuState.liveu3);
+    renderVUChannel(el.vu.liveu4L, el.vu.liveu4R, el.vu.liveu4LPeak, el.vu.liveu4RPeak, vuState.liveu4);
     renderVUChannel(el.vu.vodL,  el.vu.vodR,  el.vu.vodLPeak,  el.vu.vodRPeak,  vuState.vod);
     renderVUChannel(el.vu.pgmL,  el.vu.pgmR,  el.vu.pgmLPeak,  el.vu.pgmRPeak,  vuState.pgm);
   }
@@ -660,6 +684,9 @@ document.addEventListener('DOMContentLoaded', () => {
     el.tcCam1.textContent = state.primaryFailed ? "00:00:00:00" : getSMPTETimecode(framesCount);
     // Standby has a small simulated sync drift (-2 frames)
     el.tcCam2.textContent = getSMPTETimecode(framesCount - 2);
+    // LiveU 3 & 4 with varied network drift
+    el.tcLiveu3.textContent = getSMPTETimecode(framesCount - 3);
+    el.tcLiveu4.textContent = getSMPTETimecode(framesCount - 4);
     // VOD loops
     el.tcVod.textContent = getSMPTETimecode(framesCount % (60 * 60 * 2)); // Loop every 2 minutes
     
@@ -679,10 +706,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Draw Feed 2 (Cam 2 / Backup)
     drawStreamCam2(canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
 
-    // 3. Draw Feed 3 (VOD Playout)
+    // 3. Draw Feed 3 (LiveU 3)
+    drawStreamCam2(canvases.liveu3.ctx, canvases.liveu3.element.width, canvases.liveu3.element.height, framesCount);
+
+    // 4. Draw Feed 4 (LiveU 4)
+    drawStreamCam2(canvases.liveu4.ctx, canvases.liveu4.element.width, canvases.liveu4.element.height, framesCount);
+
+    // 5. Draw Feed 5 (VOD Playout)
     drawStreamVOD(canvases.vod.ctx, canvases.vod.element.width, canvases.vod.element.height, framesCount);
 
-    // 4. Draw Feed 4 (Program Out / PGM)
+    // 6. Draw Feed 6 (Program Out / PGM)
     const pgmW = canvases.pgm.element.width;
     const pgmH = canvases.pgm.element.height;
     const pgmCtx = canvases.pgm.ctx;
@@ -1088,8 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Solo & Mute Buttons in screen card footers
-  const feeds = ['cam1', 'cam2', 'vod'];
-  
+  const feeds = ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'];
   feeds.forEach(feed => {
     const soloBtn = document.getElementById(`btn-solo-${feed}`);
     const muteBtn = document.getElementById(`btn-mute-${feed}`);

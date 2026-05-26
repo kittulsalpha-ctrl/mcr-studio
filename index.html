@@ -71,10 +71,10 @@
 
         <div class="multiviewer-grid">
           
-          <!-- Screen 1: Camera 01 (Primary SRT contribution) -->
+          <!-- Screen 1: LiveU 1 -->
           <div class="screen-card active-stream" id="screen-cam1">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-green"></span>CAM-01 (PRIMARY SRT)</span>
+              <span class="screen-label"><span class="channel-indicator bg-green"></span>LiveU 1</span>
               <span class="screen-timecode font-fira" id="tc-cam1">00:00:00:00</span>
             </div>
             <div class="canvas-wrapper">
@@ -110,10 +110,10 @@
             </div>
           </div>
 
-          <!-- Screen 2: Camera 02 (Backup SRT contribution) -->
+          <!-- Screen 2: LiveU 2 -->
           <div class="screen-card active-stream" id="screen-cam2">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-blue"></span>CAM-02 (BACKUP SRT)</span>
+              <span class="screen-label"><span class="channel-indicator bg-blue"></span>LiveU 2</span>
               <span class="screen-timecode font-fira" id="tc-cam2">00:00:00:00</span>
             </div>
             <div class="canvas-wrapper">
@@ -144,7 +144,75 @@
             </div>
           </div>
 
-          <!-- Screen 3: Graphics Playout / WebVOD loop -->
+          <!-- Screen 3: LiveU 3 -->
+          <div class="screen-card active-stream" id="screen-liveu3">
+            <div class="screen-header">
+              <span class="screen-label"><span class="channel-indicator bg-pink"></span>LiveU 3</span>
+              <span class="screen-timecode font-fira" id="tc-liveu3">00:00:00:00</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvas-liveu3"></canvas>
+              <!-- Audio level meters on top right overlay -->
+              <div class="vu-meter-overlay">
+                <div class="vu-channel">
+                  <div class="vu-bar" id="vu-liveu3-l"></div>
+                  <div class="vu-peak" id="vu-liveu3-l-peak"></div>
+                </div>
+                <div class="vu-channel">
+                  <div class="vu-bar" id="vu-liveu3-r"></div>
+                  <div class="vu-peak" id="vu-liveu3-r-peak"></div>
+                </div>
+              </div>
+              <!-- Codec & Stream Info Overlay -->
+              <div class="stream-stats-overlay">
+                <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
+                <div class="stat-row"><span>res:</span><span>1080p60</span></div>
+                <div class="stat-row"><span>bitrate:</span><span id="overlay-liveu3-bw">5.2 Mbps</span></div>
+                <div class="stat-row"><span>rtt:</span><span id="overlay-liveu3-rtt">28ms</span></div>
+              </div>
+            </div>
+            <div class="screen-footer">
+              <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3">SOLO</button>
+              <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3">MUTE</button>
+              <div class="active-badge text-pink" id="badge-state-liveu3">LIVE</div>
+            </div>
+          </div>
+
+          <!-- Screen 4: LiveU 4 -->
+          <div class="screen-card active-stream" id="screen-liveu4">
+            <div class="screen-header">
+              <span class="screen-label"><span class="channel-indicator bg-amber"></span>LiveU 4</span>
+              <span class="screen-timecode font-fira" id="tc-liveu4">00:00:00:00</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvas-liveu4"></canvas>
+              <!-- Audio level meters on top right overlay -->
+              <div class="vu-meter-overlay">
+                <div class="vu-channel">
+                  <div class="vu-bar" id="vu-liveu4-l"></div>
+                  <div class="vu-peak" id="vu-liveu4-l-peak"></div>
+                </div>
+                <div class="vu-channel">
+                  <div class="vu-bar" id="vu-liveu4-r"></div>
+                  <div class="vu-peak" id="vu-liveu4-r-peak"></div>
+                </div>
+              </div>
+              <!-- Codec & Stream Info Overlay -->
+              <div class="stream-stats-overlay">
+                <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
+                <div class="stat-row"><span>res:</span><span>1080p60</span></div>
+                <div class="stat-row"><span>bitrate:</span><span id="overlay-liveu4-bw">4.9 Mbps</span></div>
+                <div class="stat-row"><span>rtt:</span><span id="overlay-liveu4-rtt">31ms</span></div>
+              </div>
+            </div>
+            <div class="screen-footer">
+              <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4">SOLO</button>
+              <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4">MUTE</button>
+              <div class="active-badge text-amber" id="badge-state-liveu4">LIVE</div>
+            </div>
+          </div>
+
+          <!-- Screen 5: Graphics Playout / WebVOD loop -->
           <div class="screen-card active-stream" id="screen-vod">
             <div class="screen-header">
               <span class="screen-label"><span class="channel-indicator bg-pink"></span>PLAYOUT (GRAPHICS / VOD)</span>
