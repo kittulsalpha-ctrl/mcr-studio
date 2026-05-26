@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cloud Broadcast MCR Studio & Stream Orchestrator</title>
-  <!-- Modern clean typography from Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
 
-  <!-- App Wrapper -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
   <div class="app-container">
 
-    <!-- Premium Master Control Room Header -->
     <header class="mcr-header">
       <div class="header-logo">
         <div class="logo-indicator pulse-green"></div>
@@ -23,32 +22,34 @@
         <span class="version-tag">v3.5-LIVE</span>
       </div>
 
-      <!-- Quick Telemetry Badges -->
       <div class="header-badges">
         <div class="badge" id="badge-status">
           <span class="badge-label">SYSTEM HEALTH</span>
           <span class="badge-value text-green">ACTIVE-ACTIVE</span>
         </div>
+
         <div class="badge" id="badge-tx-route">
           <span class="badge-label">TX ROUTING</span>
           <span class="badge-value text-blue" id="tx-route-value">PRIMARY</span>
         </div>
+
         <div class="badge" id="badge-throughput">
           <span class="badge-label">TOTAL BW</span>
           <span class="badge-value" id="total-bw-value">18.4 Mbps</span>
         </div>
+
         <div class="badge" id="badge-alerts">
           <span class="badge-label">ALERT MATRIX</span>
           <span class="badge-value text-green" id="matrix-alarm-value">OK</span>
         </div>
       </div>
 
-      <!-- Dual Clocks for Broadcast Time Sync -->
       <div class="header-clocks">
         <div class="clock-box border-right">
           <span class="clock-label">UTC TIME</span>
           <span class="clock-time font-fira" id="utc-clock">13:37:00</span>
         </div>
+
         <div class="clock-box">
           <span class="clock-label">LOCAL TIME</span>
           <span class="clock-time font-fira" id="local-clock">19:07:00</span>
@@ -56,30 +57,32 @@
       </div>
     </header>
 
-    <!-- Main Workspace Grid -->
     <main class="mcr-workspace">
 
-      <!-- Left Column: Multi-Viewer Screen Grid (2x2) -->
+      <!-- Left Column: Multi-Viewer Screen Grid (3x2 responsive) -->
       <section class="multiviewer-container">
         <div class="section-title-bar">
           <h2>STREAM MULTI-VIEWER</h2>
           <div class="title-decor">
             <span class="active-dot pulse-pink"></span>
-            <span class="title-subtext">QUAD-SPLIT PROCESSOR</span>
+            <span class="title-subtext">6-SOURCE PROCESSOR</span>
           </div>
         </div>
 
         <div class="multiviewer-grid">
-          
+
           <!-- Screen 1: LiveU 1 -->
           <div class="screen-card active-stream" id="screen-cam1">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-green"></span>LiveU 1</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-green"></span>LiveU 1
+              </span>
               <span class="screen-timecode font-fira" id="tc-cam1">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-cam1"></canvas>
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-cam1-l"></div>
@@ -90,35 +93,39 @@
                   <div class="vu-peak" id="vu-cam1-r-peak"></div>
                 </div>
               </div>
-              <!-- Codec & Stream Info Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">HEVC</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
                 <div class="stat-row"><span>bitrate:</span><span id="overlay-cam1-bw">6.2 Mbps</span></div>
                 <div class="stat-row"><span>rtt:</span><span id="overlay-cam1-rtt">25ms</span></div>
               </div>
-              <!-- Connection Lost / Warning Overlay -->
+
               <div class="screen-alarm-overlay" id="alarm-overlay-cam1">
                 <div class="alarm-glitch-text">NO INPUT DETECTED</div>
                 <div class="alarm-subtext">SRT SOCKET DISCONNECTED (LOSS OF SYNC)</div>
               </div>
             </div>
+
             <div class="screen-footer">
               <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1">SOLO</button>
               <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1">MUTE</button>
-              <div class="active-badge text-green" id="badge-state-cam1 font-fira">LIVE</div>
+              <div class="active-badge text-green font-fira" id="badge-state-cam1">LIVE</div>
             </div>
           </div>
 
           <!-- Screen 2: LiveU 2 -->
           <div class="screen-card active-stream" id="screen-cam2">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-blue"></span>LiveU 2</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-blue"></span>LiveU 2
+              </span>
               <span class="screen-timecode font-fira" id="tc-cam2">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-cam2"></canvas>
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-cam2-l"></div>
@@ -129,7 +136,7 @@
                   <div class="vu-peak" id="vu-cam2-r-peak"></div>
                 </div>
               </div>
-              <!-- Codec & Stream Info Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
@@ -137,22 +144,26 @@
                 <div class="stat-row"><span>rtt:</span><span id="overlay-cam2-rtt">25ms</span></div>
               </div>
             </div>
+
             <div class="screen-footer">
               <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2">SOLO</button>
               <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2">MUTE</button>
-              <div class="active-badge text-blue" id="badge-state-cam2">STANDBY</div>
+              <div class="active-badge text-blue font-fira" id="badge-state-cam2">STANDBY</div>
             </div>
           </div>
 
           <!-- Screen 3: LiveU 3 -->
           <div class="screen-card active-stream" id="screen-liveu3">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-pink"></span>LiveU 3</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-pink"></span>LiveU 3
+              </span>
               <span class="screen-timecode font-fira" id="tc-liveu3">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-liveu3"></canvas>
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-liveu3-l"></div>
@@ -163,7 +174,7 @@
                   <div class="vu-peak" id="vu-liveu3-r-peak"></div>
                 </div>
               </div>
-              <!-- Codec & Stream Info Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
@@ -171,22 +182,26 @@
                 <div class="stat-row"><span>rtt:</span><span id="overlay-liveu3-rtt">28ms</span></div>
               </div>
             </div>
+
             <div class="screen-footer">
               <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3">SOLO</button>
               <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3">MUTE</button>
-              <div class="active-badge text-pink" id="badge-state-liveu3">LIVE</div>
+              <div class="active-badge text-pink font-fira" id="badge-state-liveu3">LIVE</div>
             </div>
           </div>
 
           <!-- Screen 4: LiveU 4 -->
           <div class="screen-card active-stream" id="screen-liveu4">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-amber"></span>LiveU 4</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-amber"></span>LiveU 4
+              </span>
               <span class="screen-timecode font-fira" id="tc-liveu4">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-liveu4"></canvas>
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-liveu4-l"></div>
@@ -197,7 +212,7 @@
                   <div class="vu-peak" id="vu-liveu4-r-peak"></div>
                 </div>
               </div>
-              <!-- Codec & Stream Info Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
@@ -205,22 +220,26 @@
                 <div class="stat-row"><span>rtt:</span><span id="overlay-liveu4-rtt">31ms</span></div>
               </div>
             </div>
+
             <div class="screen-footer">
               <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4">SOLO</button>
               <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4">MUTE</button>
-              <div class="active-badge text-amber" id="badge-state-liveu4">LIVE</div>
+              <div class="active-badge text-amber font-fira" id="badge-state-liveu4">LIVE</div>
             </div>
           </div>
 
-          <!-- Screen 5: Graphics Playout / WebVOD loop -->
+          <!-- Screen 5: Playout Graphics / VOD -->
           <div class="screen-card active-stream" id="screen-vod">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-pink"></span>PLAYOUT (GRAPHICS / VOD)</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-pink"></span>PLAYOUT (GRAPHICS / VOD)
+              </span>
               <span class="screen-timecode font-fira" id="tc-vod">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-vod"></canvas>
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-vod-l"></div>
@@ -231,39 +250,41 @@
                   <div class="vu-peak" id="vu-vod-r-peak"></div>
                 </div>
               </div>
-              <!-- Codec & Stream Info Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">PRORES</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
                 <div class="stat-row"><span>source:</span><span class="text-pink">S3_BUCKET</span></div>
               </div>
             </div>
+
             <div class="screen-footer">
               <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod">SOLO</button>
               <button class="btn-screen-control btn-mute" data-feed="vod" id="btn-mute-vod">MUTE</button>
-              <div class="active-badge text-pink" id="badge-state-vod">PLAYING</div>
+              <div class="active-badge text-pink font-fira" id="badge-state-vod">PLAYING</div>
             </div>
           </div>
 
-          <!-- Screen 4: Program Out (PGM) -->
+          <!-- Screen 6: Program Out -->
           <div class="screen-card pgm-stream" id="screen-pgm">
             <div class="screen-header">
-              <span class="screen-label"><span class="channel-indicator bg-red pulse-red"></span>PROGRAM OUT (PGM)</span>
+              <span class="screen-label">
+                <span class="channel-indicator bg-red pulse-red"></span>PROGRAM OUT (PGM)
+              </span>
               <span class="screen-timecode font-fira" id="tc-pgm">00:00:00:00</span>
             </div>
+
             <div class="canvas-wrapper">
               <canvas id="canvas-pgm"></canvas>
-              <!-- Big ON-AIR Indicator -->
+
               <div class="on-air-badge">ON AIR</div>
-              
-              <!-- SCTE-35 Countdown Overlay -->
+
               <div class="ad-break-overlay" id="ad-break-banner">
                 <div class="ad-break-title">SCTE-35 AD SPLICE ACTIVE</div>
                 <div class="ad-countdown font-fira" id="ad-countdown-val">AD BREAK: 30.0s</div>
                 <div class="ad-details font-fira">ID: SCTE35_DPI_EVENT_4092</div>
               </div>
-              
-              <!-- Audio level meters on top right overlay -->
+
               <div class="vu-meter-overlay">
                 <div class="vu-channel">
                   <div class="vu-bar" id="vu-pgm-l"></div>
@@ -274,13 +295,14 @@
                   <div class="vu-peak" id="vu-pgm-r-peak"></div>
                 </div>
               </div>
-              <!-- Output Stats Overlay -->
+
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-green">H.264 (AVC)</span></div>
                 <div class="stat-row"><span>profile:</span><span>Main@L4.1</span></div>
                 <div class="stat-row"><span>latency:</span><span class="text-green" id="pgm-latency-val">0.6s (Glass-to-Glass)</span></div>
               </div>
             </div>
+
             <div class="screen-footer">
               <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: LiveU 1</span>
               <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
@@ -290,125 +312,114 @@
         </div>
       </section>
 
-      <!-- Right Column: Control Panel & Orchestrator -->
       <section class="controls-container">
-        
-        <!-- Tab panel 1: Visual Stream Orchestration Node Editor -->
+
         <div class="control-panel panel-orchestrator">
           <div class="panel-header">
             <h3>CLOUD STREAM ORCHESTRATOR</h3>
             <span class="badge-blue font-fira">AWS TRANSIT NODE GRID</span>
           </div>
+
           <div class="panel-body">
-            <!-- Node Editor Canvas/SVG Wrapper -->
             <div class="node-editor-wrapper">
-              <svg id="node-svg" viewBox="0 0 540 220" preserveAspectRatio="xMinYMin meet">
+              <svg id="node-svg" viewBox="0 0 540 220" preserveAspectRatio="xMidYMid meet">
                 <defs>
-                  <!-- Glow Filters for connectors -->
                   <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="2" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
+
                   <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="2" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
+
                   <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="2" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
                 </defs>
 
-                <!-- Connection Lines -->
-                <!-- Cam1 to Switcher -->
                 <path d="M 90,50 L 220,90" id="path-cam1" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
-                <!-- Cam2 to Switcher -->
                 <path d="M 90,170 L 220,130" id="path-cam2" class="node-link link-active-blue" stroke="#00d2ff" stroke-width="2" fill="none" />
-                <!-- VOD to Switcher (standby overlay) -->
                 <path d="M 90,110 L 220,110" id="path-vod" class="node-link link-standby" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
-                
-                <!-- Switcher to Transcoder -->
+
                 <path d="M 270,110 L 330,110" id="path-switch-to-trans" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
-                <!-- Transcoder to CDN -->
                 <path d="M 390,110 L 450,110" id="path-trans-to-cdn" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
 
-                <!-- Flowing Data Particles along paths -->
                 <circle r="4" fill="#10b981" id="dot-cam1" class="flow-particle">
                   <animateMotion dur="2.5s" repeatCount="indefinite" path="M 90,50 L 220,90" />
                 </circle>
+
                 <circle r="4" fill="#00d2ff" id="dot-cam2" class="flow-particle">
                   <animateMotion dur="3.5s" repeatCount="indefinite" path="M 90,170 L 220,130" />
                 </circle>
+
                 <circle r="4" fill="#10b981" id="dot-switch" class="flow-particle">
                   <animateMotion dur="2s" repeatCount="indefinite" path="M 270,110 L 330,110" />
                 </circle>
+
                 <circle r="4" fill="#10b981" id="dot-trans" class="flow-particle">
                   <animateMotion dur="2s" repeatCount="indefinite" path="M 390,110 L 450,110" />
                 </circle>
 
-                <!-- Node Cards (Grouped Elements for Styling/Interaction) -->
-                
-                <!-- LiveU 1 Node -->
                 <g class="node-group" id="node-card-cam1" transform="translate(10, 25)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="1.5" class="node-rect-green"/>
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="1.5" class="node-rect-green" />
                   <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 1</text>
                   <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#10b981">PRIMARY</text>
                 </g>
 
-                <!-- LiveU 2 Node -->
                 <g class="node-group" id="node-card-cam2" transform="translate(10, 145)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#00d2ff" stroke-width="1.5" class="node-rect-blue"/>
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#00d2ff" stroke-width="1.5" class="node-rect-blue" />
                   <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 2</text>
                   <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#00d2ff">STANDBY</text>
                 </g>
 
-                <!-- Seamless Switcher Node -->
                 <g class="node-group" id="node-card-switcher" transform="translate(190, 85)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="2" class="node-rect-active" id="rect-switcher"/>
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="2" class="node-rect-active" id="rect-switcher" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="600" fill="#ffffff">ST 2022-7</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="500" fill="#10b981" id="text-switcher-status">PRIMARY</text>
                 </g>
 
-                <!-- Transcoder Node (AWS MediaLive) -->
                 <g class="node-group" id="node-card-transcoder" transform="translate(310, 85)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#3b82f6" stroke-width="1.5"/>
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#3b82f6" stroke-width="1.5" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="600" fill="#ffffff">MEDIA_LIVE</text>
-                  <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#9ca3af">HEVC->H264</text>
+                  <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#9ca3af">HEVC-&gt;H264</text>
                 </g>
 
-                <!-- CDN Distribution Node (Amazon CloudFront) -->
                 <g class="node-group" id="node-card-cdn" transform="translate(430, 85)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#8b5cf6" stroke-width="1.5"/>
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#8b5cf6" stroke-width="1.5" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">CDN (EDGE)</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#a78bfa">HLS / DASH</text>
                 </g>
               </svg>
             </div>
-            
-            <!-- Quick Node Inspector -->
+
             <div class="node-inspector" id="node-inspector">
               <span class="inspector-title">Active Node Config:</span>
-              <span class="inspector-body" id="inspector-text">Click on any node to view configuration details. Currently displaying: <strong class="text-green">ST 2022-7 Switcher (Seamless Path switching enabled, switching window: 50ms)</strong></span>
+              <span class="inspector-body" id="inspector-text">
+                Click on any node to view configuration details. Currently displaying:
+                <strong class="text-green">ST 2022-7 Switcher (Seamless Path switching enabled, switching window: 50ms)</strong>
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Tab panel 2: Telemetry & Network Degradation Simulator -->
         <div class="control-panel panel-telemetry">
           <div class="panel-header">
             <h3>SRT CONTRIBUTOR TELEMETRY</h3>
             <span class="badge-amber font-fira">REAL-TIME MONITOR</span>
           </div>
+
           <div class="panel-body grid-2-col">
-            
-            <!-- Sliders for SRT Simulator -->
             <div class="telemetry-controls">
+
               <div class="control-group">
                 <div class="control-label-row">
                   <label for="slide-loss">Network Packet Loss</label>
                   <span class="val-display font-fira text-red" id="val-loss">0.0%</span>
                 </div>
-                <input type="range" id="slide-loss" class="slider slider-loss" min="0" max="20" step="0.5" value="0">
+                <input type="range" id="slide-loss" class="slider slider-loss" min="0" max="20" step="0.5" value="0" />
               </div>
 
               <div class="control-group">
@@ -416,7 +427,7 @@
                   <label for="slide-jitter">Jitter (Standard Dev)</label>
                   <span class="val-display font-fira text-amber" id="val-jitter">5ms</span>
                 </div>
-                <input type="range" id="slide-jitter" class="slider slider-jitter" min="2" max="100" step="1" value="5">
+                <input type="range" id="slide-jitter" class="slider slider-jitter" min="2" max="100" step="1" value="5" />
               </div>
 
               <div class="control-group">
@@ -424,7 +435,7 @@
                   <label for="slide-rtt">Network RTT (Ping)</label>
                   <span class="val-display font-fira text-blue" id="val-rtt">25ms</span>
                 </div>
-                <input type="range" id="slide-rtt" class="slider slider-rtt" min="10" max="300" step="5" value="25">
+                <input type="range" id="slide-rtt" class="slider slider-rtt" min="10" max="300" step="5" value="25" />
               </div>
 
               <div class="control-group">
@@ -432,42 +443,42 @@
                   <label for="slide-buffer">SRT Latency Buffer</label>
                   <span class="val-display font-fira text-green" id="val-buffer">120ms</span>
                 </div>
-                <input type="range" id="slide-buffer" class="slider slider-buffer" min="20" max="1000" step="10" value="120">
+                <input type="range" id="slide-buffer" class="slider slider-buffer" min="20" max="1000" step="10" value="120" />
               </div>
 
-              <!-- Recommendation Engine -->
               <div class="recommendation-box" id="reco-box">
                 <div class="reco-icon text-green" id="reco-icon">✓</div>
-                <div class="reco-text" id="reco-text">SRT Config: Optimal. Latency buffer (120ms) is well above the minimum recommendation of 4x RTT (100ms) for high stability.</div>
+                <div class="reco-text" id="reco-text">
+                  SRT Config: Optimal. Latency buffer (120ms) is well above the minimum recommendation of 4x RTT (100ms) for high stability.
+                </div>
               </div>
             </div>
 
-            <!-- Canvas-based dynamic real-time rolling charts -->
             <div class="telemetry-charts-container">
               <div class="chart-header">
                 <span class="chart-legend"><span class="legend-dot bg-green"></span>BW (Mbps)</span>
                 <span class="chart-legend"><span class="legend-dot bg-red"></span>Loss (%)</span>
                 <span class="chart-legend"><span class="legend-dot bg-amber"></span>Jitter (ms)</span>
               </div>
+
               <div class="chart-wrapper">
                 <canvas id="telemetry-chart"></canvas>
               </div>
+
               <div class="telemetry-underflow-alarm" id="chart-alarm-overlay">
                 BUFFER UNDERFLOW IN PROGRESS
               </div>
             </div>
-
           </div>
         </div>
 
-        <!-- Tab panel 3: Disaster Recovery failover & SCTE playout controls -->
         <div class="control-panel panel-dr-playout">
           <div class="panel-header">
-            <h3>MASTER PlAYOUT & DISASTER RECOVERY</h3>
+            <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
             <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
           </div>
+
           <div class="panel-body dr-buttons-row">
-            
             <div class="dr-group">
               <span class="dr-title">SIMULATED FAILURES</span>
               <div class="btn-grid">
@@ -477,20 +488,19 @@
             </div>
 
             <div class="dr-group">
-              <span class="dr-title">ADVERTISEMENT splice INJECTOR</span>
+              <span class="dr-title">ADVERTISEMENT SPLICE INJECTOR</span>
               <div class="btn-grid">
                 <button class="btn btn-pink" id="btn-inject-scte">INJECT SCTE-35 AD CUE (30S)</button>
                 <button class="btn btn-secondary" id="btn-cancel-scte" disabled>CANCEL AD SPLICE</button>
               </div>
             </div>
-
           </div>
         </div>
 
-        <!-- Bottom right panel: Real-time Playout Events log console -->
         <div class="control-panel panel-logs">
           <div class="panel-header">
             <h3>MCR PLAYOUT EVENTS CONSOLE</h3>
+
             <div class="logs-filter-group">
               <button class="btn-filter filter-active" data-filter="all" id="filter-all">ALL</button>
               <button class="btn-filter" data-filter="info" id="filter-info">INFO</button>
@@ -499,17 +509,16 @@
               <button class="btn-filter" id="btn-clear-logs">CLEAR</button>
             </div>
           </div>
+
           <div class="panel-body">
             <div class="console-logs-wrapper font-fira" id="console-logs">
-              <!-- Logs appended via Javascript dynamically -->
+              <!-- Logs appended via JavaScript dynamically -->
             </div>
           </div>
         </div>
 
       </section>
-
     </main>
-
   </div>
 
   <script src="app.js"></script>
