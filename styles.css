@@ -258,6 +258,33 @@ body {
   align-items: start;
 }
 
+.multiviewer-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.multiviewer-action-bar .btn {
+  min-width: 150px;
+}
+
+.action-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.hidden-video {
+  display: none !important;
+}
+
 .screen-card {
   background: var(--bg-panel);
   border: 1px solid var(--border-glow);

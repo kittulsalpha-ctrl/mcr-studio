@@ -69,6 +69,13 @@
           </div>
         </div>
 
+        <div class="multiviewer-action-bar">
+          <button class="btn btn-secondary" id="btn-start-webcam">Start Webcam</button>
+          <button class="btn btn-secondary" id="btn-load-local-video">Load Local Video</button>
+          <input type="file" id="local-video-file-input" accept="video/*" hidden />
+          <span class="action-status" id="action-status">Waiting for source...</span>
+        </div>
+
         <div class="multiviewer-grid">
 
           <!-- Screen 1: LiveU 1 -->
@@ -95,8 +102,9 @@
               </div>
 
               <div class="stream-stats-overlay">
-                <div class="stat-row"><span>codec:</span><span class="text-blue">HEVC</span></div>
-                <div class="stat-row"><span>res:</span><span>1080p60</span></div>
+                <div class="stat-row"><span>codec:</span><span class="text-blue" id="overlay-cam1-codec">Browser Cam</span></div>
+                <div class="stat-row"><span>src:</span><span id="overlay-cam1-src">No Input</span></div>
+                <div class="stat-row"><span>res:</span><span id="overlay-cam1-res">N/A</span></div>
                 <div class="stat-row"><span>bitrate:</span><span id="overlay-cam1-bw">6.2 Mbps</span></div>
                 <div class="stat-row"><span>rtt:</span><span id="overlay-cam1-rtt">25ms</span></div>
               </div>
@@ -138,8 +146,9 @@
               </div>
 
               <div class="stream-stats-overlay">
-                <div class="stat-row"><span>codec:</span><span class="text-blue">H.264</span></div>
-                <div class="stat-row"><span>res:</span><span>1080p60</span></div>
+                <div class="stat-row"><span>codec:</span><span class="text-blue" id="overlay-cam2-codec">Local File</span></div>
+                <div class="stat-row"><span>src:</span><span id="overlay-cam2-src">No File</span></div>
+                <div class="stat-row"><span>res:</span><span id="overlay-cam2-res">N/A</span></div>
                 <div class="stat-row"><span>bitrate:</span><span id="overlay-cam2-bw">5.8 Mbps</span></div>
                 <div class="stat-row"><span>rtt:</span><span id="overlay-cam2-rtt">25ms</span></div>
               </div>
@@ -521,6 +530,8 @@
     </main>
   </div>
 
+  <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
+  <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
   <script src="app.js"></script>
 </body>
 </html>
