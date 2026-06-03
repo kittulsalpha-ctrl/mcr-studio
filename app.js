@@ -24,14 +24,25 @@ document.addEventListener('DOMContentLoaded', () => {
     isUnderflow: false,
     
     // MCR Playout Routing
-    activeSource: 'cam1', // 'cam1', 'cam2', 'vod', or 'ad'
+    activeSource: null, // null when no program source is on-air, otherwise 'cam1','cam2','liveu3','liveu4','vod','ad'
     primaryFailed: false,
 
+    // Preview / Program state
+    previewFeed: null,
+
     // LiveU Video Source State
+    webcamStream: null,
+    webcamReady: false,
     cam1VideoReady: false,
     cam2VideoReady: false,
     cam2FileURL: null,
     cam2FileName: null,
+
+    // Media assignments for dynamic source targeting
+    mediaAssignments: {
+      webcam: 'cam1',
+      localVideo: 'cam2'
+    },
     
     // SCTE-35 Ad Splice
     adActive: false,
@@ -39,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     adIntervalId: null,
     
     // Multi-Viewer Settings
-    soloFeed: null, // legacy; replaced by previewFeed
     previewFeed: null,
     mutedFeeds: {
       cam1: false,
@@ -102,7 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayCam2Src: document.getElementById('overlay-cam2-src'),
     overlayCam2Res: document.getElementById('overlay-cam2-res'),
     btnStartWebcam: document.getElementById('btn-start-webcam'),
+    btnStopWebcam: document.getElementById('btn-stop-webcam'),
     btnLoadLocalVideo: document.getElementById('btn-load-local-video'),
+    btnEjectVideo: document.getElementById('btn-eject-video'),
+    selectWebcamTarget: document.getElementById('select-webcam-target'),
+    selectVideoTarget: document.getElementById('select-video-target'),
     localVideoFileInput: document.getElementById('local-video-file-input'),
     actionStatus: document.getElementById('action-status'),
     cam1Video: document.getElementById('video-cam1'),
@@ -110,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTake: document.getElementById('btn-take'),
     badgeStateCam1: document.getElementById('badge-state-cam1'),
     badgeStateCam2: document.getElementById('badge-state-cam2'),
+    badgeStateLiveu3: document.getElementById('badge-state-liveu3'),
+    badgeStateLiveu4: document.getElementById('badge-state-liveu4'),
     overlayLiveu3Bw: document.getElementById('overlay-liveu3-bw'),
     overlayLiveu3Rtt: document.getElementById('overlay-liveu3-rtt'),
     overlayLiveu4Bw: document.getElementById('overlay-liveu4-bw'),
@@ -289,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.cam2FileURL) {
       URL.revokeObjectURL(state.cam2FileURL);
       state.cam2FileURL = null;
+      state.cam2FileName = null;
     }
   }
 
@@ -298,29 +315,108 @@ document.addEventListener('DOMContentLoaded', () => {
       : 'N/A';
   }
 
+  function getFeedAssignment(feed) {
+    if (feed === 'vod') return 'vod';
+    if (state.mediaAssignments.webcam === feed) return 'webcam';
+    if (state.mediaAssignments.localVideo === feed) return 'localVideo';
+    return 'simulated';
+  }
+
+  function getFeedStatus(feed) {
+    const assignment = getFeedAssignment(feed);
+    if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
+    if (assignment === 'localVideo') return state.cam2VideoReady ? 'PLAYING' : 'OFFLINE';
+    if (assignment === 'vod') return 'PLAYING';
+    return 'SIMULATED';
+  }
+
+  function getAssignmentLabel(feed) {
+    const assignment = getFeedAssignment(feed);
+    if (assignment === 'webcam') return 'Browser Cam';
+    if (assignment === 'localVideo') return state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'Local File';
+    if (feed === 'vod') return 'PLAYOUT';
+    return 'SIMULATED';
+  }
+
+  function clearCanvas(feed) {
+    const canvas = canvases[feed]?.element;
+    if (!canvas) return;
+    const ctx = canvases[feed].ctx;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#020408';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function drawFeedCanvas(feed, ctx, w, h, frames) {
+    const assignment = getFeedAssignment(feed);
+
+    if (assignment === 'webcam') {
+      if (state.webcamReady && drawVideoFrame(el.cam1Video, ctx, w, h)) return;
+      drawStreamLossStatic(ctx, w, h);
+      return;
+    }
+
+    if (assignment === 'localVideo') {
+      if (state.cam2VideoReady && drawVideoFrame(el.cam2Video, ctx, w, h)) return;
+      drawStreamLossStatic(ctx, w, h);
+      return;
+    }
+
+    if (feed === 'cam1') {
+      drawStreamCam1(ctx, w, h, frames, state.unrecoveredLoss);
+    } else if (feed === 'cam2' || feed === 'liveu3' || feed === 'liveu4') {
+      drawStreamCam2(ctx, w, h, frames);
+    } else if (feed === 'vod') {
+      drawStreamVOD(ctx, w, h, frames);
+    }
+  }
+
   function updateSourceOverlays() {
-    const cam1Active = state.cam1VideoReady && el.cam1Video && el.cam1Video.readyState >= 2;
-    const cam2Active = state.cam2VideoReady && el.cam2Video && el.cam2Video.readyState >= 2;
+    const cam1Assignment = getFeedAssignment('cam1');
+    const cam2Assignment = getFeedAssignment('cam2');
+    const cam3Assignment = getFeedAssignment('liveu3');
+    const cam4Assignment = getFeedAssignment('liveu4');
 
-    el.overlayCam1Codec.textContent = 'Browser Cam';
-    el.overlayCam1Src.textContent = cam1Active ? 'Browser Cam' : 'No Input';
-    el.overlayCam1Res.textContent = cam1Active ? getVideoResolution(el.cam1Video) : 'N/A';
-    el.overlayCam2Codec.textContent = 'Local File';
-    el.overlayCam2Src.textContent = cam2Active ? (state.cam2FileName || 'Local File') : 'No File';
-    el.overlayCam2Res.textContent = cam2Active ? getVideoResolution(el.cam2Video) : 'N/A';
+    // Cam1 overlay adapts to assigned source
+    el.overlayCam1Codec.textContent = cam1Assignment === 'webcam' ? 'Browser Cam' : cam1Assignment === 'localVideo' ? 'Local File' : 'SIMULATED';
+    el.overlayCam1Src.textContent = cam1Assignment === 'webcam'
+      ? (state.webcamReady ? 'Browser Cam' : 'No Input')
+      : cam1Assignment === 'localVideo'
+        ? (state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File')
+        : 'Simulated Input';
+    el.overlayCam1Res.textContent = cam1Assignment === 'webcam'
+      ? (state.webcamReady ? getVideoResolution(el.cam1Video) : 'N/A')
+      : cam1Assignment === 'localVideo'
+        ? (state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A')
+        : 'N/A';
 
-    el.overlayCam1Bw.textContent = `${(5.5 + Math.random() * 0.9).toFixed(1)} Mbps`;
-    el.overlayCam2Bw.textContent = `${(4.8 + Math.random() * 1.1).toFixed(1)} Mbps`;
+    el.overlayCam2Codec.textContent = cam2Assignment === 'localVideo' ? 'Local File' : cam2Assignment === 'webcam' ? 'Browser Cam' : 'SIMULATED';
+    el.overlayCam2Src.textContent = cam2Assignment === 'localVideo'
+      ? (state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File')
+      : cam2Assignment === 'webcam'
+        ? (state.webcamReady ? 'Browser Cam' : 'No Input')
+        : 'Simulated Input';
+    el.overlayCam2Res.textContent = cam2Assignment === 'localVideo'
+      ? (state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A')
+      : cam2Assignment === 'webcam'
+        ? (state.webcamReady ? getVideoResolution(el.cam1Video) : 'N/A')
+        : 'N/A';
+
+    el.overlayCam1Bw.textContent = `${(4.8 + Math.random() * 1.2).toFixed(1)} Mbps`;
+    el.overlayCam2Bw.textContent = `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps`;
     el.overlayCam1Rtt.textContent = `${state.rttMs}ms`;
     el.overlayCam2Rtt.textContent = `${state.rttMs}ms`;
 
-    // Source health indicators per Phase 2 requirements
-    el.badgeStateCam1.textContent = cam1Active ? 'ONLINE' : 'OFFLINE';
-    el.badgeStateCam2.textContent = cam2Active ? 'PLAYING' : 'OFFLINE';
+    el.badgeStateCam1.textContent = getFeedStatus('cam1');
+    el.badgeStateCam2.textContent = getFeedStatus('cam2');
+    el.badgeStateLiveu3.textContent = getFeedStatus('liveu3');
+    el.badgeStateLiveu4.textContent = getFeedStatus('liveu4');
 
     const statusParts = [];
-    if (cam1Active) statusParts.push('Webcam active');
-    if (cam2Active) statusParts.push(state.cam2FileName || 'Local File ready');
+    statusParts.push(`Webcam ➜ ${state.mediaAssignments.webcam.toUpperCase()}`);
+    statusParts.push(`Video ➜ ${state.mediaAssignments.localVideo.toUpperCase()}`);
+    if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
+    if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
     el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'Waiting for source...';
   }
 
@@ -363,11 +459,13 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       el.cam1Video.srcObject = stream;
+      state.webcamStream = stream;
+      state.webcamReady = true;
       state.cam1VideoReady = true;
       await el.cam1Video.play().catch(() => {});
       updateSourceOverlays();
-      addLog('info', 'WEB', 'Browser webcam started for LiveU 1.');
-      addLog('info', 'MIX', 'LiveU 1 is ONLINE and available for preview/program.');
+      addLog('info', 'WEB', 'Browser webcam started and assigned to LiveU source.');
+      addLog('info', 'MIX', `Webcam available at ${state.mediaAssignments.webcam.toUpperCase()}.`);
     } catch (error) {
       addLog('alarm', 'WEB', `Unable to access webcam: ${error.message}`);
       el.actionStatus.textContent = 'Webcam access denied';
@@ -390,8 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
     el.cam2Video.load();
     el.cam2Video.play().catch(() => {});
     updateSourceOverlays();
-    addLog('info', 'VIDEO', `Local file selected for LiveU 2: ${file.name}`);
-    addLog('info', 'MIX', 'LiveU 2 is PLAYING and available for preview/program.');
+    addLog('info', 'VIDEO', `Local file selected for LiveU source: ${file.name}`);
+    addLog('info', 'MIX', `Local video available at ${state.mediaAssignments.localVideo.toUpperCase()}.`);
     el.localVideoFileInput.value = '';
   });
 
@@ -401,9 +499,91 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   el.cam1Video.addEventListener('loadedmetadata', () => {
+    state.webcamReady = true;
     state.cam1VideoReady = true;
     updateSourceOverlays();
   });
+
+  function assignMediaTarget(mediaType, target) {
+    const otherType = mediaType === 'webcam' ? 'localVideo' : 'webcam';
+    if (state.mediaAssignments[otherType] === target) {
+      addLog('warning', 'ROUTE', `${mediaType === 'webcam' ? 'Webcam' : 'Local Video'} cannot be assigned to ${target.toUpperCase()} because it is already occupied.`);
+      if (mediaType === 'webcam') el.selectWebcamTarget.value = state.mediaAssignments.webcam;
+      else el.selectVideoTarget.value = state.mediaAssignments.localVideo;
+      return;
+    }
+
+    state.mediaAssignments[mediaType] = target;
+    addLog('info', 'ROUTE', `${mediaType === 'webcam' ? 'Webcam' : 'Local Video'} assigned to ${target.toUpperCase()}.`);
+    updateSourceOverlays();
+  }
+
+  el.selectWebcamTarget.addEventListener('change', () => {
+    assignMediaTarget('webcam', el.selectWebcamTarget.value);
+  });
+
+  el.selectVideoTarget.addEventListener('change', () => {
+    assignMediaTarget('localVideo', el.selectVideoTarget.value);
+  });
+
+  function stopWebcam() {
+    if (state.webcamStream) {
+      state.webcamStream.getTracks().forEach(track => track.stop());
+      state.webcamStream = null;
+    }
+    el.cam1Video.srcObject = null;
+    state.webcamReady = false;
+    state.cam1VideoReady = false;
+    addLog('info', 'WEB', 'Webcam stopped and removed from assigned source.');
+
+    if (state.previewFeed && getFeedAssignment(state.previewFeed) === 'webcam') {
+      state.previewFeed = null;
+      document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
+      document.querySelectorAll('.screen-card').forEach(c => { c.classList.remove('preview-active'); c.style.opacity = '1.0'; c.style.boxShadow = 'none'; });
+    }
+
+    if (state.activeSource && getFeedAssignment(state.activeSource) === 'webcam') {
+      state.activeSource = null;
+      el.pgmActiveSource.textContent = 'SOURCE: NONE';
+      addLog('info', 'ROUTE', 'Program output cleared because the webcam source was stopped.');
+    }
+
+    updateSourceOverlays();
+    clearCanvas(state.mediaAssignments.webcam);
+  }
+
+  function ejectLocalVideo() {
+    if (!state.cam2FileURL) {
+      addLog('warning', 'VIDEO', 'No local video loaded to eject.');
+      return;
+    }
+
+    state.cam2Video.pause();
+    el.cam2Video.removeAttribute('src');
+    el.cam2Video.load();
+    safeRevokeVideoURL();
+    state.cam2VideoReady = false;
+
+    addLog('info', 'VIDEO', 'Local video ejected from assigned source.');
+
+    if (state.previewFeed && getFeedAssignment(state.previewFeed) === 'localVideo') {
+      state.previewFeed = null;
+      document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
+      document.querySelectorAll('.screen-card').forEach(c => { c.classList.remove('preview-active'); c.style.opacity = '1.0'; c.style.boxShadow = 'none'; });
+    }
+
+    if (state.activeSource && getFeedAssignment(state.activeSource) === 'localVideo') {
+      state.activeSource = null;
+      el.pgmActiveSource.textContent = 'SOURCE: NONE';
+      addLog('info', 'ROUTE', 'Program output cleared because the local video source was ejected.');
+    }
+
+    updateSourceOverlays();
+    clearCanvas(state.mediaAssignments.localVideo);
+  }
+
+  el.btnStopWebcam.addEventListener('click', stopWebcam);
+  el.btnEjectVideo.addEventListener('click', ejectLocalVideo);
 
   updateSourceOverlays();
 
@@ -419,7 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
   addLog('info', 'CDN', 'Edge CDN cache validation complete. Latency buffer optimal at edge locations.');
 
   // Ensure pgm label reflects initial active source
-  el.pgmActiveSource.textContent = `SOURCE: ${state.activeSource === 'cam1' ? 'LiveU 1' : state.activeSource === 'cam2' ? 'LiveU 2' : state.activeSource === 'vod' ? 'PLAYOUT' : 'UNKNOWN'}`;
+  el.pgmActiveSource.textContent = state.activeSource
+    ? `SOURCE: ${state.activeSource === 'cam1' ? 'LiveU 1' : state.activeSource === 'cam2' ? 'LiveU 2' : state.activeSource === 'liveu3' ? 'LiveU 3' : state.activeSource === 'liveu4' ? 'LiveU 4' : state.activeSource === 'vod' ? 'PLAYOUT' : state.activeSource.toUpperCase()}`
+    : 'SOURCE: NONE';
 
   // ==========================================================================
   // 5. CANVAS VIDEO STREAM RENDERING ENGINE
@@ -840,65 +1022,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // PGM timecode reflects currently routed active source
     if (state.activeSource === 'cam1') el.tcPgm.textContent = el.tcCam1.textContent;
     else if (state.activeSource === 'cam2') el.tcPgm.textContent = el.tcCam2.textContent;
+    else if (state.activeSource === 'liveu3') el.tcPgm.textContent = el.tcLiveu3.textContent;
+    else if (state.activeSource === 'liveu4') el.tcPgm.textContent = el.tcLiveu4.textContent;
     else if (state.activeSource === 'vod') el.tcPgm.textContent = el.tcVod.textContent;
     else if (state.activeSource === 'ad') el.tcPgm.textContent = getSMPTETimecode(framesCount);
+    else el.tcPgm.textContent = '--:--:--:--';
 
     // 1. Draw Feed 1 (Cam 1 / Primary)
-    if (state.primaryFailed) {
-      drawStreamLossStatic(canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height);
-    } else if (!drawVideoFrame(el.cam1Video, canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height)) {
-      drawStreamCam1(canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height, framesCount, state.unrecoveredLoss);
-    }
+    drawFeedCanvas('cam1', canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height, framesCount);
 
     // 2. Draw Feed 2 (Cam 2 / Backup)
-    if (!drawVideoFrame(el.cam2Video, canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height)) {
-      drawStreamCam2(canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
-    }
+    drawFeedCanvas('cam2', canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
 
     // 3. Draw Feed 3 (LiveU 3)
-    drawStreamCam2(canvases.liveu3.ctx, canvases.liveu3.element.width, canvases.liveu3.element.height, framesCount);
+    drawFeedCanvas('liveu3', canvases.liveu3.ctx, canvases.liveu3.element.width, canvases.liveu3.element.height, framesCount);
 
     // 4. Draw Feed 4 (LiveU 4)
-    drawStreamCam2(canvases.liveu4.ctx, canvases.liveu4.element.width, canvases.liveu4.element.height, framesCount);
+    drawFeedCanvas('liveu4', canvases.liveu4.ctx, canvases.liveu4.element.width, canvases.liveu4.element.height, framesCount);
 
     // 5. Draw Feed 5 (VOD Playout)
-    drawStreamVOD(canvases.vod.ctx, canvases.vod.element.width, canvases.vod.element.height, framesCount);
+    drawFeedCanvas('vod', canvases.vod.ctx, canvases.vod.element.width, canvases.vod.element.height, framesCount);
 
     // 6. Draw Feed 6 (Program Out / PGM)
     const pgmW = canvases.pgm.element.width;
     const pgmH = canvases.pgm.element.height;
     const pgmCtx = canvases.pgm.ctx;
-      // Render PGM by copying the corresponding source canvas where possible (avoids duplicate streams)
-      if (state.activeSource === 'ad') {
-        drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
-      } else if (state.activeSource === 'cam1') {
-        if (state.primaryFailed) {
-          drawStreamLossStatic(pgmCtx, pgmW, pgmH);
-        } else {
-          // If cam1 canvas is available, copy it into PGM to preserve overlays and avoid extra video streams
-          try {
-            pgmCtx.clearRect(0, 0, pgmW, pgmH);
-            pgmCtx.drawImage(canvases.cam1.element, 0, 0, pgmW, pgmH);
-          } catch (e) {
-            // Fallback to rendering synthetic feed
-            drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
-          }
-        }
-      } else if (state.activeSource === 'cam2') {
-        try {
-          pgmCtx.clearRect(0, 0, pgmW, pgmH);
-          pgmCtx.drawImage(canvases.cam2.element, 0, 0, pgmW, pgmH);
-        } catch (e) {
-          drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
-        }
-      } else if (state.activeSource === 'vod') {
-        try {
-          pgmCtx.clearRect(0, 0, pgmW, pgmH);
-          pgmCtx.drawImage(canvases.vod.element, 0, 0, pgmW, pgmH);
-        } catch (e) {
-          drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
-        }
+    if (state.activeSource === 'ad') {
+      drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
+    } else if (state.activeSource) {
+      try {
+        pgmCtx.clearRect(0, 0, pgmW, pgmH);
+        pgmCtx.drawImage(canvases[state.activeSource].element, 0, 0, pgmW, pgmH);
+      } catch (e) {
+        if (state.activeSource === 'cam1') drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
+        else if (state.activeSource === 'cam2' || state.activeSource === 'liveu3' || state.activeSource === 'liveu4') drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
+        else if (state.activeSource === 'vod') drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
+        else drawStreamLossStatic(pgmCtx, pgmW, pgmH);
       }
+    } else {
+      pgmCtx.clearRect(0, 0, pgmW, pgmH);
+      pgmCtx.fillStyle = '#020408';
+      pgmCtx.fillRect(0, 0, pgmW, pgmH);
+      pgmCtx.fillStyle = '#ffffff';
+      pgmCtx.font = 'bold 14px Outfit';
+      pgmCtx.textAlign = 'center';
+      pgmCtx.fillText('NO PROGRAM SOURCE', pgmW / 2, pgmH / 2);
+      pgmCtx.textAlign = 'left';
+    }
 
     // 5. Update Stereo VU meters
     updateVUMeters();
@@ -1392,6 +1562,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let label = '';
       if (state.activeSource === 'cam1') label = 'LiveU 1';
       else if (state.activeSource === 'cam2') label = 'LiveU 2';
+      else if (state.activeSource === 'liveu3') label = 'LiveU 3';
+      else if (state.activeSource === 'liveu4') label = 'LiveU 4';
       else if (state.activeSource === 'vod') label = 'PLAYOUT';
       else label = state.activeSource.toUpperCase();
       el.pgmActiveSource.textContent = `SOURCE: ${label}`;
