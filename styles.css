@@ -584,6 +584,19 @@ body {
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
+/* Preview / Tally visual state for source cards */
+.screen-card.preview-active {
+  border-color: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.18);
+  transform: translateY(-2px);
+}
+
+.btn-screen-control.btn-take {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #a7f3d0;
+}
+
 .btn-screen-control.btn-active-mute {
   background: var(--neon-red);
   border-color: var(--neon-red);

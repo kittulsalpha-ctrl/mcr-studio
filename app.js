@@ -26,6 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // MCR Playout Routing
     activeSource: 'cam1', // 'cam1', 'cam2', 'vod', or 'ad'
     primaryFailed: false,
+
+    // LiveU Video Source State
+    cam1VideoReady: false,
+    cam2VideoReady: false,
+    cam2FileURL: null,
+    cam2FileName: null,
     
     // SCTE-35 Ad Splice
     adActive: false,
@@ -33,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     adIntervalId: null,
     
     // Multi-Viewer Settings
-    soloFeed: null, // null, or 'cam1', 'cam2', 'liveu3', 'liveu4', 'vod', 'pgm'
+    soloFeed: null, // legacy; replaced by previewFeed
+    previewFeed: null,
     mutedFeeds: {
       cam1: false,
       cam2: false,
@@ -88,6 +95,21 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayCam1Rtt: document.getElementById('overlay-cam1-rtt'),
     overlayCam2Bw: document.getElementById('overlay-cam2-bw'),
     overlayCam2Rtt: document.getElementById('overlay-cam2-rtt'),
+    overlayCam1Codec: document.getElementById('overlay-cam1-codec'),
+    overlayCam1Src: document.getElementById('overlay-cam1-src'),
+    overlayCam1Res: document.getElementById('overlay-cam1-res'),
+    overlayCam2Codec: document.getElementById('overlay-cam2-codec'),
+    overlayCam2Src: document.getElementById('overlay-cam2-src'),
+    overlayCam2Res: document.getElementById('overlay-cam2-res'),
+    btnStartWebcam: document.getElementById('btn-start-webcam'),
+    btnLoadLocalVideo: document.getElementById('btn-load-local-video'),
+    localVideoFileInput: document.getElementById('local-video-file-input'),
+    actionStatus: document.getElementById('action-status'),
+    cam1Video: document.getElementById('video-cam1'),
+    cam2Video: document.getElementById('video-cam2'),
+    btnTake: document.getElementById('btn-take'),
+    badgeStateCam1: document.getElementById('badge-state-cam1'),
+    badgeStateCam2: document.getElementById('badge-state-cam2'),
     overlayLiveu3Bw: document.getElementById('overlay-liveu3-bw'),
     overlayLiveu3Rtt: document.getElementById('overlay-liveu3-rtt'),
     overlayLiveu4Bw: document.getElementById('overlay-liveu4-bw'),
@@ -263,6 +285,128 @@ document.addEventListener('DOMContentLoaded', () => {
     renderLogs();
   });
 
+  function safeRevokeVideoURL() {
+    if (state.cam2FileURL) {
+      URL.revokeObjectURL(state.cam2FileURL);
+      state.cam2FileURL = null;
+    }
+  }
+
+  function getVideoResolution(video) {
+    return (video && video.videoWidth && video.videoHeight)
+      ? `${video.videoWidth}x${video.videoHeight}`
+      : 'N/A';
+  }
+
+  function updateSourceOverlays() {
+    const cam1Active = state.cam1VideoReady && el.cam1Video && el.cam1Video.readyState >= 2;
+    const cam2Active = state.cam2VideoReady && el.cam2Video && el.cam2Video.readyState >= 2;
+
+    el.overlayCam1Codec.textContent = 'Browser Cam';
+    el.overlayCam1Src.textContent = cam1Active ? 'Browser Cam' : 'No Input';
+    el.overlayCam1Res.textContent = cam1Active ? getVideoResolution(el.cam1Video) : 'N/A';
+    el.overlayCam2Codec.textContent = 'Local File';
+    el.overlayCam2Src.textContent = cam2Active ? (state.cam2FileName || 'Local File') : 'No File';
+    el.overlayCam2Res.textContent = cam2Active ? getVideoResolution(el.cam2Video) : 'N/A';
+
+    el.overlayCam1Bw.textContent = `${(5.5 + Math.random() * 0.9).toFixed(1)} Mbps`;
+    el.overlayCam2Bw.textContent = `${(4.8 + Math.random() * 1.1).toFixed(1)} Mbps`;
+    el.overlayCam1Rtt.textContent = `${state.rttMs}ms`;
+    el.overlayCam2Rtt.textContent = `${state.rttMs}ms`;
+
+    // Source health indicators per Phase 2 requirements
+    el.badgeStateCam1.textContent = cam1Active ? 'ONLINE' : 'OFFLINE';
+    el.badgeStateCam2.textContent = cam2Active ? 'PLAYING' : 'OFFLINE';
+
+    const statusParts = [];
+    if (cam1Active) statusParts.push('Webcam active');
+    if (cam2Active) statusParts.push(state.cam2FileName || 'Local File ready');
+    el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'Waiting for source...';
+  }
+
+  function drawVideoFrame(video, ctx, width, height) {
+    if (!video || video.readyState < 2) return false;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return false;
+
+    const canvasAspect = width / height;
+    const videoAspect = vw / vh;
+    let sx = 0;
+    let sy = 0;
+    let sw = vw;
+    let sh = vh;
+
+    if (videoAspect > canvasAspect) {
+      sw = vh * canvasAspect;
+      sx = (vw - sw) / 2;
+    } else if (videoAspect < canvasAspect) {
+      sh = vw / canvasAspect;
+      sy = (vh - sh) / 2;
+    }
+
+    try {
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, width, height);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  el.btnStartWebcam.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      addLog('warning', 'WEB', 'Webcam capture is not supported in this browser.');
+      el.actionStatus.textContent = 'Webcam unsupported';
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      el.cam1Video.srcObject = stream;
+      state.cam1VideoReady = true;
+      await el.cam1Video.play().catch(() => {});
+      updateSourceOverlays();
+      addLog('info', 'WEB', 'Browser webcam started for LiveU 1.');
+      addLog('info', 'MIX', 'LiveU 1 is ONLINE and available for preview/program.');
+    } catch (error) {
+      addLog('alarm', 'WEB', `Unable to access webcam: ${error.message}`);
+      el.actionStatus.textContent = 'Webcam access denied';
+    }
+  });
+
+  el.btnLoadLocalVideo.addEventListener('click', () => {
+    el.localVideoFileInput.click();
+  });
+
+  el.localVideoFileInput.addEventListener('change', () => {
+    const file = el.localVideoFileInput.files?.[0];
+    if (!file) return;
+
+    safeRevokeVideoURL();
+    state.cam2FileName = file.name;
+    state.cam2FileURL = URL.createObjectURL(file);
+    el.cam2Video.src = state.cam2FileURL;
+    state.cam2VideoReady = false;
+    el.cam2Video.load();
+    el.cam2Video.play().catch(() => {});
+    updateSourceOverlays();
+    addLog('info', 'VIDEO', `Local file selected for LiveU 2: ${file.name}`);
+    addLog('info', 'MIX', 'LiveU 2 is PLAYING and available for preview/program.');
+    el.localVideoFileInput.value = '';
+  });
+
+  el.cam2Video.addEventListener('loadedmetadata', () => {
+    state.cam2VideoReady = true;
+    updateSourceOverlays();
+  });
+
+  el.cam1Video.addEventListener('loadedmetadata', () => {
+    state.cam1VideoReady = true;
+    updateSourceOverlays();
+  });
+
+  updateSourceOverlays();
+
   // Initialize with typical professional playout console messages
   addLog('info', 'SYSTEM', 'MCR Studio Engine Core initialized successfully.');
   addLog('info', 'ROUTE', 'AWS MediaConnect Flow configuration loaded: Primary=us-east-1, Secondary=us-east-2.');
@@ -273,6 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
   addLog('info', 'PLYT', 'Playout Engine active. Scheduling pool loaded from AWS S3 VOD asset repository.');
   addLog('info', 'TRANS', 'AWS MediaLive active-active transcoders initialized (Output: AVC 1080p60 8.0Mbps HLS/DASH).');
   addLog('info', 'CDN', 'Edge CDN cache validation complete. Latency buffer optimal at edge locations.');
+
+  // Ensure pgm label reflects initial active source
+  el.pgmActiveSource.textContent = `SOURCE: ${state.activeSource === 'cam1' ? 'LiveU 1' : state.activeSource === 'cam2' ? 'LiveU 2' : state.activeSource === 'vod' ? 'PLAYOUT' : 'UNKNOWN'}`;
 
   // ==========================================================================
   // 5. CANVAS VIDEO STREAM RENDERING ENGINE
@@ -699,12 +846,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Draw Feed 1 (Cam 1 / Primary)
     if (state.primaryFailed) {
       drawStreamLossStatic(canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height);
-    } else {
+    } else if (!drawVideoFrame(el.cam1Video, canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height)) {
       drawStreamCam1(canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height, framesCount, state.unrecoveredLoss);
     }
 
     // 2. Draw Feed 2 (Cam 2 / Backup)
-    drawStreamCam2(canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
+    if (!drawVideoFrame(el.cam2Video, canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height)) {
+      drawStreamCam2(canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
+    }
 
     // 3. Draw Feed 3 (LiveU 3)
     drawStreamCam2(canvases.liveu3.ctx, canvases.liveu3.element.width, canvases.liveu3.element.height, framesCount);
@@ -719,24 +868,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const pgmW = canvases.pgm.element.width;
     const pgmH = canvases.pgm.element.height;
     const pgmCtx = canvases.pgm.ctx;
-
-    if (state.activeSource === 'ad') {
-      drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
-    } else if (state.activeSource === 'cam1') {
-      if (state.primaryFailed) {
-        // If primary failed and switcher did NOT failover (should not happen normally unless disaster manual override)
-        drawStreamLossStatic(pgmCtx, pgmW, pgmH);
-      } else {
-        drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
+      // Render PGM by copying the corresponding source canvas where possible (avoids duplicate streams)
+      if (state.activeSource === 'ad') {
+        drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
+      } else if (state.activeSource === 'cam1') {
+        if (state.primaryFailed) {
+          drawStreamLossStatic(pgmCtx, pgmW, pgmH);
+        } else {
+          // If cam1 canvas is available, copy it into PGM to preserve overlays and avoid extra video streams
+          try {
+            pgmCtx.clearRect(0, 0, pgmW, pgmH);
+            pgmCtx.drawImage(canvases.cam1.element, 0, 0, pgmW, pgmH);
+          } catch (e) {
+            // Fallback to rendering synthetic feed
+            drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
+          }
+        }
+      } else if (state.activeSource === 'cam2') {
+        try {
+          pgmCtx.clearRect(0, 0, pgmW, pgmH);
+          pgmCtx.drawImage(canvases.cam2.element, 0, 0, pgmW, pgmH);
+        } catch (e) {
+          drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
+        }
+      } else if (state.activeSource === 'vod') {
+        try {
+          pgmCtx.clearRect(0, 0, pgmW, pgmH);
+          pgmCtx.drawImage(canvases.vod.element, 0, 0, pgmW, pgmH);
+        } catch (e) {
+          drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
+        }
       }
-    } else if (state.activeSource === 'cam2') {
-      drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
-    } else if (state.activeSource === 'vod') {
-      drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
-    }
 
     // 5. Update Stereo VU meters
     updateVUMeters();
+
+    if (framesCount % 15 === 0) {
+      updateSourceOverlays();
+    }
 
     // 6. Loop
     requestAnimationFrame(renderLoop);
@@ -1126,38 +1295,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const soloBtn = document.getElementById(`btn-solo-${feed}`);
     const muteBtn = document.getElementById(`btn-mute-${feed}`);
     
-    // Solo action
+    // Solo/Preview action: first click -> PREVIEW, then use TAKE to move to PROGRAM
     soloBtn.addEventListener('click', () => {
-      const isSoloed = soloBtn.classList.contains('btn-active-solo');
-      
-      // Reset all solo buttons first
+      const alreadyPreview = state.previewFeed === feed;
+
+      // Clear previous preview visuals
       document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
-      
-      if (!isSoloed) {
+      document.querySelectorAll('.screen-card').forEach(c => c.classList.remove('preview-active'));
+
+      if (!alreadyPreview) {
+        // Check availability for cams
+        if (feed === 'cam1' && !state.cam1VideoReady) {
+          addLog('warning', 'MIX', 'Preview request failed: LiveU 1 is OFFLINE/Unavailable.');
+          return;
+        }
+        if (feed === 'cam2' && !state.cam2VideoReady) {
+          addLog('warning', 'MIX', 'Preview request failed: LiveU 2 has no file loaded.');
+          return;
+        }
+
+        // Mark preview
+        state.previewFeed = feed;
         soloBtn.classList.add('btn-active-solo');
-        state.soloFeed = feed;
-        addLog('warning', 'MCR', `Solo mode activated for feed: ${feed.toUpperCase()}. Auditing channel solo.`);
-        
-        // Visually fade non-soloed screens
+        const screen = document.getElementById(`screen-${feed}`);
+        if (screen) screen.classList.add('preview-active');
+
+        // Dim non-preview screens but keep PGM bright
         feeds.forEach(f => {
-          const screen = document.getElementById(`screen-${f}`);
+          const screenEl = document.getElementById(`screen-${f}`);
+          if (!screenEl) return;
           if (f === feed) {
-            screen.style.opacity = '1.0';
-            screen.style.boxShadow = '0 0 15px rgba(245, 158, 11, 0.25)';
+            screenEl.style.opacity = '1.0';
+            screenEl.style.boxShadow = '0 0 18px rgba(245, 158, 11, 0.25)';
           } else {
-            screen.style.opacity = '0.35';
-            screen.style.boxShadow = 'none';
+            screenEl.style.opacity = '0.5';
+            screenEl.style.boxShadow = 'none';
           }
         });
+
+        addLog('info', 'MIX', `Preview assigned to feed: ${feed.toUpperCase()}. Use TAKE to route to PROGRAM.`);
       } else {
-        state.soloFeed = null;
-        addLog('info', 'MCR', 'Solo mode deactivated. Restoring Multi-Viewer grid matrix.');
-        
+        // Clear preview
+        state.previewFeed = null;
+        addLog('info', 'MIX', `Preview cleared for feed: ${feed.toUpperCase()}.`);
+
         // Restore all screens opacity
         feeds.forEach(f => {
           const screen = document.getElementById(`screen-${f}`);
-          screen.style.opacity = '1.0';
-          screen.style.boxShadow = 'none';
+          if (screen) {
+            screen.style.opacity = '1.0';
+            screen.style.boxShadow = 'none';
+            screen.classList.remove('preview-active');
+          }
         });
       }
     });
@@ -1176,5 +1365,44 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // TAKE button: move preview to PROGRAM
+  if (el.btnTake) {
+    el.btnTake.addEventListener('click', () => {
+      const preview = state.previewFeed;
+      if (!preview) {
+        addLog('warning', 'MIX', 'TAKE requested but no preview source selected.');
+        return;
+      }
+
+      // Availability checks
+      if (preview === 'cam1' && !state.cam1VideoReady) {
+        addLog('warning', 'MIX', 'Cannot TAKE: LiveU 1 is OFFLINE.');
+        return;
+      }
+      if (preview === 'cam2' && !state.cam2VideoReady) {
+        addLog('warning', 'MIX', 'Cannot TAKE: LiveU 2 has no file loaded.');
+        return;
+      }
+
+      // Route preview to program out
+      state.activeSource = preview === 'vod' ? 'vod' : preview;
+
+      // Update PGM label
+      let label = '';
+      if (state.activeSource === 'cam1') label = 'LiveU 1';
+      else if (state.activeSource === 'cam2') label = 'LiveU 2';
+      else if (state.activeSource === 'vod') label = 'PLAYOUT';
+      else label = state.activeSource.toUpperCase();
+      el.pgmActiveSource.textContent = `SOURCE: ${label}`;
+
+      addLog('info', 'MIX', `TAKE executed. PROGRAM routed to: ${label}.`);
+
+      // Clear preview visuals
+      state.previewFeed = null;
+      document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
+      document.querySelectorAll('.screen-card').forEach(c => { c.classList.remove('preview-active'); c.style.opacity = '1.0'; c.style.boxShadow = 'none'; });
+    });
+  }
 
 });
