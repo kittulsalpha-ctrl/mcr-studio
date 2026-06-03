@@ -43,6 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
       webcam: 'cam1',
       localVideo: 'cam2'
     },
+    // Per-tile custom sources (e.g., RTSP/OBS/HTTP URL attachments)
+    customSources: {
+      // feedId: { url: string, videoEl: HTMLVideoElement, ready: boolean }
+    },
     
     // SCTE-35 Ad Splice
     adActive: false,
@@ -316,6 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getFeedAssignment(feed) {
+    // Custom per-tile source takes precedence
+    if (state.customSources && state.customSources[feed]) return 'custom';
     if (feed === 'vod') return 'vod';
     if (state.mediaAssignments.webcam === feed) return 'webcam';
     if (state.mediaAssignments.localVideo === feed) return 'localVideo';
@@ -349,6 +355,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function drawFeedCanvas(feed, ctx, w, h, frames) {
     const assignment = getFeedAssignment(feed);
+
+    if (assignment === 'custom') {
+      const src = state.customSources[feed];
+      if (src && src.ready && drawVideoFrame(src.videoEl, ctx, w, h)) return;
+      drawStreamLossStatic(ctx, w, h);
+      return;
+    }
 
     if (assignment === 'webcam') {
       if (state.webcamReady && drawVideoFrame(el.cam1Video, ctx, w, h)) return;
@@ -479,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
   el.localVideoFileInput.addEventListener('change', () => {
     const file = el.localVideoFileInput.files?.[0];
     if (!file) return;
-
     safeRevokeVideoURL();
     state.cam2FileName = file.name;
     state.cam2FileURL = URL.createObjectURL(file);
@@ -487,9 +499,14 @@ document.addEventListener('DOMContentLoaded', () => {
     state.cam2VideoReady = false;
     el.cam2Video.load();
     el.cam2Video.play().catch(() => {});
+    // If a tile requested this local file attach, assign it now
+    if (pendingLocalAssignTarget) {
+      state.mediaAssignments.localVideo = pendingLocalAssignTarget;
+      addLog('info', 'ROUTE', `Local video assigned to ${pendingLocalAssignTarget.toUpperCase()}.`);
+      pendingLocalAssignTarget = null;
+    }
     updateSourceOverlays();
-    addLog('info', 'VIDEO', `Local file selected for LiveU source: ${file.name}`);
-    addLog('info', 'MIX', `Local video available at ${state.mediaAssignments.localVideo.toUpperCase()}.`);
+    addLog('info', 'VIDEO', `Local file selected: ${file.name}`);
     el.localVideoFileInput.value = '';
   });
 
@@ -585,7 +602,223 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnStopWebcam.addEventListener('click', stopWebcam);
   el.btnEjectVideo.addEventListener('click', ejectLocalVideo);
 
+  // Pending assignment target when user selects "Local Video" for a specific tile
+  let pendingLocalAssignTarget = null;
+
+  function setPreview(feed) {
+    state.previewFeed = feed;
+    document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
+    const btn = document.getElementById(`btn-solo-${feed}`);
+    if (btn) btn.classList.add('btn-active-solo');
+    document.querySelectorAll('.screen-card').forEach(c => c.classList.remove('preview-active'));
+    const card = document.getElementById(`screen-${feed}`);
+    if (card) card.classList.add('preview-active');
+    updateTAKEButton();
+    updateBadges();
+    updatePGMFooter();
+    addLog('info', 'MUX', `Preview set to ${getTileName(feed)}.`);
+  }
+
+  function getTileName(feed) {
+    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'PLAYOUT' : feed.toUpperCase();
+  }
+
+  function updateTAKEButton() {
+    if (state.previewFeed) {
+      el.btnTake.textContent = `TAKE: ${getTileName(state.previewFeed)}`;
+      el.btnTake.disabled = false;
+      el.btnTake.style.opacity = '1.0';
+    } else {
+      el.btnTake.textContent = 'TAKE';
+      el.btnTake.disabled = true;
+      el.btnTake.style.opacity = '0.5';
+    }
+  }
+
+  function updateBadges() {
+    const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4'];
+    tileFeeds.forEach(feed => {
+      const previewBadge = document.getElementById(`preview-badge-${feed}`);
+      const programBadge = document.getElementById(`program-badge-${feed}`);
+      const screenCard = document.getElementById(`screen-${feed}`);
+      
+      if (state.previewFeed === feed && previewBadge) {
+        previewBadge.style.display = 'block';
+      } else if (previewBadge) {
+        previewBadge.style.display = 'none';
+      }
+      
+      if (state.activeSource === feed && programBadge) {
+        programBadge.style.display = 'block';
+        if (screenCard) screenCard.classList.add('program-active');
+      } else {
+        if (programBadge) programBadge.style.display = 'none';
+        if (screenCard) screenCard.classList.remove('program-active');
+      }
+    });
+  }
+
+  function updatePGMFooter() {
+    const previewLine = document.getElementById('pgm-status-preview');
+    const programLine = document.getElementById('pgm-status-program');
+    
+    if (previewLine) {
+      previewLine.textContent = state.previewFeed ? `PREVIEW: ${getTileName(state.previewFeed)}` : 'PREVIEW: —';
+    }
+    if (programLine) {
+      programLine.textContent = state.activeSource ? `PROGRAM: ${getTileName(state.activeSource)}` : 'PROGRAM: —';
+    }
+  }
+
+  function clearPreviewUI() {
+    state.previewFeed = null;
+    document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
+    document.querySelectorAll('.screen-card').forEach(c => c.classList.remove('preview-active'));
+    updateTAKEButton();
+    updateBadges();
+    updatePGMFooter();
+  }
+
+  // TAKE button: route preview to program
+  el.btnTake.addEventListener('click', () => {
+    if (!state.previewFeed) {
+      addLog('warning', 'MIX', 'No preview source selected to take.');
+      return;
+    }
+    state.activeSource = state.previewFeed;
+    clearPreviewUI();
+    el.pgmActiveSource.textContent = `SOURCE: ${getTileName(state.activeSource)}`;
+    updateBadges();
+    updatePGMFooter();
+    addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
+  });
+
+  // Per-tile attach/eject/solo wiring
+  const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4'];
+  tileFeeds.forEach(feed => {
+    const attachBtn = document.getElementById(`btn-attach-${feed}`);
+    const ejectBtn = document.getElementById(`btn-eject-${feed}`);
+    const soloBtn = document.getElementById(`btn-solo-${feed}`);
+    const selectEl = document.getElementById(`select-source-${feed}`);
+
+    if (attachBtn && selectEl) {
+      attachBtn.addEventListener('click', async () => {
+        const val = selectEl.value;
+        if (val === 'webcam') {
+          // ensure webcam is started
+          if (!state.webcamReady) {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+              el.cam1Video.srcObject = stream;
+              state.webcamStream = stream;
+              state.webcamReady = true;
+              state.cam1VideoReady = true;
+              await el.cam1Video.play().catch(() => {});
+              addLog('info', 'WEB', 'Browser webcam started.');
+            } catch (err) {
+              addLog('alarm', 'WEB', `Unable to access webcam: ${err.message}`);
+              return;
+            }
+          }
+          state.mediaAssignments.webcam = feed;
+          addLog('info', 'ROUTE', `Webcam assigned to ${feed.toUpperCase()}.`);
+          updateSourceOverlays();
+          return;
+        }
+
+        if (val === 'local') {
+          // set pending target and open file picker
+          pendingLocalAssignTarget = feed;
+          el.localVideoFileInput.click();
+          addLog('info', 'VIDEO', `Select a local file to attach to ${feed.toUpperCase()}.`);
+          return;
+        }
+
+        // For simulated/other network sources, assign logically
+        if (val.startsWith('liveu') || val === 'obs' || val === 'rtsp') {
+          // assign mapping locally — treat as simulated or remote
+          // For now, map liveuN -> simulated representation
+          state.mediaAssignments[val === 'liveu1' ? 'webcam' : 'localVideo'] = feed; // best-effort mapping
+          addLog('info', 'ROUTE', `${val.toUpperCase()} attached to ${feed.toUpperCase()} (simulated).`);
+          updateSourceOverlays();
+          return;
+        }
+      });
+    }
+
+    if (ejectBtn) {
+      ejectBtn.addEventListener('click', () => {
+        // If this feed currently has webcam assigned
+        if (state.mediaAssignments.webcam === feed) {
+          stopWebcam();
+          state.mediaAssignments.webcam = null;
+          addLog('info', 'ROUTE', `Webcam unassigned from ${feed.toUpperCase()}.`);
+        }
+        if (state.mediaAssignments.localVideo === feed) {
+          ejectLocalVideo();
+          state.mediaAssignments.localVideo = null;
+          addLog('info', 'ROUTE', `Local video unassigned from ${feed.toUpperCase()}.`);
+        }
+        // If a custom source is attached to this feed, remove it
+        if (state.customSources && state.customSources[feed]) {
+          try {
+            const src = state.customSources[feed];
+            src.videoEl.pause();
+            src.videoEl.removeAttribute('src');
+            src.videoEl.load();
+            if (src.videoEl.parentNode) src.videoEl.parentNode.removeChild(src.videoEl);
+          } catch (e) {}
+          delete state.customSources[feed];
+          addLog('info', 'ROUTE', `Custom source detached from ${feed.toUpperCase()}.`);
+        }
+        clearCanvas(feed);
+        updateSourceOverlays();
+      });
+    }
+
+    if (soloBtn) {
+      soloBtn.addEventListener('click', () => setPreview(feed));
+    }
+    // Mute toggle
+    const muteBtn = document.getElementById(`btn-mute-${feed}`);
+    if (muteBtn) {
+      muteBtn.addEventListener('click', () => {
+        const cur = !!state.mutedFeeds[feed];
+        state.mutedFeeds[feed] = !cur;
+        muteBtn.classList.toggle('btn-active-mute', !cur);
+        addLog('info', 'AUDIO', `${feed.toUpperCase()} ${!cur ? 'muted' : 'unmuted'}.`);
+      });
+    }
+    // Edit / custom source attach
+    const editBtn = document.getElementById(`btn-edit-${feed}`);
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        const url = prompt(`Enter media URL for ${feed.toUpperCase()} (http/https/rtsp/obs):`);
+        if (!url) return;
+        // create hidden video element
+        const v = document.createElement('video');
+        v.autoplay = true; v.muted = true; v.playsInline = true; v.className = 'hidden-video';
+        v.src = url;
+        v.addEventListener('loadedmetadata', () => {
+          state.customSources[feed] = { url, videoEl: v, ready: true };
+          addLog('info', 'ROUTE', `Custom source loaded for ${feed.toUpperCase()}.`);
+          updateSourceOverlays();
+        });
+        v.addEventListener('error', () => {
+          addLog('alarm', 'ROUTE', `Failed to load custom source for ${feed.toUpperCase()}.`);
+        });
+        document.body.appendChild(v);
+        // attempt play
+        v.play().catch(() => {});
+        addLog('info', 'ROUTE', `Attempting to attach custom source to ${feed.toUpperCase()}...`);
+      });
+    }
+  });
+
   updateSourceOverlays();
+  updateTAKEButton();
+  updateBadges();
+  updatePGMFooter();
 
   // Initialize with typical professional playout console messages
   addLog('info', 'SYSTEM', 'MCR Studio Engine Core initialized successfully.');
@@ -599,9 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addLog('info', 'CDN', 'Edge CDN cache validation complete. Latency buffer optimal at edge locations.');
 
   // Ensure pgm label reflects initial active source
-  el.pgmActiveSource.textContent = state.activeSource
-    ? `SOURCE: ${state.activeSource === 'cam1' ? 'LiveU 1' : state.activeSource === 'cam2' ? 'LiveU 2' : state.activeSource === 'liveu3' ? 'LiveU 3' : state.activeSource === 'liveu4' ? 'LiveU 4' : state.activeSource === 'vod' ? 'PLAYOUT' : state.activeSource.toUpperCase()}`
-    : 'SOURCE: NONE';
+  el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getTileName(state.activeSource)}` : 'SOURCE: NONE';
 
   // ==========================================================================
   // 5. CANVAS VIDEO STREAM RENDERING ENGINE

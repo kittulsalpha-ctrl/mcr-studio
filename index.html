@@ -98,11 +98,11 @@
 
         <div class="multiviewer-grid">
 
-          <!-- Screen 1: LiveU 1 -->
+          <!-- Screen 1: MULTIVIEW 1 -->
           <div class="screen-card active-stream" id="screen-cam1">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-green"></span>LiveU 1
+                <span class="channel-indicator bg-green"></span>MULTIVIEW 1
               </span>
               <span class="screen-timecode font-fira" id="tc-cam1">00:00:00:00</span>
             </div>
@@ -136,17 +136,37 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1">SOLO</button>
-              <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1">MUTE</button>
-              <div class="active-badge text-green font-fira" id="badge-state-cam1">LIVE</div>
+              <div class="screen-footer-row-1">
+                <select class="tile-source-select" id="select-source-cam1">
+                  <option value="none">NONE</option>
+                  <option value="webcam">Webcam</option>
+                  <option value="local">Local Video</option>
+                  <option value="obs">OBS Virtual Camera</option>
+                  <option value="rtsp">RTSP Stream</option>
+                  <option value="liveu1">LiveU Feed 1</option>
+                  <option value="liveu2">LiveU Feed 2</option>
+                  <option value="liveu3">LiveU Feed 3</option>
+                  <option value="liveu4">LiveU Feed 4</option>
+                </select>
+              </div>
+              <div class="screen-footer-row-2">
+                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1">SOLO</button>
+                <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1">MUTE</button>
+                <div class="active-badge text-green font-fira" id="badge-state-cam1">OFFLINE</div>
+              </div>
             </div>
+            <div class="screen-preview-badge" id="preview-badge-cam1" style="display:none;">PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-cam1" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 2: LiveU 2 -->
+          <!-- Screen 2: MULTIVIEW 2 -->
           <div class="screen-card active-stream" id="screen-cam2">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-blue"></span>LiveU 2
+                <span class="channel-indicator bg-blue"></span>MULTIVIEW 2
               </span>
               <span class="screen-timecode font-fira" id="tc-cam2">00:00:00:00</span>
             </div>
@@ -175,17 +195,37 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2">SOLO</button>
-              <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2">MUTE</button>
-              <div class="active-badge text-blue font-fira" id="badge-state-cam2">STANDBY</div>
+              <div class="screen-footer-row-1">
+                <select class="tile-source-select" id="select-source-cam2">
+                  <option value="none">NONE</option>
+                  <option value="webcam">Webcam</option>
+                  <option value="local">Local Video</option>
+                  <option value="obs">OBS Virtual Camera</option>
+                  <option value="rtsp">RTSP Stream</option>
+                  <option value="liveu1">LiveU Feed 1</option>
+                  <option value="liveu2">LiveU Feed 2</option>
+                  <option value="liveu3">LiveU Feed 3</option>
+                  <option value="liveu4">LiveU Feed 4</option>
+                </select>
+              </div>
+              <div class="screen-footer-row-2">
+                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2">SOLO</button>
+                <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2">MUTE</button>
+                <div class="active-badge text-blue font-fira" id="badge-state-cam2">OFFLINE</div>
+              </div>
             </div>
+            <div class="screen-preview-badge" id="preview-badge-cam2" style="display:none;">PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-cam2" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 3: LiveU 3 -->
+          <!-- Screen 3: MULTIVIEW 3 -->
           <div class="screen-card active-stream" id="screen-liveu3">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-pink"></span>LiveU 3
+                <span class="channel-indicator bg-pink"></span>MULTIVIEW 3
               </span>
               <span class="screen-timecode font-fira" id="tc-liveu3">00:00:00:00</span>
             </div>
@@ -213,17 +253,37 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3">SOLO</button>
-              <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3">MUTE</button>
-              <div class="active-badge text-pink font-fira" id="badge-state-liveu3">LIVE</div>
+              <div class="screen-footer-row-1">
+                <select class="tile-source-select" id="select-source-liveu3">
+                  <option value="none">NONE</option>
+                  <option value="webcam">Webcam</option>
+                  <option value="local">Local Video</option>
+                  <option value="obs">OBS Virtual Camera</option>
+                  <option value="rtsp">RTSP Stream</option>
+                  <option value="liveu1">LiveU Feed 1</option>
+                  <option value="liveu2">LiveU Feed 2</option>
+                  <option value="liveu3">LiveU Feed 3</option>
+                  <option value="liveu4">LiveU Feed 4</option>
+                </select>
+              </div>
+              <div class="screen-footer-row-2">
+                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3">SOLO</button>
+                <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3">MUTE</button>
+                <div class="active-badge text-pink font-fira" id="badge-state-liveu3">SIMULATED</div>
+              </div>
             </div>
+            <div class="screen-preview-badge" id="preview-badge-liveu3" style="display:none;">PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-liveu3" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 4: LiveU 4 -->
+          <!-- Screen 4: MULTIVIEW 4 -->
           <div class="screen-card active-stream" id="screen-liveu4">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-amber"></span>LiveU 4
+                <span class="channel-indicator bg-amber"></span>MULTIVIEW 4
               </span>
               <span class="screen-timecode font-fira" id="tc-liveu4">00:00:00:00</span>
             </div>
@@ -251,10 +311,30 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4">SOLO</button>
-              <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4">MUTE</button>
-              <div class="active-badge text-amber font-fira" id="badge-state-liveu4">LIVE</div>
+              <div class="screen-footer-row-1">
+                <select class="tile-source-select" id="select-source-liveu4">
+                  <option value="none">NONE</option>
+                  <option value="webcam">Webcam</option>
+                  <option value="local">Local Video</option>
+                  <option value="obs">OBS Virtual Camera</option>
+                  <option value="rtsp">RTSP Stream</option>
+                  <option value="liveu1">LiveU Feed 1</option>
+                  <option value="liveu2">LiveU Feed 2</option>
+                  <option value="liveu3">LiveU Feed 3</option>
+                  <option value="liveu4">LiveU Feed 4</option>
+                </select>
+              </div>
+              <div class="screen-footer-row-2">
+                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4">SOLO</button>
+                <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4">MUTE</button>
+                <div class="active-badge text-amber font-fira" id="badge-state-liveu4">SIMULATED</div>
+              </div>
             </div>
+            <div class="screen-preview-badge" id="preview-badge-liveu4" style="display:none;">PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
           <!-- Screen 5: Playout Graphics / VOD -->
@@ -333,9 +413,15 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control" id="btn-take">TAKE</button>
-              <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: LiveU 1</span>
-              <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
+              <div class="pgm-footer-top">
+                <button class="btn-screen-control" id="btn-take">TAKE</button>
+                <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
+                <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
+              </div>
+              <div class="pgm-footer-status">
+                <div class="pgm-status-line font-fira" id="pgm-status-preview">PREVIEW: —</div>
+                <div class="pgm-status-line font-fira" id="pgm-status-program">PROGRAM: —</div>
+              </div>
             </div>
           </div>
 

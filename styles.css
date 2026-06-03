@@ -572,27 +572,52 @@ body {
 
 .screen-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   background: rgba(15, 23, 42, 0.85);
   padding: 4px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
+}
+
+.screen-footer-row-1 {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.screen-footer-row-1 .tile-source-select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.screen-footer-row-2 {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.screen-footer-row-2 .btn-screen-control {
+  flex: 0 1 auto;
+  min-width: 24px;
 }
 
 .btn-screen-control {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
   cursor: pointer;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn-screen-control:hover {
@@ -607,11 +632,49 @@ body {
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
+.screen-preview-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--neon-amber);
+  color: #000000;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+  z-index: 12;
+}
+
+.screen-program-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--neon-red);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+  z-index: 12;
+  animation: pulse-glow-red 1.2s infinite;
+}
+
 /* Preview / Tally visual state for source cards */
 .screen-card.preview-active {
-  border-color: rgba(245, 158, 11, 0.25);
-  box-shadow: 0 0 18px rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.25);
   transform: translateY(-2px);
+}
+
+.screen-card.program-active {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.3);
 }
 
 .btn-screen-control.btn-take {
@@ -641,6 +704,29 @@ body {
   color: #ffffff;
   letter-spacing: 0.05em;
   white-space: nowrap;
+}
+
+.pgm-footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.pgm-footer-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pgm-status-line {
+  font-size: 8px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
 }
 
 /* Control Panels */
