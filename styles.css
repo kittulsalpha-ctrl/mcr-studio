@@ -1432,3 +1432,13 @@ body {
     padding: 2px 6px;
   }
 }
+/* Hide multiviewer header + control panels */
+.section-title-bar,
+.multiviewer-action-bar,
+.assign-controls{
+  display: none !important;
+}
+
+.section-title-bar{
+  display: flex !important;
+}
