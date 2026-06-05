@@ -738,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (val.startsWith('liveu') || val === 'obs' || val === 'rtsp') {
           // assign mapping locally — treat as simulated or remote
           // For now, map liveuN -> simulated representation
-          state.mediaAssignments[val === 'liveu1' ? 'webcam' : 'localVideo'] = feed; // best-effort mapping
+          state.mediaAssignments[val] = feed; // best-effort mapping
           addLog('info', 'ROUTE', `${val.toUpperCase()} attached to ${feed.toUpperCase()} (simulated).`);
           updateSourceOverlays();
           return;
@@ -1690,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Solo & Mute Buttons in screen card footers
+  return; // Solo & Mute Buttons in screen card footers
   const feeds = ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'];
   feeds.forEach(feed => {
     const soloBtn = document.getElementById(`btn-solo-${feed}`);
