@@ -426,8 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
     el.badgeStateLiveu4.textContent = getFeedStatus('liveu4');
 
     const statusParts = [];
-    statusParts.push(`Webcam ➜ ${state.mediaAssignments.webcam.toUpperCase()}`);
-    statusParts.push(`Video ➜ ${state.mediaAssignments.localVideo.toUpperCase()}`);
+    statusParts.push(`Webcam ➜ ${String(state.mediaAssignments.webcam ?? 'NONE').toUpperCase()}`);
+    statusParts.push(`Video ➜ ${String(state.mediaAssignments.localVideo ?? 'NONE').toUpperCase()}`);
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
     el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'Waiting for source...';
@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await el.cam1Video.play().catch(() => {});
       updateSourceOverlays();
       addLog('info', 'WEB', 'Browser webcam started and assigned to LiveU source.');
-      addLog('info', 'MIX', `Webcam available at ${state.mediaAssignments.webcam.toUpperCase()}.`);
+      addLog('info', 'MIX', `Webcam available at ${String(state.mediaAssignments.webcam ?? 'NONE').toUpperCase()}.`);
     } catch (error) {
       addLog('alarm', 'WEB', `Unable to access webcam: ${error.message}`);
       el.actionStatus.textContent = 'Webcam access denied';
@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (val === 'local') {
           // set pending target and open file picker
-          pendingLocalAssignTarget = feed;
+          state.mediaAssignments.localVideo = feed; pendingLocalAssignTarget = feed; updateSourceOverlays();
           el.localVideoFileInput.click();
           addLog('info', 'VIDEO', `Select a local file to attach to ${feed.toUpperCase()}.`);
           return;
