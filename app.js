@@ -66,6 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
       liveu4: 'liveu4',
       vod: 'vod'
     },
+    sourceStates: {
+      liveu1: 'ONLINE',
+      liveu2: 'STANDBY',
+      liveu3: 'ONLINE',
+      liveu4: 'ONLINE'
+    },
     // Per-tile custom sources (e.g., RTSP/OBS/HTTP URL attachments)
     customSources: {
       // feedId: { url: string, videoEl: HTMLVideoElement, ready: boolean }
@@ -394,9 +400,40 @@ document.addEventListener('DOMContentLoaded', () => {
     return state.tileSourceIds[state.activeSource] || state.activeSource;
   }
 
+  function getSourceState(sourceId) {
+    if (LIVEU_SOURCE_IDS.includes(sourceId)) return state.sourceStates[sourceId] || 'OFFLINE';
+    return sourceId === 'none' ? 'OFFLINE' : 'ONLINE';
+  }
+
+  function setSourceState(sourceId, nextState) {
+    if (!LIVEU_SOURCE_IDS.includes(sourceId)) return;
+    const previousState = state.sourceStates[sourceId];
+    state.sourceStates[sourceId] = nextState;
+    if (previousState !== nextState) {
+      const severity = nextState === 'ALARM' || nextState === 'OFFLINE' ? 'alarm' : nextState === 'STANDBY' ? 'warning' : 'info';
+      addLog(severity, 'SRC', `${SOURCE_DETAILS[sourceId].label} state changed: ${previousState} → ${nextState}.`);
+    }
+    updateSourceStateControls();
+    updateSourceOverlays();
+    updateOrchestratorRouting();
+  }
+
+  function updateSourceStateControls() {
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      const select = document.getElementById(`source-state-${sourceId}`);
+      if (select) select.value = getSourceState(sourceId);
+    });
+  }
+
+  function sourceHasSignal(sourceId) {
+    const sourceState = getSourceState(sourceId);
+    return sourceState === 'ONLINE' || sourceState === 'STANDBY';
+  }
+
   function getFeedStatus(feed) {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return 'OFFLINE';
+    if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'localVideo') return state.cam2VideoReady ? 'PLAYING' : 'OFFLINE';
     if (assignment === 'vod') return 'PLAYING';
@@ -459,12 +496,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (LIVEU_SOURCE_IDS.includes(sourceId)) {
       const details = SOURCE_DETAILS[sourceId];
+      const sourceState = getSourceState(sourceId);
+      const hasSignal = sourceHasSignal(sourceId);
       return {
-        codec: details.codec,
+        codec: hasSignal ? details.codec : 'NO LOCK',
         source: details.label,
-        resolution: '1080p60',
-        bitrate: `${(sourceId === 'liveu1' ? 5.4 : 4.7 + Math.random() * 1.1).toFixed(1)} Mbps`,
-        rtt: `${state.rttMs + details.rttOffset}ms`
+        resolution: hasSignal ? '1080p60' : 'N/A',
+        bitrate: hasSignal ? `${(sourceId === 'liveu1' ? 5.4 : 4.7 + Math.random() * 1.1).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: hasSignal ? `${state.rttMs + details.rttOffset}ms` : sourceState
       };
     }
 
@@ -480,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function feedHasActiveSignal(feed) {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return false;
+    if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return sourceHasSignal(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady && el.cam1Video.readyState >= 2;
     if (assignment === 'localVideo') return state.cam2VideoReady && el.cam2Video.readyState >= 2;
     if (assignment === 'custom') return !!state.customSources[feed]?.ready;
@@ -498,6 +538,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function drawFeedCanvas(feed, ctx, w, h, frames) {
     const assignment = getFeedAssignment(feed);
+    if (!feedHasActiveSignal(feed) && feed !== 'vod') {
+      drawStreamLossStatic(ctx, w, h);
+      return;
+    }
 
     if (assignment === 'custom') {
       const src = state.customSources[feed];
@@ -852,19 +896,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPlayout = source === 'vod' || source === 'ad';
     const hasProgram = !!source;
     const routeColor = isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
+    const sourceLinkState = (sourceId, isActive, activeState = 'active') => {
+      if (!sourceHasSignal(sourceId)) return 'broken';
+      return isActive ? activeState : 'standby';
+    };
 
-    setSvgLinkState(el.pathCam1, state.primaryFailed ? 'broken' : isLiveu1 || isLiveu1Source ? 'active' : 'standby', '#10b981');
-    setSvgLinkState(el.pathCam2, isLiveu2 || isLiveu2Source ? 'active-blue' : 'standby', '#00d2ff');
-    setSvgLinkState(el.pathLiveu3, isLiveu3 ? 'active' : 'standby', '#f59e0b');
-    setSvgLinkState(el.pathLiveu4, isLiveu4 ? 'active' : 'standby', '#a78bfa');
+    setSvgLinkState(el.pathCam1, state.primaryFailed ? 'broken' : sourceLinkState('liveu1', isLiveu1 || isLiveu1Source), '#10b981');
+    setSvgLinkState(el.pathCam2, sourceLinkState('liveu2', isLiveu2 || isLiveu2Source, 'active-blue'), '#00d2ff');
+    setSvgLinkState(el.pathLiveu3, sourceLinkState('liveu3', isLiveu3), '#f59e0b');
+    setSvgLinkState(el.pathLiveu4, sourceLinkState('liveu4', isLiveu4), '#a78bfa');
     setSvgLinkState(el.pathVod, isPlayout ? 'active' : 'standby', '#ec4899');
     setSvgLinkState(el.pathSwitchToTrans, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
     setSvgLinkState(el.pathTransToCdn, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
 
-    setSvgDotState(el.dotCam1, (isLiveu1 || isLiveu1Source) && !state.primaryFailed, '#10b981');
-    setSvgDotState(el.dotCam2, isLiveu2 || isLiveu2Source, '#00d2ff');
-    setSvgDotState(el.dotLiveu3, isLiveu3, '#f59e0b');
-    setSvgDotState(el.dotLiveu4, isLiveu4, '#a78bfa');
+    setSvgDotState(el.dotCam1, (isLiveu1 || isLiveu1Source) && !state.primaryFailed && sourceHasSignal('liveu1'), '#10b981');
+    setSvgDotState(el.dotCam2, (isLiveu2 || isLiveu2Source) && sourceHasSignal('liveu2'), '#00d2ff');
+    setSvgDotState(el.dotLiveu3, isLiveu3 && sourceHasSignal('liveu3'), '#f59e0b');
+    setSvgDotState(el.dotLiveu4, isLiveu4 && sourceHasSignal('liveu4'), '#a78bfa');
     setSvgDotState(el.dotVod, isPlayout, '#ec4899');
     setSvgDotState(el.dotSwitch, hasProgram, routeColor);
     setSvgDotState(el.dotTrans, hasProgram, routeColor);
@@ -928,6 +976,12 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnTake.addEventListener('click', () => {
     if (!state.previewFeed) {
       addLog('warning', 'MIX', 'No preview source selected to take.');
+      return;
+    }
+    if (!feedHasActiveSignal(state.previewFeed)) {
+      const sourceId = state.tileSourceIds[state.previewFeed];
+      const sourceLabel = SOURCE_DETAILS[sourceId]?.label || getTileName(state.previewFeed);
+      addLog('warning', 'MIX', `TAKE blocked: ${sourceLabel} is not available.`);
       return;
     }
     state.activeSource = state.previewFeed;
@@ -1081,7 +1135,14 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTAKEButton();
   updateBadges();
   updatePGMFooter();
+  updateSourceStateControls();
   updateOrchestratorRouting();
+
+  LIVEU_SOURCE_IDS.forEach(sourceId => {
+    const select = document.getElementById(`source-state-${sourceId}`);
+    if (!select) return;
+    select.addEventListener('change', () => setSourceState(sourceId, select.value));
+  });
 
   // Initialize with typical professional playout console messages
   addLog('info', 'SYSTEM', 'MCR Studio Engine Core initialized successfully.');
@@ -1776,6 +1837,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fail Primary contribution path
   el.btnFailPrimary.addEventListener('click', () => {
     state.primaryFailed = true;
+    setSourceState('liveu1', 'ALARM');
     el.btnFailPrimary.disabled = true;
     el.btnRestorePrimary.disabled = false;
     
@@ -1795,6 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Trigger seamless failover switch inside 350ms
     setTimeout(() => {
       if (state.primaryFailed) { // Double check if already restored
+        setSourceState('liveu2', 'ONLINE');
         state.activeSource = 'cam2'; // Route backup Cam
         state.programSourceOverride = 'liveu2';
         el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
@@ -1814,6 +1877,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Restore Primary contribution path
   el.btnRestorePrimary.addEventListener('click', () => {
     state.primaryFailed = false;
+    setSourceState('liveu1', 'ONLINE');
     el.btnFailPrimary.disabled = false;
     el.btnRestorePrimary.disabled = true;
     
@@ -1828,6 +1892,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Return switcher back to Primary source (with 1.5s stabilization delay)
     setTimeout(() => {
       if (!state.primaryFailed) {
+        setSourceState('liveu2', 'STANDBY');
         state.activeSource = 'cam1';
         state.programSourceOverride = 'liveu1';
         el.pgmActiveSource.textContent = "SOURCE: LiveU 1";

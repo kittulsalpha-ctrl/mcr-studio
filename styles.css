@@ -898,6 +898,36 @@ body {
   color: var(--text-primary);
 }
 
+.source-state-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.source-state-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.source-state-select {
+  width: 100%;
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 4px;
+}
+
 /* Telemetry */
 .telemetry-controls {
   display: flex;
