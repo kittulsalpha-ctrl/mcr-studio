@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     totalBw: document.getElementById('total-bw-value'),
     txRoute: document.getElementById('tx-route-value'),
     matrixAlarm: document.getElementById('matrix-alarm-value'),
+    systemHealth: document.getElementById('system-health-value'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -787,6 +788,85 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  function parseMbps(value) {
+    const parsed = parseFloat(String(value).replace(/[^\d.]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function getEstimatedFeedBandwidth(feed) {
+    if (!feedHasActiveSignal(feed)) return 0;
+    const assignment = getFeedAssignment(feed);
+    if (assignment === 'custom') {
+      return state.customSources[feed]?.type === 'youtube' ? 5.0 : 4.2;
+    }
+    if (assignment === 'vod') return 3.8;
+    return parseMbps(getFeedMetadata(feed).bitrate);
+  }
+
+  function getAlertSummary() {
+    const alarms = [];
+    const warnings = [];
+
+    if (state.primaryFailed) alarms.push('Primary path failed');
+    if (state.isUnderflow) alarms.push('SRT underflow');
+
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      const stateName = getSourceState(sourceId);
+      const label = SOURCE_DETAILS[sourceId].shortLabel;
+      if (stateName === 'ALARM') alarms.push(`${label} alarm`);
+      else if (stateName === 'OFFLINE') warnings.push(`${label} offline`);
+    });
+
+    const programSource = getProgramSourceId();
+    if (state.activeSource && !feedHasActiveSignal(state.activeSource) && programSource !== 'ad') {
+      alarms.push('Program source unavailable');
+    }
+
+    return { alarms, warnings };
+  }
+
+  function setMetricClass(metric, className) {
+    if (metric) metric.className = `badge-value ${className}`;
+  }
+
+  function updateHeaderMetrics() {
+    const totalBandwidth = TILE_FEEDS.reduce((sum, feed) => sum + getEstimatedFeedBandwidth(feed), 0) + getEstimatedFeedBandwidth('vod');
+    el.totalBw.textContent = `${totalBandwidth.toFixed(1)} Mbps`;
+
+    const { alarms, warnings } = getAlertSummary();
+    if (alarms.length) {
+      el.matrixAlarm.textContent = `${alarms.length} ALARM${alarms.length > 1 ? 'S' : ''}`;
+      setMetricClass(el.matrixAlarm, 'text-red pulse-red');
+    } else if (warnings.length) {
+      el.matrixAlarm.textContent = `${warnings.length} WARN${warnings.length > 1 ? 'S' : ''}`;
+      setMetricClass(el.matrixAlarm, 'text-amber');
+    } else {
+      el.matrixAlarm.textContent = 'OK';
+      setMetricClass(el.matrixAlarm, 'text-green');
+    }
+
+    if (!el.systemHealth) return;
+    if (alarms.length) {
+      el.systemHealth.textContent = 'ALARM';
+      setMetricClass(el.systemHealth, 'text-red pulse-red');
+    } else if (state.adActive) {
+      el.systemHealth.textContent = 'AD BREAK';
+      setMetricClass(el.systemHealth, 'text-pink');
+    } else if (warnings.length || state.primaryFailed) {
+      el.systemHealth.textContent = 'DEGRADED';
+      setMetricClass(el.systemHealth, 'text-amber');
+    } else if (state.activeSource) {
+      el.systemHealth.textContent = 'ON AIR';
+      setMetricClass(el.systemHealth, 'text-green');
+    } else if (state.previewFeed) {
+      el.systemHealth.textContent = 'PREVIEW';
+      setMetricClass(el.systemHealth, 'text-blue');
+    } else {
+      el.systemHealth.textContent = 'READY';
+      setMetricClass(el.systemHealth, 'text-green');
+    }
+  }
+
   function feedHasActiveSignal(feed) {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return false;
@@ -918,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
     el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'Waiting for source...';
+    updateHeaderMetrics();
   }
 
   function drawVideoFrame(video, ctx, width, height) {
@@ -1115,11 +1196,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateTAKEButton() {
     if (state.previewFeed) {
-      el.btnTake.textContent = `TAKE: ${getTileName(state.previewFeed)}`;
+      el.btnTake.textContent = 'TAKE TO PGM';
       el.btnTake.disabled = false;
       el.btnTake.style.opacity = '1.0';
     } else {
-      el.btnTake.textContent = 'TAKE';
+      el.btnTake.textContent = 'TAKE PREVIEW';
       el.btnTake.disabled = true;
       el.btnTake.style.opacity = '0.5';
     }
@@ -1153,10 +1234,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const programLine = document.getElementById('pgm-status-program');
     
     if (previewLine) {
-      previewLine.textContent = state.previewFeed ? `PREVIEW: ${getTileName(state.previewFeed)}` : 'PREVIEW: —';
+      previewLine.textContent = state.previewFeed ? `PREVIEW READY: ${getTileName(state.previewFeed)}` : 'PREVIEW READY: —';
     }
     if (programLine) {
-      programLine.textContent = state.activeSource ? `PROGRAM: ${getTileName(state.activeSource)}` : 'PROGRAM: —';
+      programLine.textContent = state.activeSource ? `PROGRAM ON AIR: ${getTileName(state.activeSource)}` : 'PROGRAM ON AIR: —';
     }
   }
 
@@ -1204,6 +1285,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateOrchestratorRouting() {
     const source = getProgramSourceId();
+    const activeAssignment = state.activeSource ? getFeedAssignment(state.activeSource) : 'none';
+    const activeCustomSource = state.activeSource ? state.customSources[state.activeSource] : null;
+    const isCustomProgram = activeAssignment === 'custom';
     const isLiveu1 = source === 'cam1';
     const isLiveu1Source = source === 'liveu1';
     const isLiveu2 = source === 'cam2';
@@ -1212,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLiveu4 = source === 'liveu4';
     const isPlayout = source === 'vod' || source === 'ad';
     const hasProgram = !!source;
-    const routeColor = isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
+    const routeColor = isCustomProgram ? '#00d2ff' : isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
     const sourceLinkState = (sourceId, isActive, activeState = 'active') => {
       if (!sourceHasSignal(sourceId)) return 'broken';
       return isActive ? activeState : 'standby';
@@ -1257,6 +1341,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (source === 'ad') {
       routeLabel = 'AD CUE';
       switcherLabel = 'SCTE-35';
+    } else if (isCustomProgram) {
+      routeLabel = activeCustomSource?.type === 'youtube' ? 'YOUTUBE' : 'CUSTOM';
+      switcherLabel = routeLabel;
     } else if (state.primaryFailed) {
       routeLabel = 'ALARM';
       switcherLabel = 'PATH A FAIL';
@@ -1271,13 +1358,14 @@ document.addEventListener('DOMContentLoaded', () => {
     el.rectCdn?.setAttribute('stroke', hasProgram ? routeColor : '#8b5cf6');
 
     if (hasProgram) {
-      const sourceLabel = SOURCE_DETAILS[source]?.label || getTileName(state.activeSource);
+      const sourceLabel = SOURCE_DETAILS[source]?.label || getProgramRouteLabel(state.activeSource);
       el.inspectorText.innerHTML = `<strong class="text-green">Active Program Route</strong>: ${sourceLabel} via ${getTileName(state.activeSource)} → ST 2022-7 Switcher → AWS MediaLive → CDN Edge.`;
     } else if (state.primaryFailed) {
       el.inspectorText.innerHTML = '<strong class="text-red">Path A failure detected</strong>: LiveU 1 contribution is unavailable. Route backup or restore primary.';
     } else {
       el.inspectorText.innerHTML = '<strong class="text-green">ST 2022-7 Switcher</strong>: Waiting for PREVIEW/TAKE route selection.';
     }
+    updateHeaderMetrics();
   }
 
   function clearPreviewUI() {
@@ -2056,6 +2144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.isUnderflow && Math.random() < 0.05) {
       addLog('alarm', 'SRT', `Buffer underflow! Unrecovered packets: ${state.unrecoveredLoss.toFixed(1)}%. Late packets dropped.`);
     }
+    updateHeaderMetrics();
   }
 
   // Sync sliders to simulation
@@ -2305,7 +2394,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 10. MULTI-VIEWER BUTTONS CONTROL (SOLO / MUTE / CONFIG INTERACTIVE)
+  // 10. ORCHESTRATOR NODE INSPECTOR
   // ==========================================================================
   
   // Interactive Node selection clicks on SVG
@@ -2338,123 +2427,5 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
-
-  return; // Solo & Mute Buttons in screen card footers
-  const feeds = ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'];
-  feeds.forEach(feed => {
-    const soloBtn = document.getElementById(`btn-solo-${feed}`);
-    const muteBtn = document.getElementById(`btn-mute-${feed}`);
-    
-    // Solo/Preview action: first click -> PREVIEW, then use TAKE to move to PROGRAM
-    soloBtn.addEventListener('click', () => {
-      const alreadyPreview = state.previewFeed === feed;
-
-      // Clear previous preview visuals
-      document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
-      document.querySelectorAll('.screen-card').forEach(c => c.classList.remove('preview-active'));
-
-      if (!alreadyPreview) {
-        // Check availability for cams
-        if (feed === 'cam1' && !state.cam1VideoReady) {
-          addLog('warning', 'MIX', 'Preview request failed: LiveU 1 is OFFLINE/Unavailable.');
-          return;
-        }
-        if (feed === 'cam2' && !state.cam2VideoReady) {
-          addLog('warning', 'MIX', 'Preview request failed: LiveU 2 has no file loaded.');
-          return;
-        }
-
-        // Mark preview
-        state.previewFeed = feed;
-        soloBtn.classList.add('btn-active-solo');
-        const screen = document.getElementById(`screen-${feed}`);
-        if (screen) screen.classList.add('preview-active');
-
-        // Dim non-preview screens but keep PGM bright
-        feeds.forEach(f => {
-          const screenEl = document.getElementById(`screen-${f}`);
-          if (!screenEl) return;
-          if (f === feed) {
-            screenEl.style.opacity = '1.0';
-            screenEl.style.boxShadow = '0 0 18px rgba(245, 158, 11, 0.25)';
-          } else {
-            screenEl.style.opacity = '0.5';
-            screenEl.style.boxShadow = 'none';
-          }
-        });
-
-        addLog('info', 'MIX', `Preview assigned to feed: ${feed.toUpperCase()}. Use TAKE to route to PROGRAM.`);
-      } else {
-        // Clear preview
-        state.previewFeed = null;
-        addLog('info', 'MIX', `Preview cleared for feed: ${feed.toUpperCase()}.`);
-
-        // Restore all screens opacity
-        feeds.forEach(f => {
-          const screen = document.getElementById(`screen-${f}`);
-          if (screen) {
-            screen.style.opacity = '1.0';
-            screen.style.boxShadow = 'none';
-            screen.classList.remove('preview-active');
-          }
-        });
-      }
-    });
-
-    // Mute action
-    muteBtn.addEventListener('click', () => {
-      const isMuted = state.mutedFeeds[feed];
-      state.mutedFeeds[feed] = !isMuted;
-      
-      if (state.mutedFeeds[feed]) {
-        muteBtn.classList.add('btn-active-mute');
-        addLog('warning', 'MCR', `Audio muted for feed: ${feed.toUpperCase()}.`);
-      } else {
-        muteBtn.classList.remove('btn-active-mute');
-        addLog('info', 'MCR', `Audio unmuted for feed: ${feed.toUpperCase()}.`);
-      }
-    });
-  });
-
-  // TAKE button: move preview to PROGRAM
-  if (el.btnTake) {
-    el.btnTake.addEventListener('click', () => {
-      const preview = state.previewFeed;
-      if (!preview) {
-        addLog('warning', 'MIX', 'TAKE requested but no preview source selected.');
-        return;
-      }
-
-      // Availability checks
-      if (preview === 'cam1' && !state.cam1VideoReady) {
-        addLog('warning', 'MIX', 'Cannot TAKE: LiveU 1 is OFFLINE.');
-        return;
-      }
-      if (preview === 'cam2' && !state.cam2VideoReady) {
-        addLog('warning', 'MIX', 'Cannot TAKE: LiveU 2 has no file loaded.');
-        return;
-      }
-
-      // Route preview to program out
-      state.activeSource = preview === 'vod' ? 'vod' : preview;
-
-      // Update PGM label
-      let label = '';
-      if (state.activeSource === 'cam1') label = 'LiveU 1';
-      else if (state.activeSource === 'cam2') label = 'LiveU 2';
-      else if (state.activeSource === 'liveu3') label = 'LiveU 3';
-      else if (state.activeSource === 'liveu4') label = 'LiveU 4';
-      else if (state.activeSource === 'vod') label = 'PLAYOUT';
-      else label = state.activeSource.toUpperCase();
-      el.pgmActiveSource.textContent = `SOURCE: ${label}`;
-
-      addLog('info', 'MIX', `TAKE executed. PROGRAM routed to: ${label}.`);
-
-      // Clear preview visuals
-      state.previewFeed = null;
-      document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
-      document.querySelectorAll('.screen-card').forEach(c => { c.classList.remove('preview-active'); c.style.opacity = '1.0'; c.style.boxShadow = 'none'; });
-    });
-  }
 
 });

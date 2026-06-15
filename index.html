@@ -25,7 +25,7 @@
       <div class="header-badges">
         <div class="badge" id="badge-status">
           <span class="badge-label">SYSTEM HEALTH</span>
-          <span class="badge-value text-green">ACTIVE-ACTIVE</span>
+          <span class="badge-value text-green" id="system-health-value">ACTIVE-ACTIVE</span>
         </div>
 
         <div class="badge" id="badge-tx-route">
@@ -34,12 +34,12 @@
         </div>
 
         <div class="badge" id="badge-throughput">
-          <span class="badge-label">TOTAL BW</span>
+          <span class="badge-label">BANDWIDTH</span>
           <span class="badge-value" id="total-bw-value">18.4 Mbps</span>
         </div>
 
         <div class="badge" id="badge-alerts">
-          <span class="badge-label">ALERT MATRIX</span>
+          <span class="badge-label">ALERTS</span>
           <span class="badge-value text-green" id="matrix-alarm-value">OK</span>
         </div>
       </div>
@@ -150,11 +150,11 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1">EJECT</button>
-                <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1">SOLO</button>
-                <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1">MUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Assign the selected source to this monitor.">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
+                <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-green font-fira" id="badge-state-cam1">OFFLINE</div>
               </div>
             </div>
@@ -209,11 +209,11 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2">EJECT</button>
-                <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2">SOLO</button>
-                <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2">MUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Assign the selected source to this monitor.">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
+                <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-blue font-fira" id="badge-state-cam2">OFFLINE</div>
               </div>
             </div>
@@ -268,11 +268,11 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3">EJECT</button>
-                <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3">SOLO</button>
-                <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3">MUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Assign the selected source to this monitor.">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
+                <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-pink font-fira" id="badge-state-liveu3">SIMULATED</div>
               </div>
             </div>
@@ -327,11 +327,11 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4">EJECT</button>
-                <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4">SOLO</button>
-                <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4">MUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Assign the selected source to this monitor.">ATTACH</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
+                <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-amber font-fira" id="badge-state-liveu4">SIMULATED</div>
               </div>
             </div>
@@ -370,8 +370,8 @@
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod">SOLO</button>
-              <button class="btn-screen-control btn-mute" data-feed="vod" id="btn-mute-vod">MUTE</button>
+              <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod" title="Select Playout as Preview before sending it to Program.">PREVIEW</button>
+              <button class="btn-screen-control btn-mute" data-feed="vod" id="btn-mute-vod" title="Mute or unmute Playout audio.">MUTE</button>
               <div class="active-badge text-pink font-fira" id="badge-state-vod">PLAYING</div>
             </div>
           </div>
@@ -416,13 +416,13 @@
 
             <div class="screen-footer">
               <div class="pgm-footer-top">
-                <button class="btn-screen-control" id="btn-take">TAKE</button>
+                <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE PREVIEW</button>
                 <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
                 <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
               </div>
               <div class="pgm-footer-status">
-                <div class="pgm-status-line font-fira" id="pgm-status-preview">PREVIEW: —</div>
-                <div class="pgm-status-line font-fira" id="pgm-status-program">PROGRAM: —</div>
+                <div class="pgm-status-line font-fira" id="pgm-status-preview">PREVIEW READY: —</div>
+                <div class="pgm-status-line font-fira" id="pgm-status-program">PROGRAM ON AIR: —</div>
               </div>
             </div>
           </div>
@@ -751,7 +751,7 @@
       <input class="source-url-input" id="source-url-input" type="url" placeholder="https://www.youtube.com/watch?v=..." />
       <div class="source-url-actions">
         <span class="source-url-target font-fira" id="source-url-target">TARGET: —</span>
-        <button class="btn-screen-control btn-attach" id="source-url-attach" type="button">ATTACH</button>
+        <button class="btn-screen-control btn-attach" id="source-url-attach" type="button" title="Attach this URL to the selected monitor.">ATTACH</button>
       </div>
     </div>
   </div>
