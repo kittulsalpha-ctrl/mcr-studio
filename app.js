@@ -344,6 +344,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'SIMULATED';
   }
 
+  function feedHasActiveSignal(feed) {
+    const assignment = getFeedAssignment(feed);
+    if (assignment === 'webcam') return state.webcamReady && el.cam1Video.readyState >= 2;
+    if (assignment === 'localVideo') return state.cam2VideoReady && el.cam2Video.readyState >= 2;
+    if (assignment === 'custom') return !!state.customSources[feed]?.ready;
+    if (assignment === 'vod') return true;
+    return true;
+  }
+
   function clearCanvas(feed) {
     const canvas = canvases[feed]?.element;
     if (!canvas) return;
@@ -575,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    state.cam2Video.pause();
+    el.cam2Video.pause();
     el.cam2Video.removeAttribute('src');
     el.cam2Video.load();
     safeRevokeVideoURL();
@@ -1175,22 +1184,24 @@ document.addEventListener('DOMContentLoaded', () => {
       target.rp = Math.max(target.r, target.rp - 0.006);
     }
 
-    // Cam 1 status
-    generateVUValues('cam1', !state.primaryFailed, state.mutedFeeds.cam1);
-    // Cam 2 status
-    generateVUValues('cam2', true, state.mutedFeeds.cam2);
+    // Multi-view sources only generate audio when the assigned source has signal.
+    generateVUValues('cam1', feedHasActiveSignal('cam1') && !state.primaryFailed, state.mutedFeeds.cam1);
+    generateVUValues('cam2', feedHasActiveSignal('cam2'), state.mutedFeeds.cam2);
+    generateVUValues('liveu3', feedHasActiveSignal('liveu3'), state.mutedFeeds.liveu3);
+    generateVUValues('liveu4', feedHasActiveSignal('liveu4'), state.mutedFeeds.liveu4);
+
     // VOD status
     generateVUValues('vod', true, state.mutedFeeds.vod);
     
     // PGM status follows the active playout source
-    let pgmActive = true;
+    let pgmActive = !!state.activeSource && feedHasActiveSignal(state.activeSource);
     let pgmMuted = state.mutedFeeds.pgm;
     
     if (state.activeSource === 'cam1' && state.primaryFailed) {
       pgmActive = false; // No audio if source is failed and no backup configured
     }
     
-    if (pgmMuted) {
+    if (!pgmActive || pgmMuted) {
       vuState.pgm.l = 0;
       vuState.pgm.r = 0;
       vuState.pgm.lp = Math.max(0, vuState.pgm.lp - 0.008);
@@ -1198,6 +1209,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       let activeSourceVU = vuState.cam1;
       if (state.activeSource === 'cam2') activeSourceVU = vuState.cam2;
+      else if (state.activeSource === 'liveu3') activeSourceVU = vuState.liveu3;
+      else if (state.activeSource === 'liveu4') activeSourceVU = vuState.liveu4;
       else if (state.activeSource === 'vod') activeSourceVU = vuState.vod;
       else if (state.activeSource === 'ad') {
         // Custom active ad audio
