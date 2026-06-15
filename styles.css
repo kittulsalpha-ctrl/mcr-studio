@@ -928,6 +928,44 @@ body {
   padding: 4px;
 }
 
+.source-detection-grid {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.source-detection-row {
+  display: grid;
+  grid-template-columns: 42px repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.source-detection-row span {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.source-detection-row label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.source-detection-row input {
+  width: 10px;
+  height: 10px;
+  accent-color: var(--neon-red);
+}
+
 /* Telemetry */
 .telemetry-controls {
   display: flex;

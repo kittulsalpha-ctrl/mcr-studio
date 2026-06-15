@@ -72,6 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
       liveu3: 'ONLINE',
       liveu4: 'ONLINE'
     },
+    sourceBaseStates: {
+      liveu1: 'ONLINE',
+      liveu2: 'STANDBY',
+      liveu3: 'ONLINE',
+      liveu4: 'ONLINE'
+    },
+    sourceDetections: {
+      liveu1: { black: false, silence: false, frozen: false },
+      liveu2: { black: false, silence: false, frozen: false },
+      liveu3: { black: false, silence: false, frozen: false },
+      liveu4: { black: false, silence: false, frozen: false }
+    },
     // Per-tile custom sources (e.g., RTSP/OBS/HTTP URL attachments)
     customSources: {
       // feedId: { url: string, videoEl: HTMLVideoElement, ready: boolean }
@@ -405,15 +417,47 @@ document.addEventListener('DOMContentLoaded', () => {
     return sourceId === 'none' ? 'OFFLINE' : 'ONLINE';
   }
 
+  function getActiveDetections(sourceId) {
+    const detections = state.sourceDetections[sourceId] || {};
+    return Object.entries(detections)
+      .filter(([, active]) => active)
+      .map(([name]) => name.toUpperCase());
+  }
+
+  function deriveSourceState(sourceId) {
+    if (getActiveDetections(sourceId).length > 0) return 'ALARM';
+    return state.sourceBaseStates[sourceId] || 'OFFLINE';
+  }
+
   function setSourceState(sourceId, nextState) {
     if (!LIVEU_SOURCE_IDS.includes(sourceId)) return;
     const previousState = state.sourceStates[sourceId];
-    state.sourceStates[sourceId] = nextState;
-    if (previousState !== nextState) {
-      const severity = nextState === 'ALARM' || nextState === 'OFFLINE' ? 'alarm' : nextState === 'STANDBY' ? 'warning' : 'info';
-      addLog(severity, 'SRC', `${SOURCE_DETAILS[sourceId].label} state changed: ${previousState} → ${nextState}.`);
+    state.sourceBaseStates[sourceId] = nextState;
+    state.sourceStates[sourceId] = deriveSourceState(sourceId);
+    if (previousState !== state.sourceStates[sourceId]) {
+      const severity = state.sourceStates[sourceId] === 'ALARM' || state.sourceStates[sourceId] === 'OFFLINE' ? 'alarm' : state.sourceStates[sourceId] === 'STANDBY' ? 'warning' : 'info';
+      addLog(severity, 'SRC', `${SOURCE_DETAILS[sourceId].label} state changed: ${previousState} → ${state.sourceStates[sourceId]}.`);
     }
     updateSourceStateControls();
+    updateDetectionControls();
+    updateSourceOverlays();
+    updateOrchestratorRouting();
+  }
+
+  function setSourceDetection(sourceId, detectionName, active) {
+    if (!LIVEU_SOURCE_IDS.includes(sourceId)) return;
+    const detections = state.sourceDetections[sourceId];
+    if (!detections || detections[detectionName] === active) return;
+    detections[detectionName] = active;
+    const previousState = state.sourceStates[sourceId];
+    state.sourceStates[sourceId] = deriveSourceState(sourceId);
+    addLog(active ? 'alarm' : 'info', 'QC', `${SOURCE_DETAILS[sourceId].label} ${detectionName.toUpperCase()} detection ${active ? 'triggered' : 'cleared'}.`);
+    if (previousState !== state.sourceStates[sourceId]) {
+      const severity = state.sourceStates[sourceId] === 'ALARM' || state.sourceStates[sourceId] === 'OFFLINE' ? 'alarm' : state.sourceStates[sourceId] === 'STANDBY' ? 'warning' : 'info';
+      addLog(severity, 'SRC', `${SOURCE_DETAILS[sourceId].label} state changed: ${previousState} → ${state.sourceStates[sourceId]}.`);
+    }
+    updateSourceStateControls();
+    updateDetectionControls();
     updateSourceOverlays();
     updateOrchestratorRouting();
   }
@@ -422,6 +466,15 @@ document.addEventListener('DOMContentLoaded', () => {
     LIVEU_SOURCE_IDS.forEach(sourceId => {
       const select = document.getElementById(`source-state-${sourceId}`);
       if (select) select.value = getSourceState(sourceId);
+    });
+  }
+
+  function updateDetectionControls() {
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      ['black', 'silence', 'frozen'].forEach(detectionName => {
+        const input = document.getElementById(`detect-${detectionName}-${sourceId}`);
+        if (input) input.checked = !!state.sourceDetections[sourceId]?.[detectionName];
+      });
     });
   }
 
@@ -498,9 +551,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const details = SOURCE_DETAILS[sourceId];
       const sourceState = getSourceState(sourceId);
       const hasSignal = sourceHasSignal(sourceId);
+      const activeDetections = getActiveDetections(sourceId);
       return {
         codec: hasSignal ? details.codec : 'NO LOCK',
-        source: details.label,
+        source: activeDetections.length ? `${details.label} ${activeDetections.join('/')}` : details.label,
         resolution: hasSignal ? '1080p60' : 'N/A',
         bitrate: hasSignal ? `${(sourceId === 'liveu1' ? 5.4 : 4.7 + Math.random() * 1.1).toFixed(1)} Mbps` : '0.0 Mbps',
         rtt: hasSignal ? `${state.rttMs + details.rttOffset}ms` : sourceState
@@ -1136,12 +1190,20 @@ document.addEventListener('DOMContentLoaded', () => {
   updateBadges();
   updatePGMFooter();
   updateSourceStateControls();
+  updateDetectionControls();
   updateOrchestratorRouting();
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);
     if (!select) return;
     select.addEventListener('change', () => setSourceState(sourceId, select.value));
+
+    ['black', 'silence', 'frozen'].forEach(detectionName => {
+      const input = document.getElementById(`detect-${detectionName}-${sourceId}`);
+      if (input) {
+        input.addEventListener('change', () => setSourceDetection(sourceId, detectionName, input.checked));
+      }
+    });
   });
 
   // Initialize with typical professional playout console messages
