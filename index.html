@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=demo-presets-2" />
 </head>
 
 <body>
@@ -75,6 +75,20 @@
           <button class="btn btn-secondary" id="btn-load-local-video">Load Local Video</button>
           <button class="btn btn-secondary" id="btn-eject-video">EJECT VIDEO</button>
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
+        </div>
+        <div class="multiviewer-action-bar preset-controls">
+          <label class="action-select-label">Demo Preset:
+            <select id="select-demo-preset">
+              <option value="clean">Clean Startup</option>
+              <option value="football">Football MCR Demo</option>
+              <option value="youtube">YouTube Live Demo</option>
+              <option value="failover">Failover Drill</option>
+              <option value="adcue">Ad Cue Drill</option>
+            </select>
+          </label>
+          <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD PRESET</button>
+          <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this preset.">COPY LINK</button>
+          <span class="preset-link-status font-fira" id="preset-link-status">Shareable preset URLs use ?preset=name</span>
         </div>
         <div class="multiviewer-action-bar assign-controls">
           <label class="action-select-label">Assign Webcam To:
@@ -758,6 +772,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js"></script>
+  <script src="app.js?v=demo-presets-2"></script>
 </body>
 </html>

@@ -12,6 +12,69 @@ document.addEventListener('DOMContentLoaded', () => {
     liveu3: { label: 'LiveU Feed 3', shortLabel: 'LIVEU 3', codec: 'H.264', color: '#f59e0b', rttOffset: 3 },
     liveu4: { label: 'LiveU Feed 4', shortLabel: 'LIVEU 4', codec: 'H.264', color: '#a78bfa', rttOffset: 6 }
   };
+  const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+  const DEMO_PRESETS = {
+    clean: {
+      label: 'Clean Startup',
+      tileSourceIds: { cam1: 'webcam', cam2: 'localVideo', liveu3: 'liveu3', liveu4: 'liveu4' },
+      sourceBaseStates: { liveu1: 'ONLINE', liveu2: 'STANDBY', liveu3: 'ONLINE', liveu4: 'ONLINE' },
+      sourceDetections: {},
+      customSources: {},
+      previewFeed: null,
+      activeSource: null,
+      programSourceOverride: null,
+      mutedFeeds: {},
+      primaryFailed: false
+    },
+    football: {
+      label: 'Football MCR Demo',
+      tileSourceIds: { cam1: 'liveu1', cam2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' },
+      sourceBaseStates: { liveu1: 'ONLINE', liveu2: 'STANDBY', liveu3: 'ONLINE', liveu4: 'ONLINE' },
+      sourceDetections: {},
+      customSources: {},
+      previewFeed: 'liveu3',
+      activeSource: 'cam1',
+      programSourceOverride: 'liveu1',
+      mutedFeeds: {},
+      primaryFailed: false
+    },
+    youtube: {
+      label: 'YouTube Live Demo',
+      tileSourceIds: { cam1: 'custom', cam2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' },
+      sourceBaseStates: { liveu1: 'ONLINE', liveu2: 'STANDBY', liveu3: 'ONLINE', liveu4: 'ONLINE' },
+      sourceDetections: {},
+      customSources: { cam1: { type: 'youtube', url: DEFAULT_YOUTUBE_URL } },
+      previewFeed: null,
+      activeSource: 'cam1',
+      programSourceOverride: null,
+      mutedFeeds: {},
+      primaryFailed: false
+    },
+    failover: {
+      label: 'Failover Drill',
+      tileSourceIds: { cam1: 'liveu1', cam2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' },
+      sourceBaseStates: { liveu1: 'ALARM', liveu2: 'ONLINE', liveu3: 'ONLINE', liveu4: 'ONLINE' },
+      sourceDetections: {},
+      customSources: {},
+      previewFeed: null,
+      activeSource: 'cam2',
+      programSourceOverride: 'liveu2',
+      mutedFeeds: {},
+      primaryFailed: true
+    },
+    adcue: {
+      label: 'Ad Cue Drill',
+      tileSourceIds: { cam1: 'liveu1', cam2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' },
+      sourceBaseStates: { liveu1: 'ONLINE', liveu2: 'STANDBY', liveu3: 'ONLINE', liveu4: 'ONLINE' },
+      sourceDetections: {},
+      customSources: {},
+      previewFeed: 'vod',
+      activeSource: 'cam1',
+      programSourceOverride: 'liveu1',
+      mutedFeeds: {},
+      primaryFailed: false
+    }
+  };
 
   // ==========================================================================
   // 1. STATE MANAGEMENT
@@ -170,6 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnStopWebcam: document.getElementById('btn-stop-webcam'),
     btnLoadLocalVideo: document.getElementById('btn-load-local-video'),
     btnEjectVideo: document.getElementById('btn-eject-video'),
+    selectDemoPreset: document.getElementById('select-demo-preset'),
+    btnLoadPreset: document.getElementById('btn-load-preset'),
+    btnCopyPresetLink: document.getElementById('btn-copy-preset-link'),
+    presetLinkStatus: document.getElementById('preset-link-status'),
     selectWebcamTarget: document.getElementById('select-webcam-target'),
     selectVideoTarget: document.getElementById('select-video-target'),
     localVideoFileInput: document.getElementById('local-video-file-input'),
@@ -577,6 +644,130 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = el.sourceUrlInput?.value || '';
     if (!feed || !url.trim()) return;
     if (attachCustomSourceFromUrl(feed, url)) closeSourceUrlEditor();
+  }
+
+  function resetScenarioMedia() {
+    Object.keys(state.customSources).forEach(feed => teardownCustomSource(feed));
+    if (state.webcamStream) {
+      state.webcamStream.getTracks().forEach(track => track.stop());
+      state.webcamStream = null;
+    }
+    el.cam1Video.srcObject = null;
+    state.webcamReady = false;
+    state.cam1VideoReady = false;
+    if (state.cam2FileURL) {
+      el.cam2Video.pause();
+      el.cam2Video.removeAttribute('src');
+      el.cam2Video.load();
+      safeRevokeVideoURL();
+    }
+    state.cam2VideoReady = false;
+    state.cam2FileName = null;
+    state.mediaAssignments.webcam = null;
+    state.mediaAssignments.localVideo = null;
+  }
+
+  function normalizePresetId(presetId) {
+    return DEMO_PRESETS[presetId] ? presetId : 'clean';
+  }
+
+  function setSelectValue(id, value) {
+    const select = document.getElementById(id);
+    if (select) select.value = value;
+  }
+
+  function getSelectValueForSourceId(sourceId) {
+    if (sourceId === 'localVideo') return 'local';
+    if (sourceId === 'custom') return 'none';
+    return sourceId;
+  }
+
+  function applyDemoPreset(presetId, { updateUrl = false } = {}) {
+    const id = normalizePresetId(presetId);
+    const preset = DEMO_PRESETS[id];
+
+    if (state.adIntervalId) clearInterval(state.adIntervalId);
+    state.adActive = false;
+    state.adTimeRemaining = 0;
+    state.preAdRoute = null;
+    if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
+    if (el.btnInjectScte) el.btnInjectScte.disabled = false;
+    if (el.btnCancelScte) el.btnCancelScte.disabled = true;
+    resetScenarioMedia();
+
+    TILE_FEEDS.forEach(feed => {
+      const sourceId = preset.tileSourceIds?.[feed] || 'none';
+      setTileSource(feed, sourceId);
+      setSelectValue(`select-source-${feed}`, getSelectValueForSourceId(sourceId));
+      clearCanvas(feed);
+    });
+
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      const nextState = preset.sourceBaseStates?.[sourceId] || 'ONLINE';
+      state.sourceBaseStates[sourceId] = nextState;
+      state.sourceDetections[sourceId] = { black: false, silence: false, frozen: false, ...preset.sourceDetections?.[sourceId] };
+      state.sourceStates[sourceId] = deriveSourceState(sourceId);
+    });
+
+    Object.entries(preset.customSources || {}).forEach(([feed, customSource]) => {
+      if (customSource?.url) attachCustomSourceFromUrl(feed, customSource.url);
+    });
+
+    state.previewFeed = preset.previewFeed || null;
+    state.activeSource = preset.activeSource || null;
+    state.programSourceOverride = preset.programSourceOverride || null;
+    state.primaryFailed = !!preset.primaryFailed;
+    state.mutedFeeds = { cam1: false, cam2: false, liveu3: false, liveu4: false, vod: false, pgm: false, ...preset.mutedFeeds };
+
+    if (el.btnFailPrimary) el.btnFailPrimary.disabled = state.primaryFailed;
+    if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = !state.primaryFailed;
+    el.alarmOverlayCam1?.classList.toggle('alarm-active', state.primaryFailed);
+
+    document.querySelectorAll('.btn-solo').forEach(button => button.classList.remove('btn-active-solo'));
+    document.querySelectorAll('.screen-card').forEach(card => card.classList.remove('preview-active', 'program-active'));
+    if (state.previewFeed) {
+      document.getElementById(`btn-solo-${state.previewFeed}`)?.classList.add('btn-active-solo');
+      document.getElementById(`screen-${state.previewFeed}`)?.classList.add('preview-active');
+    }
+
+    Object.entries(state.mutedFeeds).forEach(([feed, muted]) => {
+      document.getElementById(`btn-mute-${feed}`)?.classList.toggle('btn-active-mute', !!muted);
+      applyYouTubeMute(feed);
+    });
+
+    if (el.selectDemoPreset) el.selectDemoPreset.value = id;
+    el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
+    updateSourceStateControls();
+    updateDetectionControls();
+    updateTAKEButton();
+    updateBadges();
+    updatePGMFooter();
+    updateSourceOverlays();
+    updateOrchestratorRouting();
+    syncProgramEmbed();
+    addLog('info', 'DEMO', `${preset.label} preset loaded.`);
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('preset', id);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
+
+  function copyPresetLink() {
+    const id = normalizePresetId(el.selectDemoPreset?.value || 'clean');
+    const url = new URL(window.location.href);
+    url.searchParams.set('preset', id);
+    const link = url.toString();
+    navigator.clipboard?.writeText(link)
+      .then(() => {
+        if (el.presetLinkStatus) el.presetLinkStatus.textContent = `Copied: ?preset=${id}`;
+        addLog('info', 'DEMO', `Shareable preset link copied: ${id}.`);
+      })
+      .catch(() => {
+        if (el.presetLinkStatus) el.presetLinkStatus.textContent = link;
+        addLog('warning', 'DEMO', 'Clipboard unavailable. Preset link shown in the preset bar.');
+      });
   }
 
   function getFeedAssignment(feed) {
@@ -1521,6 +1712,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.key === 'Enter') submitSourceUrlEditor();
     if (event.key === 'Escape') closeSourceUrlEditor();
   });
+  el.btnLoadPreset?.addEventListener('click', () => {
+    applyDemoPreset(el.selectDemoPreset?.value || 'clean', { updateUrl: true });
+  });
+  el.btnCopyPresetLink?.addEventListener('click', copyPresetLink);
 
   updateSourceOverlays();
   updateTAKEButton();
@@ -1580,6 +1775,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   window.addEventListener('resize', resizeCanvases);
   resizeCanvases();
+
+  const requestedPreset = new URLSearchParams(window.location.search).get('preset');
+  if (requestedPreset) applyDemoPreset(requestedPreset);
 
   // Canvas Drawing Patterns
   let angle = 0;

@@ -1630,3 +1630,18 @@ body {
 .section-title-bar{
   display: flex !important;
 }
+
+.multiviewer-action-bar.preset-controls {
+  display: flex !important;
+  margin-bottom: 10px;
+}
+
+.preset-link-status {
+  min-width: 180px;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
