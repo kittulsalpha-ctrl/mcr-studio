@@ -14,6 +14,7 @@
   --neon-blue: #00d2ff;
   --neon-pink: #ec4899;
   --neon-amber: #f59e0b;
+  --neon-purple: #a78bfa;
   --neon-red: #ef4444;
 
   --text-primary: #f1f5f9;
@@ -65,6 +66,7 @@ body {
 .text-blue { color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
 .text-pink { color: var(--neon-pink); text-shadow: 0 0 10px rgba(236, 72, 153, 0.4); }
 .text-amber { color: var(--neon-amber); text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+.text-purple { color: var(--neon-purple); text-shadow: 0 0 10px rgba(167, 139, 250, 0.4); }
 .text-red { color: var(--neon-red); text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
 
 .bg-green { background-color: var(--neon-green); }
@@ -813,7 +815,7 @@ body {
 #node-svg {
   width: 100%;
   height: auto;
-  min-height: 180px;
+  min-height: 220px;
   display: block;
 }
 

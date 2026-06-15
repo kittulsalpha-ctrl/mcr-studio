@@ -440,7 +440,7 @@
 
           <div class="panel-body">
             <div class="node-editor-wrapper">
-              <svg id="node-svg" viewBox="0 0 540 220" preserveAspectRatio="xMidYMid meet">
+              <svg id="node-svg" viewBox="0 0 540 280" preserveAspectRatio="xMidYMid meet">
                 <defs>
                   <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="2" result="blur" />
@@ -458,58 +458,80 @@
                   </filter>
                 </defs>
 
-                <path d="M 90,50 L 220,90" id="path-cam1" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
-                <path d="M 90,170 L 220,130" id="path-cam2" class="node-link link-active-blue" stroke="#00d2ff" stroke-width="2" fill="none" />
-                <path d="M 90,110 L 220,110" id="path-vod" class="node-link link-standby" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
+                <path d="M 90,35 L 220,118" id="path-cam1" class="node-link link-standby" stroke="#10b981" stroke-width="1.5" fill="none" />
+                <path d="M 90,95 L 220,132" id="path-cam2" class="node-link link-standby" stroke="#00d2ff" stroke-width="1.5" fill="none" />
+                <path d="M 90,155 L 220,148" id="path-liveu3" class="node-link link-standby" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                <path d="M 90,215 L 220,162" id="path-liveu4" class="node-link link-standby" stroke="#a78bfa" stroke-width="1.5" fill="none" />
+                <path d="M 90,250 L 220,150" id="path-vod" class="node-link link-standby" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
 
-                <path d="M 270,110 L 330,110" id="path-switch-to-trans" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
-                <path d="M 390,110 L 450,110" id="path-trans-to-cdn" class="node-link link-active" stroke="#10b981" stroke-width="2" fill="none" />
+                <path d="M 270,140 L 330,140" id="path-switch-to-trans" class="node-link link-standby" stroke="#10b981" stroke-width="1.5" fill="none" />
+                <path d="M 390,140 L 450,140" id="path-trans-to-cdn" class="node-link link-standby" stroke="#10b981" stroke-width="1.5" fill="none" />
 
                 <circle r="4" fill="#10b981" id="dot-cam1" class="flow-particle">
-                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 90,50 L 220,90" />
+                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 90,35 L 220,118" />
                 </circle>
 
                 <circle r="4" fill="#00d2ff" id="dot-cam2" class="flow-particle">
-                  <animateMotion dur="3.5s" repeatCount="indefinite" path="M 90,170 L 220,130" />
+                  <animateMotion dur="3.5s" repeatCount="indefinite" path="M 90,95 L 220,132" />
+                </circle>
+
+                <circle r="4" fill="#f59e0b" id="dot-liveu3" class="flow-particle">
+                  <animateMotion dur="3.2s" repeatCount="indefinite" path="M 90,155 L 220,148" />
+                </circle>
+
+                <circle r="4" fill="#a78bfa" id="dot-liveu4" class="flow-particle">
+                  <animateMotion dur="3.4s" repeatCount="indefinite" path="M 90,215 L 220,162" />
                 </circle>
 
                 <circle r="4" fill="#ec4899" id="dot-vod" class="flow-particle">
-                  <animateMotion dur="3s" repeatCount="indefinite" path="M 90,110 L 220,110" />
+                  <animateMotion dur="3s" repeatCount="indefinite" path="M 90,250 L 220,150" />
                 </circle>
 
                 <circle r="4" fill="#10b981" id="dot-switch" class="flow-particle">
-                  <animateMotion dur="2s" repeatCount="indefinite" path="M 270,110 L 330,110" />
+                  <animateMotion dur="2s" repeatCount="indefinite" path="M 270,140 L 330,140" />
                 </circle>
 
                 <circle r="4" fill="#10b981" id="dot-trans" class="flow-particle">
-                  <animateMotion dur="2s" repeatCount="indefinite" path="M 390,110 L 450,110" />
+                  <animateMotion dur="2s" repeatCount="indefinite" path="M 390,140 L 450,140" />
                 </circle>
 
-                <g class="node-group" id="node-card-cam1" transform="translate(10, 25)">
+                <g class="node-group" id="node-card-cam1" transform="translate(10, 10)">
                   <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="1.5" class="node-rect-green" />
                   <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 1</text>
                   <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#10b981">PRIMARY</text>
                 </g>
 
-                <g class="node-group" id="node-card-cam2" transform="translate(10, 145)">
+                <g class="node-group" id="node-card-cam2" transform="translate(10, 70)">
                   <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#00d2ff" stroke-width="1.5" class="node-rect-blue" />
                   <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 2</text>
                   <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#00d2ff">STANDBY</text>
                 </g>
 
-                <g class="node-group" id="node-card-switcher" transform="translate(190, 85)">
+                <g class="node-group" id="node-card-liveu3" transform="translate(10, 130)">
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#f59e0b" stroke-width="1.5" />
+                  <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 3</text>
+                  <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#f59e0b">REMOTE</text>
+                </g>
+
+                <g class="node-group" id="node-card-liveu4" transform="translate(10, 190)">
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#a78bfa" stroke-width="1.5" />
+                  <text x="40" y="22" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">LiveU 4</text>
+                  <text x="40" y="38" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#a78bfa">REMOTE</text>
+                </g>
+
+                <g class="node-group" id="node-card-switcher" transform="translate(190, 115)">
                   <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#10b981" stroke-width="2" class="node-rect-active" id="rect-switcher" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="600" fill="#ffffff">ST 2022-7</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="500" fill="#10b981" id="text-switcher-status">PRIMARY</text>
                 </g>
 
-                <g class="node-group" id="node-card-transcoder" transform="translate(310, 85)">
+                <g class="node-group" id="node-card-transcoder" transform="translate(310, 115)">
                   <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#3b82f6" stroke-width="1.5" id="rect-medialive" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="600" fill="#ffffff">MEDIA_LIVE</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#9ca3af">HEVC-&gt;H264</text>
                 </g>
 
-                <g class="node-group" id="node-card-cdn" transform="translate(430, 85)">
+                <g class="node-group" id="node-card-cdn" transform="translate(430, 115)">
                   <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#8b5cf6" stroke-width="1.5" id="rect-cdn" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">CDN (EDGE)</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#a78bfa">HLS / DASH</text>

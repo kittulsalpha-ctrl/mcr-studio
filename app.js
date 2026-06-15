@@ -175,11 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
     textSwitcherStatus: document.getElementById('text-switcher-status'),
     pathCam1: document.getElementById('path-cam1'),
     pathCam2: document.getElementById('path-cam2'),
+    pathLiveu3: document.getElementById('path-liveu3'),
+    pathLiveu4: document.getElementById('path-liveu4'),
     pathVod: document.getElementById('path-vod'),
     pathSwitchToTrans: document.getElementById('path-switch-to-trans'),
     pathTransToCdn: document.getElementById('path-trans-to-cdn'),
     dotCam1: document.getElementById('dot-cam1'),
     dotCam2: document.getElementById('dot-cam2'),
+    dotLiveu3: document.getElementById('dot-liveu3'),
+    dotLiveu4: document.getElementById('dot-liveu4'),
     dotVod: document.getElementById('dot-vod'),
     dotSwitch: document.getElementById('dot-switch'),
     dotTrans: document.getElementById('dot-trans'),
@@ -778,19 +782,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const source = state.activeSource;
     const isLiveu1 = source === 'cam1';
     const isLiveu2 = source === 'cam2';
+    const isLiveu3 = source === 'liveu3';
+    const isLiveu4 = source === 'liveu4';
     const isPlayout = source === 'vod' || source === 'ad';
-    const isExtendedLiveu = source === 'liveu3' || source === 'liveu4';
     const hasProgram = !!source;
-    const routeColor = isLiveu2 ? '#00d2ff' : isPlayout ? '#ec4899' : isExtendedLiveu ? '#f59e0b' : '#10b981';
+    const routeColor = isLiveu2 ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
 
     setSvgLinkState(el.pathCam1, state.primaryFailed ? 'broken' : isLiveu1 ? 'active' : 'standby', '#10b981');
     setSvgLinkState(el.pathCam2, isLiveu2 ? 'active-blue' : 'standby', '#00d2ff');
+    setSvgLinkState(el.pathLiveu3, isLiveu3 ? 'active' : 'standby', '#f59e0b');
+    setSvgLinkState(el.pathLiveu4, isLiveu4 ? 'active' : 'standby', '#a78bfa');
     setSvgLinkState(el.pathVod, isPlayout ? 'active' : 'standby', '#ec4899');
     setSvgLinkState(el.pathSwitchToTrans, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
     setSvgLinkState(el.pathTransToCdn, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
 
     setSvgDotState(el.dotCam1, isLiveu1 && !state.primaryFailed, '#10b981');
     setSvgDotState(el.dotCam2, isLiveu2, '#00d2ff');
+    setSvgDotState(el.dotLiveu3, isLiveu3, '#f59e0b');
+    setSvgDotState(el.dotLiveu4, isLiveu4, '#a78bfa');
     setSvgDotState(el.dotVod, isPlayout, '#ec4899');
     setSvgDotState(el.dotSwitch, hasProgram, routeColor);
     setSvgDotState(el.dotTrans, hasProgram, routeColor);
@@ -824,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     el.txRoute.textContent = routeLabel;
-    el.txRoute.className = `badge-value ${routeColor === '#00d2ff' ? 'text-blue' : routeColor === '#ec4899' ? 'text-pink' : routeColor === '#f59e0b' ? 'text-amber' : 'text-green'}`;
+    el.txRoute.className = `badge-value ${routeColor === '#00d2ff' ? 'text-blue' : routeColor === '#ec4899' ? 'text-pink' : routeColor === '#f59e0b' ? 'text-amber' : routeColor === '#a78bfa' ? 'text-purple' : 'text-green'}`;
     el.textSwitcherStatus.textContent = switcherLabel;
     el.textSwitcherStatus.setAttribute('fill', state.primaryFailed && !isLiveu2 ? '#ef4444' : routeColor);
     el.rectSwitcher.setAttribute('stroke', state.primaryFailed && !isLiveu2 ? '#ef4444' : routeColor);
@@ -1840,6 +1849,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const nodeCards = [
     { id: 'node-card-cam1', text: '<strong class="text-green">Camera-01 Source</strong>: Primary Contribution SRT Feed. Transmitting from on-prem hardware encoder via us-east-1 gateways.' },
     { id: 'node-card-cam2', text: '<strong class="text-blue">Camera-02 Source</strong>: Secondary Contribution SRT Feed. Transmitting from standby cloud encoder via us-east-2 gateways.' },
+    { id: 'node-card-liveu3', text: '<strong class="text-amber">Camera-03 Source</strong>: Remote LiveU contribution feed. Simulated path reserved for future SRT/WebRTC ingest telemetry.' },
+    { id: 'node-card-liveu4', text: '<strong class="text-purple">Camera-04 Source</strong>: Remote LiveU contribution feed. Simulated path reserved for future SRT/WebRTC ingest telemetry.' },
     { id: 'node-card-switcher', text: '<strong class="text-green">Seamless Switcher (SMPTE ST 2022-7)</strong>: Provides hitless active-active failover protection. Real-time path switching within a 50ms buffer envelope.' },
     { id: 'node-card-transcoder', text: '<strong class="text-blue">AWS MediaLive Transcoder</strong>: Transcodes contribution streams from HEVC/H.265 (High Bitrate contribution) down to H.264 (Distribution Profiles) dynamically.' },
     { id: 'node-card-cdn', text: '<strong class="text-pink">Edge CDN (Amazon CloudFront)</strong>: Packages stream formats into HLS (HTTP Live Streaming) and DASH with multi-region caches for low-latency player delivery.' }
