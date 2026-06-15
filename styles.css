@@ -404,6 +404,7 @@ body {
   height: 100%;
   border: 0;
   background: #020408;
+  pointer-events: none;
   z-index: 3;
 }
 

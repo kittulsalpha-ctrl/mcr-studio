@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     adActive: false,
     adTimeRemaining: 0.0, // seconds
     adIntervalId: null,
+    preAdRoute: null,
     
     // Multi-Viewer Settings
     previewFeed: null,
@@ -444,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
       playsinline: '1',
       rel: '0',
       modestbranding: '1',
-      enablejsapi: '1'
+      enablejsapi: '1',
+      origin: window.location.origin
     });
 
     if (videoId) return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
@@ -471,6 +473,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return true;
   }
 
+  function sendYouTubeCommand(frame, command) {
+    if (!frame?.contentWindow) return;
+    frame.contentWindow.postMessage(JSON.stringify({
+      event: 'command',
+      func: command,
+      args: []
+    }), '*');
+  }
+
+  function applyYouTubeMute(feed) {
+    const src = state.customSources[feed];
+    if (src?.type !== 'youtube' || !src.frameEl) return;
+    sendYouTubeCommand(src.frameEl, state.mutedFeeds[feed] ? 'mute' : 'unMute');
+  }
+
   function createYouTubeFrame(feed, url, embedUrl) {
     const wrapper = getCanvasWrapper(feed);
     if (!wrapper) return null;
@@ -482,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
     frame.referrerPolicy = 'strict-origin-when-cross-origin';
     frame.allowFullscreen = true;
+    frame.addEventListener('load', () => applyYouTubeMute(feed));
     wrapper.appendChild(frame);
 
     state.customSources[feed] = {
@@ -1142,36 +1160,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function removeProgramEmbed() {
-    if (state.programEmbedFrame?.parentNode) {
-      state.programEmbedFrame.parentNode.removeChild(state.programEmbedFrame);
-    }
-    state.programEmbedFrame = null;
-  }
-
   function syncProgramEmbed() {
-    const programSource = state.activeSource ? state.customSources[state.activeSource] : null;
-    if (!programSource || programSource.type !== 'youtube' || !programSource.embedUrl) {
-      removeProgramEmbed();
-      return;
-    }
+    state.programEmbedFrame = null;
 
-    if (state.programEmbedFrame?.dataset.embedUrl === programSource.embedUrl) return;
+    Object.entries(state.customSources).forEach(([feed, src]) => {
+      if (src?.type !== 'youtube' || !src.frameEl) return;
 
-    removeProgramEmbed();
-    const wrapper = getCanvasWrapper('pgm');
-    if (!wrapper) return;
+      const isProgramSource = state.activeSource === feed;
+      const targetWrapper = getCanvasWrapper(isProgramSource ? 'pgm' : feed);
+      if (!targetWrapper) return;
 
-    const frame = document.createElement('iframe');
-    frame.className = 'tile-embed-frame tile-embed-frame-pgm';
-    frame.title = 'PROGRAM OUT YouTube source';
-    frame.src = programSource.embedUrl;
-    frame.dataset.embedUrl = programSource.embedUrl;
-    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-    frame.referrerPolicy = 'strict-origin-when-cross-origin';
-    frame.allowFullscreen = true;
-    wrapper.appendChild(frame);
-    state.programEmbedFrame = frame;
+      if (src.frameEl.parentNode !== targetWrapper) {
+        targetWrapper.appendChild(src.frameEl);
+      }
+
+      src.frameEl.classList.toggle('tile-embed-frame-pgm', isProgramSource);
+      src.frameEl.title = isProgramSource
+        ? 'PROGRAM OUT YouTube source'
+        : `${getTileName(feed)} YouTube source`;
+
+      if (isProgramSource) state.programEmbedFrame = src.frameEl;
+      applyYouTubeMute(feed);
+    });
   }
 
   function setSvgLinkState(path, stateName, color) {
@@ -1403,6 +1413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cur = !!state.mutedFeeds[feed];
         state.mutedFeeds[feed] = !cur;
         muteBtn.classList.toggle('btn-active-mute', !cur);
+        applyYouTubeMute(feed);
         addLog('info', 'AUDIO', `${feed.toUpperCase()} ${!cur ? 'muted' : 'unmuted'}.`);
       });
     }
@@ -2214,6 +2225,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     state.adActive = true;
     state.adTimeRemaining = 30.0;
+    state.preAdRoute = {
+      activeSource: state.activeSource,
+      programSourceOverride: state.programSourceOverride,
+      label: el.pgmActiveSource.textContent
+    };
     el.btnInjectScte.disabled = true;
     el.btnCancelScte.disabled = false;
     
@@ -2224,6 +2240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
+    syncProgramEmbed();
     
     // Show countdown banner on PGM screen
     el.adBreakBanner.style.display = 'block';
@@ -2263,8 +2280,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide overlay
     el.adBreakBanner.style.display = 'none';
     
-    // Restore program route
-    if (state.primaryFailed) {
+    // Restore the exact route that was on air before SCTE interrupted it.
+    if (state.preAdRoute?.activeSource) {
+      state.activeSource = state.preAdRoute.activeSource;
+      state.programSourceOverride = state.preAdRoute.programSourceOverride;
+      el.pgmActiveSource.textContent = state.preAdRoute.label || `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
+    } else if (state.primaryFailed) {
       state.activeSource = 'cam2';
       state.programSourceOverride = 'liveu2';
       el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
@@ -2273,9 +2294,11 @@ document.addEventListener('DOMContentLoaded', () => {
       state.programSourceOverride = 'liveu1';
       el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
     }
+    state.preAdRoute = null;
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
+    syncProgramEmbed();
     
     addLog('info', 'SCTE', 'SCTE-35 Splice-Out command injected. Event ID: 4092 (Out-of-Network complete).');
     addLog('info', 'PLYT', 'Program routing returned successfully to Contribution feed.');
