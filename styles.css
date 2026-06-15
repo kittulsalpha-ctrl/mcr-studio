@@ -1274,6 +1274,31 @@ body {
   box-shadow: 0 0 6px rgba(0, 210, 255, 0.3);
 }
 
+.log-tag-filter,
+.log-search-input {
+  min-height: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+}
+
+.log-tag-filter {
+  max-width: 86px;
+}
+
+.log-search-input {
+  width: clamp(96px, 18vw, 160px);
+}
+
+.log-search-input::placeholder {
+  color: var(--text-muted);
+}
+
 #btn-clear-logs {
   background: transparent;
   border-color: transparent;
@@ -1282,6 +1307,11 @@ body {
 
 #btn-clear-logs:hover {
   color: var(--neon-red);
+}
+
+.log-empty {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .console-logs-wrapper {

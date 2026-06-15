@@ -200,6 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     filterInfo: document.getElementById('filter-info'),
     filterWarning: document.getElementById('filter-warning'),
     filterAlarm: document.getElementById('filter-alarm'),
+    logTagFilter: document.getElementById('log-tag-filter'),
+    logSearchInput: document.getElementById('log-search-input'),
     
     // Node SVG elements
     rectSwitcher: document.getElementById('rect-switcher'),
@@ -327,10 +329,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderLogs() {
     const activeFilter = document.querySelector('.btn-filter.filter-active').getAttribute('data-filter');
+    const activeTag = el.logTagFilter?.value || 'all';
+    const searchTerm = (el.logSearchInput?.value || '').trim().toLowerCase();
     el.consoleLogs.innerHTML = '';
+    let visibleCount = 0;
     
     state.logs.forEach(log => {
       if (activeFilter !== 'all' && log.severity !== activeFilter) return;
+      if (activeTag !== 'all' && log.tag !== activeTag) return;
+      if (searchTerm) {
+        const haystack = `${log.timestamp} ${log.severity} ${log.tag} ${log.message}`.toLowerCase();
+        if (!haystack.includes(searchTerm)) return;
+      }
       
       const logDiv = document.createElement('div');
       logDiv.className = `log-entry log-${log.severity}`;
@@ -342,7 +352,15 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       
       el.consoleLogs.appendChild(logDiv);
+      visibleCount++;
     });
+
+    if (!visibleCount) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'log-entry log-empty';
+      emptyDiv.textContent = 'No log entries match the current filters.';
+      el.consoleLogs.appendChild(emptyDiv);
+    }
     
     // Auto-scroll to bottom
     el.consoleLogs.scrollTop = el.consoleLogs.scrollHeight;
@@ -361,6 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
     state.logs = [];
     renderLogs();
   });
+
+  el.logTagFilter?.addEventListener('change', renderLogs);
+  el.logSearchInput?.addEventListener('input', renderLogs);
 
   function safeRevokeVideoURL() {
     if (state.cam2FileURL) {
