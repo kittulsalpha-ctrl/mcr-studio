@@ -741,6 +741,21 @@
     </main>
   </div>
 
+  <div class="source-url-modal" id="source-url-modal" aria-hidden="true">
+    <div class="source-url-dialog" role="dialog" aria-modal="true" aria-labelledby="source-url-title">
+      <div class="source-url-header">
+        <h3 id="source-url-title">EDIT SOURCE</h3>
+        <button class="btn-screen-control" id="source-url-close" type="button">CANCEL</button>
+      </div>
+      <label class="source-url-label" for="source-url-input">MEDIA URL</label>
+      <input class="source-url-input" id="source-url-input" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+      <div class="source-url-actions">
+        <span class="source-url-target font-fira" id="source-url-target">TARGET: —</span>
+        <button class="btn-screen-control btn-attach" id="source-url-attach" type="button">ATTACH</button>
+      </div>
+    </div>
+  </div>
+
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
   <script src="app.js"></script>

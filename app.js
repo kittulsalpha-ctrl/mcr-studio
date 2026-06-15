@@ -84,10 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
       liveu3: { black: false, silence: false, frozen: false },
       liveu4: { black: false, silence: false, frozen: false }
     },
-    // Per-tile custom sources (e.g., RTSP/OBS/HTTP URL attachments)
+    // Per-tile custom sources (e.g., RTSP/OBS/HTTP/YouTube URL attachments)
     customSources: {
-      // feedId: { url: string, videoEl: HTMLVideoElement, ready: boolean }
+      // feedId: { type: string, url: string, embedUrl?: string, videoEl?: HTMLVideoElement, frameEl?: HTMLIFrameElement, ready: boolean }
     },
+    programEmbedFrame: null,
+    activeEditFeed: null,
     
     // SCTE-35 Ad Splice
     adActive: false,
@@ -202,6 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
     filterAlarm: document.getElementById('filter-alarm'),
     logTagFilter: document.getElementById('log-tag-filter'),
     logSearchInput: document.getElementById('log-search-input'),
+    sourceUrlModal: document.getElementById('source-url-modal'),
+    sourceUrlInput: document.getElementById('source-url-input'),
+    sourceUrlAttach: document.getElementById('source-url-attach'),
+    sourceUrlClose: document.getElementById('source-url-close'),
+    sourceUrlTarget: document.getElementById('source-url-target'),
     
     // Node SVG elements
     rectSwitcher: document.getElementById('rect-switcher'),
@@ -397,10 +404,167 @@ document.addEventListener('DOMContentLoaded', () => {
       : 'N/A';
   }
 
+  function getCanvasWrapper(feed) {
+    return document.querySelector(`#screen-${feed} .canvas-wrapper`);
+  }
+
+  function isYouTubeHost(hostname) {
+    return /(^|\.)youtube\.com$/i.test(hostname) || /(^|\.)youtu\.be$/i.test(hostname) || /(^|\.)youtube-nocookie\.com$/i.test(hostname);
+  }
+
+  function buildYouTubeEmbedUrl(rawUrl) {
+    let parsed;
+    try {
+      parsed = new URL(rawUrl.trim());
+    } catch (error) {
+      return null;
+    }
+
+    if (!isYouTubeHost(parsed.hostname)) return null;
+
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    let videoId = '';
+    let channelId = '';
+
+    if (parsed.hostname.includes('youtu.be')) {
+      videoId = pathParts[0] || '';
+    } else if (parsed.searchParams.get('v')) {
+      videoId = parsed.searchParams.get('v');
+    } else if (pathParts[0] === 'embed' && pathParts[1]) {
+      videoId = pathParts[1];
+    } else if ((pathParts[0] === 'live' || pathParts[0] === 'shorts') && pathParts[1]) {
+      videoId = pathParts[1];
+    } else if (pathParts[0] === 'channel' && pathParts[1]?.startsWith('UC')) {
+      channelId = pathParts[1];
+    }
+
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '0',
+      playsinline: '1',
+      rel: '0',
+      modestbranding: '1',
+      enablejsapi: '1'
+    });
+
+    if (videoId) return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+    if (channelId) return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}&${params.toString()}`;
+    return null;
+  }
+
+  function teardownCustomSource(feed) {
+    const src = state.customSources?.[feed];
+    if (!src) return false;
+
+    try {
+      if (src.videoEl) {
+        src.videoEl.pause();
+        src.videoEl.removeAttribute('src');
+        src.videoEl.load();
+        if (src.videoEl.parentNode) src.videoEl.parentNode.removeChild(src.videoEl);
+      }
+      if (src.frameEl?.parentNode) src.frameEl.parentNode.removeChild(src.frameEl);
+    } catch (error) {}
+
+    delete state.customSources[feed];
+    syncProgramEmbed();
+    return true;
+  }
+
+  function createYouTubeFrame(feed, url, embedUrl) {
+    const wrapper = getCanvasWrapper(feed);
+    if (!wrapper) return null;
+
+    const frame = document.createElement('iframe');
+    frame.className = 'tile-embed-frame';
+    frame.title = `${getTileName(feed)} YouTube source`;
+    frame.src = embedUrl;
+    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.allowFullscreen = true;
+    wrapper.appendChild(frame);
+
+    state.customSources[feed] = {
+      type: 'youtube',
+      url,
+      embedUrl,
+      frameEl: frame,
+      ready: true
+    };
+    setTileSource(feed, 'custom');
+    return frame;
+  }
+
+  function attachCustomSourceFromUrl(feed, rawUrl) {
+    const url = rawUrl.trim();
+    if (!feed || !url) return false;
+
+    teardownCustomSource(feed);
+
+    const youtubeEmbedUrl = buildYouTubeEmbedUrl(url);
+    if (youtubeEmbedUrl) {
+      const frame = createYouTubeFrame(feed, url, youtubeEmbedUrl);
+      if (!frame) {
+        addLog('alarm', 'ROUTE', `Unable to attach YouTube source to ${feed.toUpperCase()}.`);
+        return false;
+      }
+      addLog('info', 'ROUTE', `YouTube source attached to ${feed.toUpperCase()}.`);
+      updateSourceOverlays();
+      syncProgramEmbed();
+      return true;
+    }
+
+    const v = document.createElement('video');
+    v.autoplay = true;
+    v.muted = true;
+    v.playsInline = true;
+    v.className = 'hidden-video';
+    v.src = url;
+    v.addEventListener('loadedmetadata', () => {
+      state.customSources[feed] = { type: 'video', url, videoEl: v, ready: true };
+      setTileSource(feed, 'custom');
+      addLog('info', 'ROUTE', `Custom source loaded for ${feed.toUpperCase()}.`);
+      updateSourceOverlays();
+    });
+    v.addEventListener('error', () => {
+      addLog('alarm', 'ROUTE', `Failed to load custom source for ${feed.toUpperCase()}.`);
+    });
+    document.body.appendChild(v);
+    v.play().catch(() => {});
+    addLog('info', 'ROUTE', `Attempting to attach custom source to ${feed.toUpperCase()}...`);
+    return true;
+  }
+
+  function openSourceUrlEditor(feed) {
+    state.activeEditFeed = feed;
+    if (el.sourceUrlTarget) el.sourceUrlTarget.textContent = `TARGET: ${getTileName(feed)}`;
+    el.sourceUrlModal?.classList.add('modal-open');
+    el.sourceUrlModal?.setAttribute('aria-hidden', 'false');
+    if (el.sourceUrlInput) {
+      el.sourceUrlInput.value = state.customSources[feed]?.url || '';
+      el.sourceUrlInput.focus();
+      el.sourceUrlInput.select();
+    }
+  }
+
+  function closeSourceUrlEditor() {
+    state.activeEditFeed = null;
+    el.sourceUrlModal?.classList.remove('modal-open');
+    el.sourceUrlModal?.setAttribute('aria-hidden', 'true');
+  }
+
+  function submitSourceUrlEditor() {
+    const feed = state.activeEditFeed;
+    const url = el.sourceUrlInput?.value || '';
+    if (!feed || !url.trim()) return;
+    if (attachCustomSourceFromUrl(feed, url)) closeSourceUrlEditor();
+  }
+
   function getFeedAssignment(feed) {
     // Custom per-tile source takes precedence
     if (state.customSources && state.customSources[feed]) return 'custom';
     const sourceId = state.tileSourceIds[feed];
+    if (sourceId === 'custom') return 'none';
     if (LIVEU_SOURCE_IDS.includes(sourceId)) return 'simulated';
     if (sourceId === 'none') return 'none';
     return state.tileSources[feed] || 'simulated';
@@ -423,6 +587,9 @@ document.addEventListener('DOMContentLoaded', () => {
       el.pgmActiveSource.textContent = 'SOURCE: NONE';
       addLog('info', 'ROUTE', `${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
       updateOrchestratorRouting();
+      updateBadges();
+      updatePGMFooter();
+      syncProgramEmbed();
     }
   }
 
@@ -510,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'localVideo') return state.cam2VideoReady ? 'PLAYING' : 'OFFLINE';
+    if (assignment === 'custom') return state.customSources[feed]?.ready ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'vod') return 'PLAYING';
     return 'SIMULATED';
   }
@@ -518,6 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return 'Browser Cam';
     if (assignment === 'localVideo') return state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'Local File';
+    if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : 'Custom Source';
     if (feed === 'vod') return 'PLAYOUT';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
     return 'SIMULATED';
@@ -559,6 +728,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (assignment === 'custom') {
       const src = state.customSources[feed];
+      if (src?.type === 'youtube') {
+        return {
+          codec: 'YOUTUBE',
+          source: 'YouTube Live',
+          resolution: 'Embedded Player',
+          bitrate: 'Adaptive',
+          rtt: 'HTTP'
+        };
+      }
       return {
         codec: 'CUSTOM',
         source: src?.url || 'Custom Source',
@@ -611,6 +789,24 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  function drawEmbeddedSourceSlate(ctx, width, height, title, subtitle) {
+    ctx.fillStyle = '#020408';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, width - 20, height - 20);
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.12)';
+    ctx.fillRect(18, 18, width - 36, height - 36);
+    ctx.fillStyle = '#00d2ff';
+    ctx.font = 'bold 18px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, width / 2, height / 2 - 8);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '10px Fira Code';
+    ctx.fillText(subtitle, width / 2, height / 2 + 12);
+    ctx.textAlign = 'left';
+  }
+
   function drawFeedCanvas(feed, ctx, w, h, frames) {
     const assignment = getFeedAssignment(feed);
     if (!feedHasActiveSignal(feed) && feed !== 'vod') {
@@ -620,6 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (assignment === 'custom') {
       const src = state.customSources[feed];
+      if (src?.type === 'youtube') {
+        drawEmbeddedSourceSlate(ctx, w, h, 'YOUTUBE LIVE', 'EMBEDDED PLAYER ACTIVE');
+        return;
+      }
       if (src && src.ready && drawVideoFrame(src.videoEl, ctx, w, h)) return;
       drawStreamLossStatic(ctx, w, h);
       return;
@@ -942,6 +1142,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function removeProgramEmbed() {
+    if (state.programEmbedFrame?.parentNode) {
+      state.programEmbedFrame.parentNode.removeChild(state.programEmbedFrame);
+    }
+    state.programEmbedFrame = null;
+  }
+
+  function syncProgramEmbed() {
+    const programSource = state.activeSource ? state.customSources[state.activeSource] : null;
+    if (!programSource || programSource.type !== 'youtube' || !programSource.embedUrl) {
+      removeProgramEmbed();
+      return;
+    }
+
+    if (state.programEmbedFrame?.dataset.embedUrl === programSource.embedUrl) return;
+
+    removeProgramEmbed();
+    const wrapper = getCanvasWrapper('pgm');
+    if (!wrapper) return;
+
+    const frame = document.createElement('iframe');
+    frame.className = 'tile-embed-frame tile-embed-frame-pgm';
+    frame.title = 'PROGRAM OUT YouTube source';
+    frame.src = programSource.embedUrl;
+    frame.dataset.embedUrl = programSource.embedUrl;
+    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.allowFullscreen = true;
+    wrapper.appendChild(frame);
+    state.programEmbedFrame = frame;
+  }
+
   function setSvgLinkState(path, stateName, color) {
     if (!path) return;
     path.classList.remove('link-active', 'link-active-blue', 'link-standby', 'link-broken');
@@ -1063,10 +1295,11 @@ document.addEventListener('DOMContentLoaded', () => {
     state.programSourceOverride = null;
     clearPreviewUI();
     el.pgmActiveSource.textContent = `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
-  updateBadges();
-  updatePGMFooter();
-  updateOrchestratorRouting();
-  addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
+    updateBadges();
+    updatePGMFooter();
+    updateOrchestratorRouting();
+    syncProgramEmbed();
+    addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
   });
 
   // Per-tile attach/eject/solo wiring
@@ -1137,29 +1370,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ejectBtn) {
       ejectBtn.addEventListener('click', () => {
         // If this feed currently has webcam assigned
-        if (state.mediaAssignments.webcam === feed) {
+        if (state.mediaAssignments.webcam === feed && getFeedAssignment(feed) === 'webcam') {
           stopWebcam();
           state.mediaAssignments.webcam = null;
           addLog('info', 'ROUTE', `Webcam unassigned from ${feed.toUpperCase()}.`);
         }
-        if (state.mediaAssignments.localVideo === feed) {
+        if (state.mediaAssignments.localVideo === feed && getFeedAssignment(feed) === 'localVideo') {
           ejectLocalVideo();
           state.mediaAssignments.localVideo = null;
           addLog('info', 'ROUTE', `Local video unassigned from ${feed.toUpperCase()}.`);
         }
-        // If a custom source is attached to this feed, remove it
-        if (state.customSources && state.customSources[feed]) {
-          try {
-            const src = state.customSources[feed];
-            src.videoEl.pause();
-            src.videoEl.removeAttribute('src');
-            src.videoEl.load();
-            if (src.videoEl.parentNode) src.videoEl.parentNode.removeChild(src.videoEl);
-          } catch (e) {}
-          delete state.customSources[feed];
+        const hadCustomSource = teardownCustomSource(feed);
+        if (hadCustomSource) {
           addLog('info', 'ROUTE', `Custom source detached from ${feed.toUpperCase()}.`);
+          clearTileSource(feed);
         }
-        if (state.mediaAssignments.webcam !== feed && state.mediaAssignments.localVideo !== feed && !state.customSources[feed]) {
+        if (!hadCustomSource && state.mediaAssignments.webcam !== feed && state.mediaAssignments.localVideo !== feed && !state.customSources[feed]) {
           clearTileSource(feed);
         }
         clearCanvas(feed);
@@ -1183,27 +1409,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Edit / custom source attach
     const editBtn = document.getElementById(`btn-edit-${feed}`);
     if (editBtn) {
-      editBtn.addEventListener('click', () => {
-        const url = prompt(`Enter media URL for ${feed.toUpperCase()} (http/https/rtsp/obs):`);
-        if (!url) return;
-        // create hidden video element
-        const v = document.createElement('video');
-        v.autoplay = true; v.muted = true; v.playsInline = true; v.className = 'hidden-video';
-        v.src = url;
-        v.addEventListener('loadedmetadata', () => {
-          state.customSources[feed] = { url, videoEl: v, ready: true };
-          addLog('info', 'ROUTE', `Custom source loaded for ${feed.toUpperCase()}.`);
-          updateSourceOverlays();
-        });
-        v.addEventListener('error', () => {
-          addLog('alarm', 'ROUTE', `Failed to load custom source for ${feed.toUpperCase()}.`);
-        });
-        document.body.appendChild(v);
-        // attempt play
-        v.play().catch(() => {});
-        addLog('info', 'ROUTE', `Attempting to attach custom source to ${feed.toUpperCase()}...`);
-      });
+      editBtn.addEventListener('click', () => openSourceUrlEditor(feed));
     }
+  });
+
+  el.sourceUrlAttach?.addEventListener('click', submitSourceUrlEditor);
+  el.sourceUrlClose?.addEventListener('click', closeSourceUrlEditor);
+  el.sourceUrlModal?.addEventListener('click', event => {
+    if (event.target === el.sourceUrlModal) closeSourceUrlEditor();
+  });
+  el.sourceUrlInput?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') submitSourceUrlEditor();
+    if (event.key === 'Escape') closeSourceUrlEditor();
   });
 
   updateSourceOverlays();
@@ -1711,6 +1928,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pgmCtx.fillText('NO PROGRAM SOURCE', pgmW / 2, pgmH / 2);
       pgmCtx.textAlign = 'left';
     }
+    syncProgramEmbed();
 
     // 5. Update Stereo VU meters
     updateVUMeters();
