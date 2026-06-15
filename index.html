@@ -473,6 +473,10 @@
                   <animateMotion dur="3.5s" repeatCount="indefinite" path="M 90,170 L 220,130" />
                 </circle>
 
+                <circle r="4" fill="#ec4899" id="dot-vod" class="flow-particle">
+                  <animateMotion dur="3s" repeatCount="indefinite" path="M 90,110 L 220,110" />
+                </circle>
+
                 <circle r="4" fill="#10b981" id="dot-switch" class="flow-particle">
                   <animateMotion dur="2s" repeatCount="indefinite" path="M 270,110 L 330,110" />
                 </circle>
@@ -500,13 +504,13 @@
                 </g>
 
                 <g class="node-group" id="node-card-transcoder" transform="translate(310, 85)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#3b82f6" stroke-width="1.5" />
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#3b82f6" stroke-width="1.5" id="rect-medialive" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="600" fill="#ffffff">MEDIA_LIVE</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#9ca3af">HEVC-&gt;H264</text>
                 </g>
 
                 <g class="node-group" id="node-card-cdn" transform="translate(430, 85)">
-                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#8b5cf6" stroke-width="1.5" />
+                  <rect x="0" y="0" width="80" height="50" rx="6" fill="#111827" stroke="#8b5cf6" stroke-width="1.5" id="rect-cdn" />
                   <text x="40" y="20" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="600" fill="#ffffff">CDN (EDGE)</text>
                   <text x="40" y="36" text-anchor="middle" font-family="Fira Code" font-size="8" fill="#a78bfa">HLS / DASH</text>
                 </g>

@@ -170,11 +170,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Node SVG elements
     rectSwitcher: document.getElementById('rect-switcher'),
+    rectMediaLive: document.getElementById('rect-medialive'),
+    rectCdn: document.getElementById('rect-cdn'),
     textSwitcherStatus: document.getElementById('text-switcher-status'),
     pathCam1: document.getElementById('path-cam1'),
     pathCam2: document.getElementById('path-cam2'),
+    pathVod: document.getElementById('path-vod'),
+    pathSwitchToTrans: document.getElementById('path-switch-to-trans'),
+    pathTransToCdn: document.getElementById('path-trans-to-cdn'),
     dotCam1: document.getElementById('dot-cam1'),
     dotCam2: document.getElementById('dot-cam2'),
+    dotVod: document.getElementById('dot-vod'),
     dotSwitch: document.getElementById('dot-switch'),
     dotTrans: document.getElementById('dot-trans'),
     inspectorText: document.getElementById('inspector-text'),
@@ -352,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeSource = null;
       el.pgmActiveSource.textContent = 'SOURCE: NONE';
       addLog('info', 'ROUTE', `${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
+      updateOrchestratorRouting();
     }
   }
 
@@ -749,6 +756,90 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function setSvgLinkState(path, stateName, color) {
+    if (!path) return;
+    path.classList.remove('link-active', 'link-active-blue', 'link-standby', 'link-broken');
+    path.style.stroke = color || '';
+    path.style.strokeWidth = stateName === 'active' || stateName === 'active-blue' ? '2.5px' : '1.5px';
+
+    if (stateName === 'broken') path.classList.add('link-broken');
+    else if (stateName === 'active-blue') path.classList.add('link-active-blue');
+    else if (stateName === 'active') path.classList.add('link-active');
+    else path.classList.add('link-standby');
+  }
+
+  function setSvgDotState(dot, visible, color) {
+    if (!dot) return;
+    dot.style.display = visible ? 'block' : 'none';
+    if (color) dot.setAttribute('fill', color);
+  }
+
+  function updateOrchestratorRouting() {
+    const source = state.activeSource;
+    const isLiveu1 = source === 'cam1';
+    const isLiveu2 = source === 'cam2';
+    const isPlayout = source === 'vod' || source === 'ad';
+    const isExtendedLiveu = source === 'liveu3' || source === 'liveu4';
+    const hasProgram = !!source;
+    const routeColor = isLiveu2 ? '#00d2ff' : isPlayout ? '#ec4899' : isExtendedLiveu ? '#f59e0b' : '#10b981';
+
+    setSvgLinkState(el.pathCam1, state.primaryFailed ? 'broken' : isLiveu1 ? 'active' : 'standby', '#10b981');
+    setSvgLinkState(el.pathCam2, isLiveu2 ? 'active-blue' : 'standby', '#00d2ff');
+    setSvgLinkState(el.pathVod, isPlayout ? 'active' : 'standby', '#ec4899');
+    setSvgLinkState(el.pathSwitchToTrans, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
+    setSvgLinkState(el.pathTransToCdn, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
+
+    setSvgDotState(el.dotCam1, isLiveu1 && !state.primaryFailed, '#10b981');
+    setSvgDotState(el.dotCam2, isLiveu2, '#00d2ff');
+    setSvgDotState(el.dotVod, isPlayout, '#ec4899');
+    setSvgDotState(el.dotSwitch, hasProgram, routeColor);
+    setSvgDotState(el.dotTrans, hasProgram, routeColor);
+
+    let routeLabel = 'IDLE';
+    let switcherLabel = 'IDLE';
+    if (state.primaryFailed && isLiveu2) {
+      routeLabel = 'BACKUP';
+      switcherLabel = 'BACKUP PATH';
+    } else if (isLiveu1) {
+      routeLabel = 'PRIMARY';
+      switcherLabel = 'PRIMARY';
+    } else if (isLiveu2) {
+      routeLabel = 'LIVEU 2';
+      switcherLabel = 'LIVEU 2';
+    } else if (source === 'liveu3') {
+      routeLabel = 'LIVEU 3';
+      switcherLabel = 'LIVEU 3';
+    } else if (source === 'liveu4') {
+      routeLabel = 'LIVEU 4';
+      switcherLabel = 'LIVEU 4';
+    } else if (source === 'vod') {
+      routeLabel = 'PLAYOUT';
+      switcherLabel = 'PLAYOUT';
+    } else if (source === 'ad') {
+      routeLabel = 'AD CUE';
+      switcherLabel = 'SCTE-35';
+    } else if (state.primaryFailed) {
+      routeLabel = 'ALARM';
+      switcherLabel = 'PATH A FAIL';
+    }
+
+    el.txRoute.textContent = routeLabel;
+    el.txRoute.className = `badge-value ${routeColor === '#00d2ff' ? 'text-blue' : routeColor === '#ec4899' ? 'text-pink' : routeColor === '#f59e0b' ? 'text-amber' : 'text-green'}`;
+    el.textSwitcherStatus.textContent = switcherLabel;
+    el.textSwitcherStatus.setAttribute('fill', state.primaryFailed && !isLiveu2 ? '#ef4444' : routeColor);
+    el.rectSwitcher.setAttribute('stroke', state.primaryFailed && !isLiveu2 ? '#ef4444' : routeColor);
+    el.rectMediaLive?.setAttribute('stroke', hasProgram ? routeColor : '#3b82f6');
+    el.rectCdn?.setAttribute('stroke', hasProgram ? routeColor : '#8b5cf6');
+
+    if (hasProgram) {
+      el.inspectorText.innerHTML = `<strong class="text-green">Active Program Route</strong>: ${getTileName(source)} → ST 2022-7 Switcher → AWS MediaLive → CDN Edge.`;
+    } else if (state.primaryFailed) {
+      el.inspectorText.innerHTML = '<strong class="text-red">Path A failure detected</strong>: LiveU 1 contribution is unavailable. Route backup or restore primary.';
+    } else {
+      el.inspectorText.innerHTML = '<strong class="text-green">ST 2022-7 Switcher</strong>: Waiting for PREVIEW/TAKE route selection.';
+    }
+  }
+
   function clearPreviewUI() {
     state.previewFeed = null;
     document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
@@ -769,6 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.pgmActiveSource.textContent = `SOURCE: ${getTileName(state.activeSource)}`;
     updateBadges();
     updatePGMFooter();
+    updateOrchestratorRouting();
     addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
   });
 
@@ -911,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTAKEButton();
   updateBadges();
   updatePGMFooter();
+  updateOrchestratorRouting();
 
   // Initialize with typical professional playout console messages
   addLog('info', 'SYSTEM', 'MCR Studio Engine Core initialized successfully.');
@@ -1615,10 +1708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.matrixAlarm.textContent = "ALARM: FAIL";
     el.matrixAlarm.className = "badge-value text-red pulse-red";
     
-    // Break node link on SVG
-    el.pathCam1.classList.remove('link-active');
-    el.pathCam1.classList.add('link-broken');
-    el.dotCam1.style.display = 'none';
+    updateOrchestratorRouting();
 
     // Log failure
     addLog('alarm', 'SRT', 'Primary contribution encoder connection lost! SRT Socket connection timeout.');
@@ -1629,13 +1719,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.primaryFailed) { // Double check if already restored
         state.activeSource = 'cam2'; // Route backup Cam
         el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
-        el.txRoute.textContent = "BACKUP";
-        el.txRoute.className = "badge-value text-blue";
-        
-        // Update switcher SVG node badge
-        el.textSwitcherStatus.textContent = "BACKUP PATH";
-        el.textSwitcherStatus.setAttribute('fill', '#00d2ff');
-        el.rectSwitcher.setAttribute('stroke', '#00d2ff');
+        updateBadges();
+        updatePGMFooter();
+        updateOrchestratorRouting();
         
         // Log switch
         addLog('alarm', 'SWT', 'Switcher input switched automatically: Path A (failed) ➔ Path B (active backup).');
@@ -1655,10 +1741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Remove alarm overlays
     el.alarmOverlayCam1.classList.remove('alarm-active');
     
-    // Restore SVG links
-    el.pathCam1.classList.remove('link-broken');
-    el.pathCam1.classList.add('link-active');
-    el.dotCam1.style.display = 'block';
+    updateOrchestratorRouting();
 
     addLog('info', 'SRT', 'SRT Contribution Socket re-established. Port 9001 handshake complete.');
     addLog('info', 'SRT', 'Camera-01 stream restored (Bitrate: 6.2 Mbps, Codec: HEVC).');
@@ -1668,12 +1751,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.primaryFailed) {
         state.activeSource = 'cam1';
         el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
-        el.txRoute.textContent = "PRIMARY";
-        el.txRoute.className = "badge-value text-blue";
-        
-        el.textSwitcherStatus.textContent = "PRIMARY";
-        el.textSwitcherStatus.setAttribute('fill', '#10b981');
-        el.rectSwitcher.setAttribute('stroke', '#10b981');
+        updateBadges();
+        updatePGMFooter();
+        updateOrchestratorRouting();
         
         addLog('info', 'SWT', 'Stabilization window complete. Switcher reverted back: Path B ➔ Path A (Primary).');
       }
@@ -1694,13 +1774,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update active source to ad break loop
     state.activeSource = 'ad';
     el.pgmActiveSource.textContent = "SOURCE: AD-LOOP (SCTE-35)";
+    updateBadges();
+    updatePGMFooter();
+    updateOrchestratorRouting();
     
     // Show countdown banner on PGM screen
     el.adBreakBanner.style.display = 'block';
-    
-    // Animate VOD link dashboard lines
-    el.pathCam1.classList.add('link-standby');
-    el.pathCam2.classList.add('link-standby');
     
     // Logs
     addLog('info', 'SCTE', 'SCTE-35 Digital Program Insertion triggered. Event ID: 4092. Out-Of-Network Splice=TRUE.');
@@ -1745,9 +1824,9 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeSource = 'cam1';
       el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
     }
-
-    el.pathCam1.classList.remove('link-standby');
-    el.pathCam2.classList.remove('link-standby');
+    updateBadges();
+    updatePGMFooter();
+    updateOrchestratorRouting();
     
     addLog('info', 'SCTE', 'SCTE-35 Splice-Out command injected. Event ID: 4092 (Out-of-Network complete).');
     addLog('info', 'PLYT', 'Program routing returned successfully to Contribution feed.');
