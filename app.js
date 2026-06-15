@@ -123,6 +123,12 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayCam2Codec: document.getElementById('overlay-cam2-codec'),
     overlayCam2Src: document.getElementById('overlay-cam2-src'),
     overlayCam2Res: document.getElementById('overlay-cam2-res'),
+    overlayLiveu3Codec: document.getElementById('overlay-liveu3-codec'),
+    overlayLiveu3Src: document.getElementById('overlay-liveu3-src'),
+    overlayLiveu3Res: document.getElementById('overlay-liveu3-res'),
+    overlayLiveu4Codec: document.getElementById('overlay-liveu4-codec'),
+    overlayLiveu4Src: document.getElementById('overlay-liveu4-src'),
+    overlayLiveu4Res: document.getElementById('overlay-liveu4-res'),
     btnStartWebcam: document.getElementById('btn-start-webcam'),
     btnStopWebcam: document.getElementById('btn-stop-webcam'),
     btnLoadLocalVideo: document.getElementById('btn-load-local-video'),
@@ -365,6 +371,49 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'SIMULATED';
   }
 
+  function getFeedMetadata(feed) {
+    const assignment = getFeedAssignment(feed);
+
+    if (assignment === 'webcam') {
+      return {
+        codec: 'Browser Cam',
+        source: state.webcamReady ? 'Browser Cam' : 'No Input',
+        resolution: state.webcamReady ? getVideoResolution(el.cam1Video) : 'N/A',
+        bitrate: state.webcamReady ? `${(4.8 + Math.random() * 1.2).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: state.webcamReady ? `${state.rttMs}ms` : '--'
+      };
+    }
+
+    if (assignment === 'localVideo') {
+      return {
+        codec: 'Local File',
+        source: state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File',
+        resolution: state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A',
+        bitrate: state.cam2VideoReady ? `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: state.cam2VideoReady ? `${state.rttMs}ms` : '--'
+      };
+    }
+
+    if (assignment === 'custom') {
+      const src = state.customSources[feed];
+      return {
+        codec: 'CUSTOM',
+        source: src?.url || 'Custom Source',
+        resolution: src?.ready ? getVideoResolution(src.videoEl) : 'N/A',
+        bitrate: src?.ready ? `${(3.8 + Math.random() * 2.2).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: src?.ready ? `${state.rttMs}ms` : '--'
+      };
+    }
+
+    return {
+      codec: feed === 'cam1' ? 'HEVC' : 'H.264',
+      source: 'Simulated Input',
+      resolution: '1080p60',
+      bitrate: `${(feed === 'cam1' ? 5.4 : 4.7 + Math.random() * 1.1).toFixed(1)} Mbps`,
+      rtt: `${feed === 'liveu3' ? state.rttMs + 3 : feed === 'liveu4' ? state.rttMs + 6 : state.rttMs}ms`
+    };
+  }
+
   function feedHasActiveSignal(feed) {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return state.webcamReady && el.cam1Video.readyState >= 2;
@@ -415,40 +464,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateSourceOverlays() {
-    const cam1Assignment = getFeedAssignment('cam1');
-    const cam2Assignment = getFeedAssignment('cam2');
-    const cam3Assignment = getFeedAssignment('liveu3');
-    const cam4Assignment = getFeedAssignment('liveu4');
+    const overlayFields = {
+      cam1: {
+        codec: el.overlayCam1Codec,
+        source: el.overlayCam1Src,
+        resolution: el.overlayCam1Res,
+        bitrate: el.overlayCam1Bw,
+        rtt: el.overlayCam1Rtt
+      },
+      cam2: {
+        codec: el.overlayCam2Codec,
+        source: el.overlayCam2Src,
+        resolution: el.overlayCam2Res,
+        bitrate: el.overlayCam2Bw,
+        rtt: el.overlayCam2Rtt
+      },
+      liveu3: {
+        codec: el.overlayLiveu3Codec,
+        source: el.overlayLiveu3Src,
+        resolution: el.overlayLiveu3Res,
+        bitrate: el.overlayLiveu3Bw,
+        rtt: el.overlayLiveu3Rtt
+      },
+      liveu4: {
+        codec: el.overlayLiveu4Codec,
+        source: el.overlayLiveu4Src,
+        resolution: el.overlayLiveu4Res,
+        bitrate: el.overlayLiveu4Bw,
+        rtt: el.overlayLiveu4Rtt
+      }
+    };
 
-    // Cam1 overlay adapts to assigned source
-    el.overlayCam1Codec.textContent = cam1Assignment === 'webcam' ? 'Browser Cam' : cam1Assignment === 'localVideo' ? 'Local File' : 'SIMULATED';
-    el.overlayCam1Src.textContent = cam1Assignment === 'webcam'
-      ? (state.webcamReady ? 'Browser Cam' : 'No Input')
-      : cam1Assignment === 'localVideo'
-        ? (state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File')
-        : 'Simulated Input';
-    el.overlayCam1Res.textContent = cam1Assignment === 'webcam'
-      ? (state.webcamReady ? getVideoResolution(el.cam1Video) : 'N/A')
-      : cam1Assignment === 'localVideo'
-        ? (state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A')
-        : 'N/A';
-
-    el.overlayCam2Codec.textContent = cam2Assignment === 'localVideo' ? 'Local File' : cam2Assignment === 'webcam' ? 'Browser Cam' : 'SIMULATED';
-    el.overlayCam2Src.textContent = cam2Assignment === 'localVideo'
-      ? (state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File')
-      : cam2Assignment === 'webcam'
-        ? (state.webcamReady ? 'Browser Cam' : 'No Input')
-        : 'Simulated Input';
-    el.overlayCam2Res.textContent = cam2Assignment === 'localVideo'
-      ? (state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A')
-      : cam2Assignment === 'webcam'
-        ? (state.webcamReady ? getVideoResolution(el.cam1Video) : 'N/A')
-        : 'N/A';
-
-    el.overlayCam1Bw.textContent = `${(4.8 + Math.random() * 1.2).toFixed(1)} Mbps`;
-    el.overlayCam2Bw.textContent = `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps`;
-    el.overlayCam1Rtt.textContent = `${state.rttMs}ms`;
-    el.overlayCam2Rtt.textContent = `${state.rttMs}ms`;
+    TILE_FEEDS.forEach(feed => {
+      const metadata = getFeedMetadata(feed);
+      const fields = overlayFields[feed];
+      if (!fields) return;
+      fields.codec.textContent = metadata.codec;
+      fields.source.textContent = metadata.source;
+      fields.resolution.textContent = metadata.resolution;
+      fields.bitrate.textContent = metadata.bitrate;
+      fields.rtt.textContent = metadata.rtt;
+    });
 
     el.badgeStateCam1.textContent = getFeedStatus('cam1');
     el.badgeStateCam2.textContent = getFeedStatus('cam2');
