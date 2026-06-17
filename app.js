@@ -108,6 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preview / Program state
     previewFeed: null,
     programSourceOverride: null,
+    graphicsPreview: null,
+    activeGraphics: null,
+    tickerOn: false,
+    bugOn: false,
 
     // LiveU Video Source State
     webcamStream: null,
@@ -271,6 +275,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnFadeBlack: document.getElementById('btn-fade-black'),
     btnClearProgram: document.getElementById('btn-clear-program'),
     btnEmergencyBackup: document.getElementById('btn-emergency-backup'),
+    btnPreviewLowerThird: document.getElementById('btn-preview-lower-third'),
+    btnTakeGraphics: document.getElementById('btn-take-graphics'),
+    btnToggleTicker: document.getElementById('btn-toggle-ticker'),
+    btnToggleBug: document.getElementById('btn-toggle-bug'),
+    btnClearGraphics: document.getElementById('btn-clear-graphics'),
+    cgEngineLayer: document.getElementById('cg-engine-layer'),
     badgeStateCam1: document.getElementById('badge-state-cam1'),
     badgeStateCam2: document.getElementById('badge-state-cam2'),
     badgeStateLiveu3: document.getElementById('badge-state-liveu3'),
@@ -465,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function logMatchesTimelineFilter(log, filter) {
     if (filter === 'all') return true;
     if (filter === 'alarm') return log.severity === 'alarm';
-    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP'].includes(log.tag);
+    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG'].includes(log.tag);
     if (filter === 'cloud') return ['SRT', 'SWT', 'TRANS', 'CDN', 'SRC'].includes(log.tag);
     if (filter === 'ai') return log.tag === 'AI';
     if (filter === 'scte') return log.tag === 'SCTE' || log.tag === 'PLYT';
@@ -553,8 +563,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (action === 'graphics') {
-      setPreview('vod');
-      addLog('info', 'MIX', 'Graphics cue armed from rundown.');
+      if (!state.graphicsPreview) previewGraphic('lowerThird');
+      takeGraphic();
+      addLog('info', 'CG', 'Rundown keyed lower-third graphics over Program.');
+      return;
+    }
+    if (action === 'preview-graphic') {
+      previewGraphic('lowerThird');
+      addLog('info', 'CG', 'Rundown previewed lower-third graphics.');
       return;
     }
     if (action === 'scte') {
@@ -1160,6 +1176,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.btnInjectScte) el.btnInjectScte.disabled = false;
     if (el.btnCancelScte) el.btnCancelScte.disabled = true;
     el.pgmActiveSource.textContent = 'SOURCE: NONE';
+    if (state.activeGraphics || state.tickerOn || state.bugOn) {
+      clearGraphics('Graphics cleared with Program Off Air.');
+    }
     addLog(previousSource ? 'info' : 'warning', 'MIX', message);
     updateOrchestratorRouting();
     updateBadges();
@@ -1255,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'localVideo') return getLocalVideo(feed)?.ready ? 'PLAYING' : 'OFFLINE';
     if (assignment === 'custom') return state.customSources[feed]?.ready ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'ndi') return getSourceState(state.tileSourceIds[feed]);
-    if (assignment === 'vod') return 'PLAYING';
+    if (assignment === 'vod') return state.activeGraphics || state.tickerOn || state.bugOn ? 'KEYING' : 'READY';
     return 'SIMULATED';
   }
 
@@ -1265,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'localVideo') return getLocalVideo(feed)?.fileName || 'Local File';
     if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : 'Custom Source';
     if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.label || 'NDI Bridge';
-    if (feed === 'vod') return 'Built-in Graphics';
+    if (feed === 'vod') return 'CG Key/Fill Engine';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
     return 'SIMULATED';
   }
@@ -1339,6 +1358,16 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
+    if (assignment === 'vod') {
+      return {
+        codec: 'CG KEY/FILL',
+        source: state.activeGraphics || state.tickerOn || state.bugOn ? 'Graphics On Air' : 'Graphics Standby',
+        resolution: '1080p60 Alpha',
+        bitrate: '0.0 Mbps',
+        rtt: 'LOCAL'
+      };
+    }
+
     if (LIVEU_SOURCE_IDS.includes(sourceId)) {
       const details = SOURCE_DETAILS[sourceId];
       const sourceState = getSourceState(sourceId);
@@ -1374,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return state.customSources[feed]?.type === 'youtube' ? 5.0 : 4.2;
     }
     if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.bitrate || 6.5;
-    if (assignment === 'vod') return 3.8;
+    if (assignment === 'vod') return 0;
     return parseMbps(getFeedMetadata(feed).bitrate);
   }
 
@@ -1449,7 +1478,7 @@ document.addEventListener('DOMContentLoaded', () => {
       recommendations.push({ level: 'alarm', text: `Program source ${getTileName(state.activeSource)} is unavailable. Route backup or take OFF AIR.` });
     }
     if (state.primaryFailed || getSourceState('liveu1') === 'OFFLINE' || getSourceState('liveu1') === 'ALARM') {
-      recommendations.push({ level: 'warning', text: 'Recommend Emergency Backup: route LiveU Feed 2 or Playout / Graphics while primary recovers.' });
+      recommendations.push({ level: 'warning', text: 'Recommend Emergency Backup: route LiveU Feed 2 or another healthy contribution source while primary recovers.' });
     }
     if (state.rttMs >= 160) {
       recommendations.push({ level: 'warning', text: `High RTT at ${state.rttMs}ms. Increase SRT latency buffer and avoid route changes during packet recovery.` });
@@ -1942,7 +1971,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getTileName(feed) {
-    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'PLAYOUT / GRAPHICS' : feed.toUpperCase();
+    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'CG / GRAPHICS ENGINE' : feed.toUpperCase();
   }
 
   function getProgramRouteLabel(feed) {
@@ -1968,7 +1997,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateBadges() {
-    const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'];
+    const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4'];
     tileFeeds.forEach(feed => {
       const previewBadge = document.getElementById(`preview-badge-${feed}`);
       const programBadge = document.getElementById(`program-badge-${feed}`);
@@ -2008,12 +2037,91 @@ document.addEventListener('DOMContentLoaded', () => {
     if (programLine) {
       programLine.textContent = state.activeSource ? `PROGRAM ON AIR: ${getTileName(state.activeSource)}` : 'PROGRAM ON AIR: —';
     }
+    const graphicsLine = document.getElementById('pgm-status-graphics');
+    if (graphicsLine) {
+      const layers = [];
+      if (state.activeGraphics) layers.push(graphicsLabel(state.activeGraphics));
+      if (state.tickerOn) layers.push('Ticker');
+      if (state.bugOn) layers.push('Bug');
+      graphicsLine.textContent = layers.length ? `GRAPHICS: ${layers.join(' + ')} ON AIR` : state.graphicsPreview ? `GRAPHICS PREVIEW: ${graphicsLabel(state.graphicsPreview)}` : 'GRAPHICS: CLEAR';
+    }
     if (el.btnClearProgram) {
       el.btnClearProgram.disabled = !state.activeSource;
       el.btnClearProgram.style.opacity = state.activeSource ? '1.0' : '0.5';
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();
+  }
+
+  function graphicsLabel(type) {
+    const labels = {
+      lowerThird: 'Lower Third',
+      ticker: 'Ticker',
+      bug: 'Score Bug'
+    };
+    return labels[type] || 'Graphic';
+  }
+
+  function updateGraphicsUI() {
+    const previewBadge = document.getElementById('preview-badge-vod');
+    const programBadge = document.getElementById('program-badge-vod');
+    const card = document.getElementById('screen-vod');
+    const badge = document.getElementById('badge-state-vod');
+    const layers = [];
+    if (state.activeGraphics) layers.push(graphicsLabel(state.activeGraphics));
+    if (state.tickerOn) layers.push('Ticker');
+    if (state.bugOn) layers.push('Bug');
+
+    if (previewBadge) previewBadge.style.display = state.graphicsPreview ? 'block' : 'none';
+    if (programBadge) programBadge.style.display = layers.length ? 'block' : 'none';
+    if (card) {
+      card.classList.toggle('preview-active', !!state.graphicsPreview);
+      card.classList.toggle('program-active', layers.length > 0);
+    }
+    if (badge) {
+      badge.textContent = layers.length ? 'CG ON AIR' : state.graphicsPreview ? 'CG PREVIEW' : 'CG STBY';
+      badge.classList.toggle('text-red', layers.length > 0);
+      badge.classList.toggle('text-pink', layers.length === 0);
+    }
+    if (el.cgEngineLayer) {
+      el.cgEngineLayer.textContent = layers.length ? layers.join(' + ').toUpperCase() : state.graphicsPreview ? `${graphicsLabel(state.graphicsPreview).toUpperCase()} PVW` : 'STANDBY';
+    }
+    el.btnTakeGraphics?.classList.toggle('btn-active-graphics', !!state.graphicsPreview);
+    el.btnToggleTicker?.classList.toggle('btn-active-graphics', state.tickerOn);
+    el.btnToggleBug?.classList.toggle('btn-active-graphics', state.bugOn);
+    updatePGMFooter();
+  }
+
+  function previewGraphic(type = 'lowerThird') {
+    state.graphicsPreview = type;
+    updateGraphicsUI();
+    addLog('info', 'CG', `${graphicsLabel(type)} loaded to CG preview.`);
+  }
+
+  function takeGraphic() {
+    const graphic = state.graphicsPreview || 'lowerThird';
+    state.activeGraphics = graphic;
+    state.graphicsPreview = null;
+    updateGraphicsUI();
+    addLog('info', 'CG', `${graphicsLabel(graphic)} keyed over Program.`);
+  }
+
+  function clearGraphics(message = 'All graphics cleared from Program.') {
+    const hadGraphics = !!state.activeGraphics || state.tickerOn || state.bugOn || !!state.graphicsPreview;
+    state.activeGraphics = null;
+    state.graphicsPreview = null;
+    state.tickerOn = false;
+    state.bugOn = false;
+    updateGraphicsUI();
+    if (hadGraphics) addLog('info', 'CG', message);
+  }
+
+  function toggleGraphicsLayer(layer) {
+    if (layer === 'ticker') state.tickerOn = !state.tickerOn;
+    if (layer === 'bug') state.bugOn = !state.bugOn;
+    updateGraphicsUI();
+    const isOn = layer === 'ticker' ? state.tickerOn : state.bugOn;
+    addLog('info', 'CG', `${graphicsLabel(layer)} ${isOn ? 'keyed over Program' : 'cleared from Program'}.`);
   }
 
   function syncProgramEmbed() {
@@ -2069,6 +2177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLiveu2Source = source === 'liveu2';
     const isLiveu3 = source === 'liveu3';
     const isLiveu4 = source === 'liveu4';
+    const hasGraphicsLayer = !!state.activeGraphics || state.tickerOn || state.bugOn;
     const isPlayout = source === 'vod' || source === 'ad';
     const hasProgram = !!source;
     const routeColor = isCustomProgram ? '#00d2ff' : isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
@@ -2081,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setSvgLinkState(el.pathCam2, sourceLinkState('liveu2', isLiveu2 || isLiveu2Source, 'active-blue'), '#00d2ff');
     setSvgLinkState(el.pathLiveu3, sourceLinkState('liveu3', isLiveu3), '#f59e0b');
     setSvgLinkState(el.pathLiveu4, sourceLinkState('liveu4', isLiveu4), '#a78bfa');
-    setSvgLinkState(el.pathVod, isPlayout ? 'active' : 'standby', '#ec4899');
+    setSvgLinkState(el.pathVod, isPlayout || hasGraphicsLayer ? 'active' : 'standby', '#ec4899');
     setSvgLinkState(el.pathSwitchToTrans, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
     setSvgLinkState(el.pathTransToCdn, hasProgram ? (isLiveu2 ? 'active-blue' : 'active') : 'standby', routeColor);
 
@@ -2089,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setSvgDotState(el.dotCam2, (isLiveu2 || isLiveu2Source) && sourceHasSignal('liveu2'), '#00d2ff');
     setSvgDotState(el.dotLiveu3, isLiveu3 && sourceHasSignal('liveu3'), '#f59e0b');
     setSvgDotState(el.dotLiveu4, isLiveu4 && sourceHasSignal('liveu4'), '#a78bfa');
-    setSvgDotState(el.dotVod, isPlayout, '#ec4899');
+    setSvgDotState(el.dotVod, isPlayout || hasGraphicsLayer, '#ec4899');
     setSvgDotState(el.dotSwitch, hasProgram, routeColor);
     setSvgDotState(el.dotTrans, hasProgram, routeColor);
 
@@ -2178,7 +2287,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function routeEmergencyBackup() {
-    const backupFeed = feedHasActiveSignal('cam2') ? 'cam2' : 'vod';
+    const backupFeed = ['cam2', 'liveu3', 'liveu4', 'cam1'].find(feed => feedHasActiveSignal(feed));
+    if (!backupFeed) {
+      clearProgramOut('Emergency backup failed: no healthy contribution source available.');
+      addLog('alarm', 'MIX', 'Emergency backup unavailable. No healthy contribution source found.');
+      return;
+    }
     setPreview(backupFeed);
     routePreviewToProgram('EMERGENCY BACKUP');
     addLog('alarm', 'MIX', `Emergency backup routed: ${getProgramRouteLabel(backupFeed)}.`);
@@ -2322,15 +2436,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btn-solo-vod')?.addEventListener('click', () => setPreview('vod'));
+  el.btnPreviewLowerThird?.addEventListener('click', () => previewGraphic('lowerThird'));
+  el.btnTakeGraphics?.addEventListener('click', takeGraphic);
+  el.btnToggleTicker?.addEventListener('click', () => toggleGraphicsLayer('ticker'));
+  el.btnToggleBug?.addEventListener('click', () => toggleGraphicsLayer('bug'));
+  el.btnClearGraphics?.addEventListener('click', () => clearGraphics());
   document.getElementById('screen-vod')?.addEventListener('click', () => inspectFeed('vod'));
-  document.getElementById('btn-mute-vod')?.addEventListener('click', () => {
-    const cur = !!state.mutedFeeds.vod;
-    state.mutedFeeds.vod = !cur;
-    document.getElementById('btn-mute-vod')?.classList.toggle('btn-active-mute', !cur);
-    updateSourceInspector();
-    addLog('info', 'AUDIO', `PLAYOUT / GRAPHICS ${!cur ? 'muted' : 'unmuted'}.`);
-  });
 
   el.sourceUrlAttach?.addEventListener('click', submitSourceUrlEditor);
   el.sourceUrlClose?.addEventListener('click', closeSourceUrlEditor);
@@ -2387,7 +2498,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addLog('info', 'SRT', 'Secondary contribution SRT socket listening on port 9002.');
   addLog('info', 'SRT', 'Camera-01 stream connected (Bitrate: 6.2 Mbps, Codec: HEVC/H.265 Main10 Profile).');
   addLog('info', 'SRT', 'Camera-02 stream connected (Bitrate: 5.8 Mbps, Codec: AVC/H.264 High Profile).');
-  addLog('info', 'PLYT', 'Playout Engine active. Scheduling pool loaded from AWS S3 VOD asset repository.');
+  addLog('info', 'CG', 'CG graphics engine active. Key/fill overlay layers ready.');
   addLog('info', 'TRANS', 'AWS MediaLive active-active transcoders initialized (Output: AVC 1080p60 8.0Mbps HLS/DASH).');
   addLog('info', 'CDN', 'Edge CDN cache validation complete. Latency buffer optimal at edge locations.');
 
@@ -2560,62 +2671,100 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function drawStreamVOD(ctx, w, h, frames) {
-    // Playout/VOD: Classic SMPTE-style broadcast test bars with scrolling banner
-    ctx.fillStyle = '#000000';
+    // CG engine preview: key/fill style operator monitor.
+    ctx.fillStyle = '#050814';
     ctx.fillRect(0, 0, w, h);
-
-    // SMPTE Color Bars layout (7 columns)
-    const colors = [
-      '#ffffff', // Gray/White
-      '#c0c000', // Yellow
-      '#00c0c0', // Cyan
-      '#00c000', // Green
-      '#c000c0', // Magenta
-      '#c00000', // Red
-      '#0000c0'  // Blue
-    ];
-    
-    const colW = w / 7;
-    
-    // Top 75% height colors bars
-    const topH = h * 0.7;
-    for (let i = 0; i < 7; i++) {
-      ctx.fillStyle = colors[i];
-      ctx.fillRect(i * colW, 0, colW + 1, topH);
+    const grid = 24;
+    ctx.strokeStyle = 'rgba(236, 72, 153, 0.12)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += grid) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y < h; y += grid) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
 
-    // Lower 15% height reverse colors or patterns
-    const midH = h * 0.85;
-    const revColors = [
-      '#0000c0', '#131313', '#c000c0', '#131313', '#00c0c0', '#131313', '#ffffff'
-    ];
-    for (let i = 0; i < 7; i++) {
-      ctx.fillStyle = revColors[i];
-      ctx.fillRect(i * colW, topH, colW + 1, midH - topH);
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.16)';
+    ctx.fillRect(0, 0, w, 24);
+    ctx.fillStyle = '#fbcfe8';
+    ctx.font = 'bold 10px Outfit';
+    ctx.fillText('CG ENGINE / KEY + FILL OUTPUT', 14, 16);
+
+    drawGraphicsOverlay(ctx, w, h, {
+      lowerThird: state.graphicsPreview === 'lowerThird' || state.activeGraphics === 'lowerThird',
+      ticker: state.tickerOn,
+      bug: state.bugOn,
+      preview: state.graphicsPreview
+    }, frames);
+
+    if (!state.graphicsPreview && !state.activeGraphics && !state.tickerOn && !state.bugOn) {
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.78)';
+      ctx.font = 'bold 13px Outfit';
+      ctx.textAlign = 'center';
+      ctx.fillText('NO GRAPHICS KEYED', w / 2, h / 2);
+      ctx.font = '9px Fira Code';
+      ctx.fillText('PREVIEW CG OR TAKE A RUNDOWN GRAPHIC', w / 2, h / 2 + 18);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  function drawGraphicsOverlay(ctx, w, h, layers, frames) {
+    if (layers.bug) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(127, 29, 29, 0.92)';
+      ctx.fillRect(w - 92, 14, 76, 24);
+      ctx.strokeStyle = '#fecaca';
+      ctx.strokeRect(w - 90, 16, 72, 20);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px Outfit';
+      ctx.textAlign = 'center';
+      ctx.fillText('LIVE', w - 54, 30);
+      ctx.restore();
     }
 
-    // Bottom 15% custom gray gradient and solid black blocks
-    ctx.fillStyle = '#131313';
-    ctx.fillRect(0, midH, w, h - midH);
-    
-    // Overlay scrolling ticker in the bottom block
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(0, midH + 2, w, (h - midH) - 4);
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 9px Inter';
-    
-    const tickerText = "ANTIGRAVITY PLYOUT CORE ENGINE OK • ACTIVE-ACTIVE TRANSIT FLOW • HLS CACHE SYNCED • INJECT SCTE-35 SPLICE TO TEST ADS LOOP • ";
-    const textWidth = ctx.measureText(tickerText).width;
-    const scrollX = (frames * 1.2) % textWidth;
-    
-    ctx.fillText(tickerText, -scrollX, midH + 12);
-    ctx.fillText(tickerText, -scrollX + textWidth, midH + 12);
+    if (layers.lowerThird) {
+      const y = h - 62;
+      ctx.save();
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+      ctx.fillRect(18, y, Math.min(w - 36, 340), 44);
+      ctx.fillStyle = 'rgba(0, 210, 255, 0.88)';
+      ctx.fillRect(18, y, 5, 44);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Outfit';
+      ctx.fillText('FIELD REPORTER', 32, y + 18);
+      ctx.fillStyle = '#bae6fd';
+      ctx.font = '10px Fira Code';
+      ctx.fillText('Live from Stadium Touchline', 32, y + 34);
+      if (layers.preview) {
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+        ctx.fillRect(250, y + 8, 70, 18);
+        ctx.fillStyle = '#111827';
+        ctx.font = 'bold 8px Outfit';
+        ctx.fillText('PREVIEW', 262, y + 20);
+      }
+      ctx.restore();
+    }
 
-    // Overlay text labels
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.font = 'bold 9px Outfit';
-    ctx.fillText("MCR_VOD_ASSET_1092", 15, 25);
+    if (layers.ticker) {
+      const tickerY = h - 20;
+      const tickerText = 'MATCH CONTROL • PRIMARY CONTRIBUTION STABLE • CLOUD MCR DEMO • LOWER THIRD READY • ';
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.fillRect(0, tickerY - 2, w, 22);
+      ctx.fillStyle = '#fbcfe8';
+      ctx.font = 'bold 9px Fira Code';
+      const textWidth = ctx.measureText(tickerText).width;
+      const scrollX = (frames * 1.4) % textWidth;
+      ctx.fillText(tickerText, -scrollX, tickerY + 12);
+      ctx.fillText(tickerText, -scrollX + textWidth, tickerY + 12);
+      ctx.restore();
+    }
   }
 
   function drawStreamAdBreak(ctx, w, h, frames) {
@@ -2744,8 +2893,11 @@ document.addEventListener('DOMContentLoaded', () => {
     generateVUValues('liveu3', feedHasActiveSignal('liveu3'), state.mutedFeeds.liveu3);
     generateVUValues('liveu4', feedHasActiveSignal('liveu4'), state.mutedFeeds.liveu4);
 
-    // VOD status
-    generateVUValues('vod', true, state.mutedFeeds.vod);
+    // CG graphics are key/fill overlays and do not contribute program audio.
+    vuState.vod.l = 0;
+    vuState.vod.r = 0;
+    vuState.vod.lp = Math.max(0, vuState.vod.lp - 0.008);
+    vuState.vod.rp = Math.max(0, vuState.vod.rp - 0.008);
     
     // PGM status follows the active playout source
     let pgmActive = !!state.activeSource && feedHasActiveSignal(state.activeSource);
@@ -2866,6 +3018,14 @@ document.addEventListener('DOMContentLoaded', () => {
       pgmCtx.textAlign = 'center';
       pgmCtx.fillText('NO PROGRAM SOURCE', pgmW / 2, pgmH / 2);
       pgmCtx.textAlign = 'left';
+    }
+
+    if (state.activeGraphics || state.tickerOn || state.bugOn) {
+      drawGraphicsOverlay(pgmCtx, pgmW, pgmH, {
+        lowerThird: state.activeGraphics === 'lowerThird',
+        ticker: state.tickerOn,
+        bug: state.bugOn
+      }, framesCount);
     }
     syncProgramEmbed();
 

@@ -332,6 +332,30 @@ body {
   border-color: rgba(0, 210, 255, 0.12);
 }
 
+.screen-card.graphics-engine-card {
+  border-color: rgba(236, 72, 153, 0.24);
+}
+
+.screen-card.graphics-engine-card .screen-header {
+  background: rgba(83, 20, 64, 0.55);
+}
+
+.screen-card.graphics-engine-card .screen-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.screen-card.graphics-engine-card .active-badge {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.screen-card.graphics-engine-card .btn-screen-control {
+  min-width: 0;
+  width: 100%;
+}
+
 .screen-card.pgm-stream {
   grid-column: span 2;
   grid-row: span 2;
@@ -788,6 +812,13 @@ body {
   border-color: var(--neon-red);
   color: #ffffff;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.btn-screen-control.btn-active-graphics {
+  background: rgba(236, 72, 153, 0.9);
+  border-color: rgba(251, 207, 232, 0.8);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.45);
 }
 
 .active-badge {

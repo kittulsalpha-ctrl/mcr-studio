@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=cloud-mcr-demo-1" />
+  <link rel="stylesheet" href="styles.css?v=cg-overlay-1" />
 </head>
 
 <body>
@@ -365,11 +365,11 @@
             <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 5: Playout Graphics / Test Source -->
-          <div class="screen-card active-stream" id="screen-vod">
+          <!-- Screen 5: CG / Graphics Engine -->
+          <div class="screen-card active-stream graphics-engine-card" id="screen-vod">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-pink"></span>PLAYOUT / GRAPHICS
+                <span class="channel-indicator bg-pink"></span>CG / GRAPHICS ENGINE
               </span>
               <span class="screen-timecode font-fira" id="tc-vod">00:00:00:00</span>
             </div>
@@ -389,19 +389,22 @@
               </div>
 
               <div class="stream-stats-overlay">
-                <div class="stat-row"><span>codec:</span><span class="text-blue">PRORES</span></div>
+                <div class="stat-row"><span>engine:</span><span class="text-blue">CG KEY/FILL</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
-                <div class="stat-row"><span>source:</span><span class="text-pink">BUILT-IN TEST</span></div>
+                <div class="stat-row"><span>layer:</span><span class="text-pink" id="cg-engine-layer">STANDBY</span></div>
               </div>
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod" title="Select the built-in graphics/test source as Preview before sending it to Program.">PREVIEW</button>
-              <button class="btn-screen-control btn-mute" data-feed="vod" id="btn-mute-vod" title="Mute or unmute Playout audio.">MUTE</button>
-              <div class="active-badge text-pink font-fira" id="badge-state-vod">TEST SRC</div>
+              <button class="btn-screen-control btn-solo" id="btn-preview-lower-third" title="Preview a lower-third graphic in the CG engine.">PREVIEW CG</button>
+              <button class="btn-screen-control" id="btn-take-graphics" title="Key the previewed graphic over Program Out.">TAKE CG</button>
+              <button class="btn-screen-control" id="btn-toggle-ticker" title="Toggle the ticker graphic over Program Out.">TICKER</button>
+              <button class="btn-screen-control" id="btn-toggle-bug" title="Toggle the live/score bug over Program Out.">BUG</button>
+              <button class="btn-screen-control btn-eject" id="btn-clear-graphics" title="Clear all graphics from Program Out.">CLEAR CG</button>
+              <div class="active-badge text-pink font-fira" id="badge-state-vod">CG STBY</div>
             </div>
-            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">PREVIEW</div>
-            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">ON AIR</div>
+            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">CG PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">CG ON AIR</div>
           </div>
 
           <!-- Screen 6: Program Out -->
@@ -455,6 +458,7 @@
               <div class="pgm-footer-status">
                 <div class="pgm-status-line pgm-status-current font-fira" id="pgm-status-current">CURRENT / PROGRAM: —</div>
                 <div class="pgm-status-line pgm-status-next font-fira" id="pgm-status-next">NEXT / PREVIEW: —</div>
+                <div class="pgm-status-line font-fira" id="pgm-status-graphics">GRAPHICS: CLEAR</div>
                 <div class="pgm-status-line font-fira" id="pgm-status-preview">PREVIEW READY: —</div>
                 <div class="pgm-status-line font-fira" id="pgm-status-program">PROGRAM ON AIR: —</div>
               </div>
@@ -821,9 +825,9 @@
             <span class="badge-pink font-fira">CUE CONTROL</span>
           </div>
           <div class="panel-body rundown-list" id="rundown-list">
-            <div class="rundown-cue" data-cue-source="vod"><span>PRE-SHOW</span><strong>Graphics / test slate</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+            <div class="rundown-cue" data-cue-source="vod"><span>PRE-SHOW</span><strong>Future full-frame slate/playout</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
             <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-            <div class="rundown-cue" data-cue-source="vod"><span>GRAPHICS</span><strong>Lower-third / slate source</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="graphics">TRIGGER</button></div>
+            <div class="rundown-cue" data-cue-source="graphics"><span>GRAPHICS</span><strong>Key lower-third over Program</strong><button class="btn-filter" data-cue-action="preview-graphic">PREVIEW CG</button><button class="btn-filter" data-cue-action="graphics">TAKE CG</button></div>
             <div class="rundown-cue" data-cue-source="ad"><span>BREAK</span><strong>SCTE-35 ad marker</strong><button class="btn-filter" data-cue-action="scte">SCTE</button></div>
             <div class="rundown-cue" data-cue-source="cam2"><span>BACKUP / FILLER</span><strong>Backup contribution path</strong><button class="btn-filter" data-cue-action="backup">BACKUP</button></div>
             <div class="rundown-cue" data-cue-source="vod"><span>END SLATE</span><strong>Built-in graphics source</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
@@ -887,6 +891,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=cloud-mcr-demo-1"></script>
+  <script src="app.js?v=cg-overlay-1"></script>
 </body>
 </html>

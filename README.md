@@ -2,13 +2,19 @@
 
 Browser-based Cloud MCR/PCR prototype for monitoring, routing, preview/program switching, signal health, cloud distribution, and AI-assisted incident response.
 
-This project is a working front-end demo for a modern hybrid broadcast operations cockpit. It combines a multiviewer, preview/program switching, source routing, graphics/playout cues, signal-path visibility, cloud distribution awareness, alarms/QC, incident logs, and an operational AI assistant.
+This project is a working front-end demo for a modern hybrid broadcast operations cockpit. It combines a multiviewer, preview/program switching, source routing, CG graphics overlays, signal-path visibility, cloud distribution awareness, alarms/QC, incident logs, and an operational AI assistant.
 
 ## Current Demo Scope
 
 - `OPERATE`: operator-facing view with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Signal Path, Source Inspector, and AI Ops Assistant.
 - `ENGINEERING`: simulated cloud broadcast health dashboard for contribution inputs, NDI/SRT/WebRTC gateway, AWS MediaConnect, AWS MediaLive, CDN Edge, primary/backup path, RTT, bitrate, packet loss, jitter, region, encoder, and stream health.
 - `EVENT / AUTOMATION`: simple rundown automation for pre-show, main live feed, graphics, break/SCTE marker, backup/filler, and end slate cues, plus the incident timeline.
+
+## Graphics vs Playout
+
+The `CG / GRAPHICS ENGINE` tile represents a key/fill graphics system similar to a Vizrt-style CG engine. It does not replace the Program video route. Instead, operators can preview and take graphics layers such as lower-thirds, ticker, and bug overlays, which are keyed over the active Program source.
+
+Full-frame playout is a separate future concept. VOD, ad loops, filler, end slates, and emergency loops should eventually live in a dedicated playout/server module and route to Program like a normal video source.
 
 ## Simulated vs Real
 
@@ -41,6 +47,7 @@ See `NDI_BRIDGE_API.md` for the placeholder bridge contract.
 
 ## Roadmap
 
+- Dedicated playout/server module for full-frame VOD, filler, ad loops, and end slates.
 - Real NDI/SRT/WebRTC gateway bridge.
 - FFmpeg or GStreamer backend for media ingest, transcode, preview generation, and QC probes.
 - Browser audio meters, silence detection, black/freeze detection, and stream stats.
