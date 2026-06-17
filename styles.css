@@ -1114,6 +1114,161 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.cloud-topology-body {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.topology-node {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.64);
+  padding: 8px;
+}
+
+.topology-node span,
+.audio-channel-head span,
+.audio-pgm-strip span,
+.afv-toggle {
+  display: block;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.topology-node strong {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.topology-node small,
+.topology-meta {
+  display: grid;
+  gap: 2px;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 8px;
+}
+
+.topology-node.topology-active {
+  border-color: rgba(16, 185, 129, 0.42);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.12);
+}
+
+.topology-node.topology-alarm {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.18);
+}
+
+.topology-arrow {
+  display: none;
+}
+
+.mixer-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.afv-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.audio-mixer-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.22fr);
+  gap: 10px;
+}
+
+.audio-mixer-channels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.audio-channel,
+.audio-pgm-strip {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.62);
+  padding: 7px;
+}
+
+.audio-channel.audio-channel-pgm {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.18);
+}
+
+.audio-channel.audio-channel-muted {
+  opacity: 0.58;
+}
+
+.audio-channel.audio-channel-solo {
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.audio-channel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+}
+
+.audio-route-state,
+.audio-pgm-strip strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.audio-channel-meter,
+.audio-pgm-meter {
+  height: 42px;
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  margin: 7px 0;
+  padding: 4px;
+  background: #03060c;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.audio-channel-meter div,
+.audio-pgm-meter div {
+  width: 50%;
+  min-height: 2px;
+  background: linear-gradient(to top, var(--neon-green), var(--neon-amber), var(--neon-red));
+  border-radius: 3px 3px 0 0;
+}
+
+.audio-fader {
+  width: 100%;
+  accent-color: var(--neon-blue);
+}
+
+.audio-channel-controls {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.audio-pgm-strip {
+  display: flex;
+  flex-direction: column;
+}
+
 .engineering-card small {
   display: block;
   margin-top: 3px;
@@ -1872,6 +2027,11 @@ body {
   .console-logs-wrapper {
     height: 180px;
   }
+
+  .cloud-topology-body,
+  .audio-mixer-channels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -1886,7 +2046,13 @@ body {
   .signal-flow-strip,
   .engineering-grid,
   .route-summary-strip,
-  .rundown-cue {
+  .rundown-cue,
+  .audio-mixer-body {
+    grid-template-columns: 1fr;
+  }
+
+  .cloud-topology-body,
+  .audio-mixer-channels {
     grid-template-columns: 1fr;
   }
 

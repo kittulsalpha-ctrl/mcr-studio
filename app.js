@@ -112,6 +112,32 @@ document.addEventListener('DOMContentLoaded', () => {
     activeGraphics: null,
     tickerOn: false,
     bugOn: false,
+    systemModel: {
+      chain: ['sources', 'ingest', 'switcher', 'audio', 'cg', 'replay', 'playout', 'encoder', 'distribution'],
+      services: {
+        sources: { label: 'Contribution Sources', role: 'LiveU / NDI / SRT / WebRTC', instance: 'edge/source-net', status: 'ONLINE', load: 31, latency: 25 },
+        ingest: { label: 'Cloud Ingest Gateway', role: 'Receiver / demux / preview proxy', instance: 'ec2-ingest-a', status: 'ONLINE', load: 42, latency: 38 },
+        switcher: { label: 'Video Switcher', role: 'Preview/Program router', instance: 'ec2-switcher-gpu-a', status: 'ONLINE', load: 48, latency: 46 },
+        audio: { label: 'Audio Mixer', role: 'PGM bus / faders / AFV', instance: 'ec2-audio-a', status: 'ONLINE', load: 26, latency: 18 },
+        cg: { label: 'CG Keyer', role: 'Lower-third / ticker / bug', instance: 'ec2-cg-a', status: 'STANDBY', load: 18, latency: 12 },
+        replay: { label: 'Replay Server', role: 'ISO record / clip playback', instance: 'ec2-replay-a', status: 'STANDBY', load: 22, latency: 30 },
+        playout: { label: 'Playout Server', role: 'Slate / filler / ad loop', instance: 'ec2-playout-a', status: 'STANDBY', load: 16, latency: 24 },
+        encoder: { label: 'Program Encoder', role: 'PGM A/V encode', instance: 'ec2-encoder-a', status: 'ONLINE', load: 54, latency: 72 },
+        distribution: { label: 'MediaLive / CDN', role: 'Package / origin / edge', instance: 'aws-us-east-1', status: 'ONLINE', load: 37, latency: 110 }
+      }
+    },
+    audioMixer: {
+      audioFollowVideo: true,
+      programBus: null,
+      channels: {
+        cam1: { label: 'MV1 / LiveU 1', fader: 0.82, mute: false, solo: false, pfl: false },
+        cam2: { label: 'MV2 / Backup', fader: 0.76, mute: false, solo: false, pfl: false },
+        liveu3: { label: 'MV3 / LiveU 3', fader: 0.74, mute: false, solo: false, pfl: false },
+        liveu4: { label: 'MV4 / LiveU 4', fader: 0.72, mute: false, solo: false, pfl: false },
+        replay: { label: 'Replay EC2', fader: 0.7, mute: true, solo: false, pfl: false },
+        playout: { label: 'Playout EC2', fader: 0.68, mute: true, solo: false, pfl: false }
+      }
+    },
 
     // LiveU Video Source State
     webcamStream: null,
@@ -350,6 +376,13 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceInspectorMeta: document.getElementById('source-inspector-meta'),
     aiOpsSummary: document.getElementById('ai-ops-summary'),
     aiOpsList: document.getElementById('ai-ops-list'),
+    audioMixerChannels: document.getElementById('audio-mixer-channels'),
+    audioAfvToggle: document.getElementById('audio-afv-toggle'),
+    audioPgmBus: document.getElementById('audio-pgm-bus'),
+    audioPgmStatus: document.getElementById('audio-pgm-status'),
+    audioPgmMeterL: document.getElementById('audio-pgm-meter-l'),
+    audioPgmMeterR: document.getElementById('audio-pgm-meter-r'),
+    cloudTopologyBody: document.getElementById('cloud-topology-body'),
     engInputStatus: document.getElementById('eng-input-status'),
     engGatewayStatus: document.getElementById('eng-gateway-status'),
     engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
@@ -475,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function logMatchesTimelineFilter(log, filter) {
     if (filter === 'all') return true;
     if (filter === 'alarm') return log.severity === 'alarm';
-    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG'].includes(log.tag);
+    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO'].includes(log.tag);
     if (filter === 'cloud') return ['SRT', 'SWT', 'TRANS', 'CDN', 'SRC'].includes(log.tag);
     if (filter === 'ai') return log.tag === 'AI';
     if (filter === 'scte') return log.tag === 'SCTE' || log.tag === 'PLYT';
@@ -537,6 +570,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   el.logTagFilter?.addEventListener('change', renderLogs);
   el.logSearchInput?.addEventListener('input', renderLogs);
+
+  el.audioAfvToggle?.addEventListener('change', event => {
+    state.audioMixer.audioFollowVideo = event.target.checked;
+    addLog('info', 'AUDIO', `Audio Follow Video ${state.audioMixer.audioFollowVideo ? 'enabled' : 'disabled'}.`);
+    syncAudioFollowVideo('AFV enabled');
+    renderAudioMixer();
+    renderEngineeringDashboard();
+  });
+
+  el.audioMixerChannels?.addEventListener('input', event => {
+    const row = event.target.closest('[data-audio-feed]');
+    const feed = row?.dataset.audioFeed;
+    if (!feed || event.target.dataset.audioAction !== 'fader') return;
+    state.audioMixer.channels[feed].fader = Number(event.target.value);
+    renderAudioMixer();
+  });
+
+  el.audioMixerChannels?.addEventListener('click', event => {
+    const button = event.target.closest('[data-audio-action]');
+    const row = event.target.closest('[data-audio-feed]');
+    const feed = row?.dataset.audioFeed;
+    if (!button || !feed) return;
+    const channel = state.audioMixer.channels[feed];
+    const action = button.dataset.audioAction;
+    if (action === 'pgm') {
+      state.audioMixer.audioFollowVideo = false;
+      setProgramAudioFeed(feed, 'manual mixer');
+      addLog('info', 'AUDIO', `Manual PGM audio selected: ${channel.label}.`);
+    }
+    if (action === 'mute') {
+      channel.mute = !channel.mute;
+      addLog('info', 'AUDIO', `${channel.label} ${channel.mute ? 'muted' : 'unmuted'} in audio mixer.`);
+    }
+    if (action === 'solo') {
+      channel.solo = !channel.solo;
+      addLog('info', 'AUDIO', `${channel.label} ${channel.solo ? 'soloed' : 'solo cleared'} in audio mixer.`);
+    }
+    if (action === 'pfl') {
+      channel.pfl = !channel.pfl;
+      addLog('info', 'AUDIO', `${channel.label} ${channel.pfl ? 'PFL enabled' : 'PFL cleared'}.`);
+    }
+    renderAudioMixer();
+    renderEngineeringDashboard();
+  });
 
   function setOperatorView(view = 'operate') {
     document.querySelectorAll('.operator-view-tab').forEach(button => {
@@ -866,6 +943,8 @@ document.addEventListener('DOMContentLoaded', () => {
     state.programSourceOverride = preset.programSourceOverride || null;
     state.primaryFailed = !!preset.primaryFailed;
     state.mutedFeeds = { cam1: false, cam2: false, liveu3: false, liveu4: false, vod: false, pgm: false, ...preset.mutedFeeds };
+    state.audioMixer.audioFollowVideo = true;
+    state.audioMixer.programBus = state.activeSource && state.audioMixer.channels[state.activeSource] ? state.activeSource : null;
 
     if (el.btnFailPrimary) el.btnFailPrimary.disabled = state.primaryFailed;
     if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = !state.primaryFailed;
@@ -892,6 +971,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePGMFooter();
     updateSourceOverlays();
     updateOrchestratorRouting();
+    renderAudioMixer();
+    renderCloudTopology();
     syncProgramEmbed();
     addLog('info', 'DEMO', `${preset.label} preset loaded.`);
 
@@ -1172,6 +1253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.preAdRoute = null;
     state.activeSource = null;
     state.programSourceOverride = null;
+    setProgramAudioFeed(null, 'program off air');
     if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
     if (el.btnInjectScte) el.btnInjectScte.disabled = false;
     if (el.btnCancelScte) el.btnCancelScte.disabled = true;
@@ -1407,6 +1489,54 @@ document.addEventListener('DOMContentLoaded', () => {
     return parseMbps(getFeedMetadata(feed).bitrate);
   }
 
+  function getAudioLabel(feed) {
+    if (!feed) return 'NONE';
+    const channel = state.audioMixer.channels[feed];
+    if (channel) return channel.label;
+    if (feed === 'ad') return 'SCTE Ad Loop';
+    return getTileName(feed);
+  }
+
+  function setProgramAudioFeed(feed, reason = 'manual') {
+    const nextFeed = feed && state.audioMixer.channels[feed] ? feed : null;
+    if (state.audioMixer.programBus === nextFeed) return;
+    state.audioMixer.programBus = nextFeed;
+    renderAudioMixer();
+    addLog(nextFeed ? 'info' : 'warning', 'AUDIO', nextFeed ? `PGM audio routed to ${getAudioLabel(nextFeed)} (${reason}).` : `PGM audio cleared (${reason}).`);
+  }
+
+  function syncAudioFollowVideo(reason = 'AFV') {
+    if (!state.audioMixer.audioFollowVideo) return;
+    setProgramAudioFeed(state.activeSource, reason);
+  }
+
+  function deriveServiceStatus(serviceId) {
+    const alarms = getActiveAlarmSummary();
+    if (serviceId === 'sources') return alarms.some(a => a.includes('INPUT LOSS') || a.includes('QC ALARM')) ? 'ALARM' : 'ONLINE';
+    if (serviceId === 'ingest') return state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : 'ONLINE';
+    if (serviceId === 'switcher') return state.activeSource ? 'ROUTING' : 'IDLE';
+    if (serviceId === 'audio') return state.audioMixer.programBus ? 'PGM' : 'IDLE';
+    if (serviceId === 'cg') return state.activeGraphics || state.tickerOn || state.bugOn ? 'KEYING' : 'STANDBY';
+    if (serviceId === 'replay') return 'STANDBY';
+    if (serviceId === 'playout') return state.activeSource === 'ad' ? 'ON AIR' : 'STANDBY';
+    if (serviceId === 'encoder') return state.activeSource ? 'ENCODING' : 'IDLE';
+    if (serviceId === 'distribution') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'ONLINE' : 'READY';
+    return 'ONLINE';
+  }
+
+  function syncBackendModel() {
+    Object.entries(state.systemModel.services).forEach(([serviceId, service]) => {
+      service.status = deriveServiceStatus(serviceId);
+      const jitter = Math.round(Math.sin((framesCount + serviceId.length * 13) * 0.03) * 4);
+      if (serviceId === 'ingest') service.latency = Math.max(10, state.rttMs + state.jitterMs + jitter);
+      if (serviceId === 'encoder') service.load = state.activeSource ? 54 + Math.round(state.calculatedBw * 2) : 28;
+      if (serviceId === 'switcher') service.load = state.activeSource ? 48 : 20;
+      if (serviceId === 'audio') service.load = state.audioMixer.programBus ? 28 : 12;
+      if (serviceId === 'cg') service.load = state.activeGraphics || state.tickerOn || state.bugOn ? 36 : 18;
+      if (serviceId === 'distribution') service.latency = 90 + state.rttMs + Math.round(state.lossPercent * 4);
+    });
+  }
+
   function setMetricText(node, value, className = '') {
     if (!node) return;
     node.textContent = value;
@@ -1509,6 +1639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderEngineeringDashboard() {
+    syncBackendModel();
     const onlineInputs = TILE_FEEDS.filter(feed => feedHasActiveSignal(feed)).length;
     const alarms = getActiveAlarmSummary();
     setMetricText(el.engInputStatus, `${onlineInputs}/4 ONLINE`, onlineInputs >= 3 ? 'text-green' : onlineInputs >= 2 ? 'text-amber' : 'text-red');
@@ -1528,6 +1659,98 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `PROGRAM: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : '—'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `PATH: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
+    renderCloudTopology();
+    renderAudioMixer();
+  }
+
+  function serviceStatusClass(status) {
+    if (['ALARM', 'FAILED', 'DEGRADED'].includes(status)) return 'text-red';
+    if (['STANDBY', 'READY', 'IDLE'].includes(status)) return 'text-amber';
+    return 'text-green';
+  }
+
+  function renderCloudTopology() {
+    if (!el.cloudTopologyBody) return;
+    const chain = state.systemModel.chain;
+    if (!el.cloudTopologyBody.children.length) {
+      el.cloudTopologyBody.innerHTML = chain.map((serviceId, index) => {
+        const service = state.systemModel.services[serviceId];
+        const arrow = index < chain.length - 1 ? '<div class="topology-arrow">→</div>' : '';
+        return `
+          <div class="topology-node" data-service="${serviceId}">
+            <span>${service.label}</span>
+            <strong class="topology-status">${service.status}</strong>
+            <small class="topology-role">${service.role}</small>
+            <div class="topology-meta font-fira"><b class="topology-instance">${service.instance}</b><em class="topology-load">${service.load}% CPU/GPU</em><em class="topology-latency">${service.latency}ms</em></div>
+          </div>
+          ${arrow}
+        `;
+      }).join('');
+    }
+    chain.forEach(serviceId => {
+      const service = state.systemModel.services[serviceId];
+      const node = el.cloudTopologyBody.querySelector(`[data-service="${serviceId}"]`);
+      if (!node) return;
+      node.classList.toggle('topology-active', ['ROUTING', 'PGM', 'KEYING', 'ENCODING', 'ON AIR'].includes(service.status));
+      node.classList.toggle('topology-alarm', ['ALARM', 'FAILED', 'DEGRADED'].includes(service.status));
+      const status = node.querySelector('.topology-status');
+      if (status) {
+        status.textContent = service.status;
+        status.className = `topology-status ${serviceStatusClass(service.status)}`;
+      }
+      const load = node.querySelector('.topology-load');
+      const latency = node.querySelector('.topology-latency');
+      if (load) load.textContent = `${service.load}% CPU/GPU`;
+      if (latency) latency.textContent = `${service.latency}ms`;
+    });
+  }
+
+  function renderAudioMixer() {
+    if (!el.audioMixerChannels) return;
+    const channelEntries = Object.entries(state.audioMixer.channels);
+    if (!el.audioMixerChannels.children.length) {
+      el.audioMixerChannels.innerHTML = channelEntries.map(([feed, channel]) => `
+        <div class="audio-channel" data-audio-feed="${feed}">
+          <div class="audio-channel-head">
+            <span>${channel.label}</span>
+            <strong class="audio-route-state">ISO</strong>
+          </div>
+          <div class="audio-channel-meter"><div class="audio-meter-l"></div><div class="audio-meter-r"></div></div>
+          <input type="range" min="0" max="1" step="0.01" value="${channel.fader}" class="audio-fader" data-audio-action="fader" />
+          <div class="audio-channel-controls">
+            <button class="btn-filter" data-audio-action="pgm">PGM</button>
+            <button class="btn-filter" data-audio-action="mute">MUTE</button>
+            <button class="btn-filter" data-audio-action="solo">SOLO</button>
+            <button class="btn-filter" data-audio-action="pfl">PFL</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    if (el.audioAfvToggle) el.audioAfvToggle.checked = state.audioMixer.audioFollowVideo;
+    if (el.audioPgmBus) el.audioPgmBus.textContent = `PGM AUDIO: ${getAudioLabel(state.audioMixer.programBus)}`;
+    if (el.audioPgmStatus) el.audioPgmStatus.textContent = state.audioMixer.audioFollowVideo ? 'AUDIO FOLLOW VIDEO' : 'MANUAL AUDIO BUS';
+    channelEntries.forEach(([feed, channel]) => {
+      const row = el.audioMixerChannels.querySelector(`[data-audio-feed="${feed}"]`);
+      if (!row) return;
+      const vu = vuState[feed] || { l: 0, r: 0 };
+      row.classList.toggle('audio-channel-pgm', state.audioMixer.programBus === feed);
+      row.classList.toggle('audio-channel-muted', channel.mute);
+      row.classList.toggle('audio-channel-solo', channel.solo);
+      const route = row.querySelector('.audio-route-state');
+      if (route) route.textContent = state.audioMixer.programBus === feed ? 'PGM' : channel.pfl ? 'PFL' : 'ISO';
+      const fader = row.querySelector('.audio-fader');
+      if (fader && document.activeElement !== fader) fader.value = channel.fader;
+      const meterL = row.querySelector('.audio-meter-l');
+      const meterR = row.querySelector('.audio-meter-r');
+      if (meterL) meterL.style.height = `${vu.l * channel.fader * 100}%`;
+      if (meterR) meterR.style.height = `${vu.r * channel.fader * 100}%`;
+      row.querySelector('[data-audio-action="mute"]')?.classList.toggle('filter-active', channel.mute);
+      row.querySelector('[data-audio-action="solo"]')?.classList.toggle('filter-active', channel.solo);
+      row.querySelector('[data-audio-action="pfl"]')?.classList.toggle('filter-active', channel.pfl);
+      row.querySelector('[data-audio-action="pgm"]')?.classList.toggle('filter-active', state.audioMixer.programBus === feed);
+    });
+    if (el.audioPgmMeterL) el.audioPgmMeterL.style.height = `${vuState.pgm.l * 100}%`;
+    if (el.audioPgmMeterR) el.audioPgmMeterR.style.height = `${vuState.pgm.r * 100}%`;
   }
 
   function getAlertSummary() {
@@ -2275,6 +2498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     state.activeSource = state.previewFeed;
     state.programSourceOverride = null;
+    syncAudioFollowVideo(actionLabel);
     clearPreviewUI();
     el.pgmActiveSource.textContent = `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
     updateBadges();
@@ -2899,11 +3123,14 @@ document.addEventListener('DOMContentLoaded', () => {
     vuState.vod.lp = Math.max(0, vuState.vod.lp - 0.008);
     vuState.vod.rp = Math.max(0, vuState.vod.rp - 0.008);
     
-    // PGM status follows the active playout source
-    let pgmActive = !!state.activeSource && feedHasActiveSignal(state.activeSource);
+    // PGM audio follows the audio mixer's Program bus, which may follow video or be manually assigned.
+    const pgmAudioFeed = state.audioMixer.programBus;
+    const pgmChannel = pgmAudioFeed ? state.audioMixer.channels[pgmAudioFeed] : null;
+    let pgmActive = !!pgmAudioFeed && feedHasActiveSignal(pgmAudioFeed);
     let pgmMuted = state.mutedFeeds.pgm;
+    if (pgmChannel?.mute) pgmMuted = true;
     
-    if (state.activeSource === 'cam1' && state.primaryFailed) {
+    if (pgmAudioFeed === 'cam1' && state.primaryFailed) {
       pgmActive = false; // No audio if source is failed and no backup configured
     }
     
@@ -2914,10 +3141,9 @@ document.addEventListener('DOMContentLoaded', () => {
       vuState.pgm.rp = Math.max(0, vuState.pgm.rp - 0.008);
     } else {
       let activeSourceVU = vuState.cam1;
-      if (state.activeSource === 'cam2') activeSourceVU = vuState.cam2;
-      else if (state.activeSource === 'liveu3') activeSourceVU = vuState.liveu3;
-      else if (state.activeSource === 'liveu4') activeSourceVU = vuState.liveu4;
-      else if (state.activeSource === 'vod') activeSourceVU = vuState.vod;
+      if (pgmAudioFeed === 'cam2') activeSourceVU = vuState.cam2;
+      else if (pgmAudioFeed === 'liveu3') activeSourceVU = vuState.liveu3;
+      else if (pgmAudioFeed === 'liveu4') activeSourceVU = vuState.liveu4;
       else if (state.activeSource === 'ad') {
         // Custom active ad audio
         const adL = 0.7 + Math.sin(framesCount * 0.1) * 0.1 + Math.random() * 0.1;
@@ -2929,10 +3155,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (state.activeSource !== 'ad') {
-        vuState.pgm.l = activeSourceVU.l;
-        vuState.pgm.r = activeSourceVU.r;
-        vuState.pgm.lp = activeSourceVU.lp;
-        vuState.pgm.rp = activeSourceVU.rp;
+        const fader = pgmChannel?.fader ?? 1;
+        vuState.pgm.l = activeSourceVU.l * fader;
+        vuState.pgm.r = activeSourceVU.r * fader;
+        vuState.pgm.lp = activeSourceVU.lp * fader;
+        vuState.pgm.rp = activeSourceVU.rp * fader;
       }
     }
 
@@ -2950,6 +3177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderVUChannel(el.vu.liveu4L, el.vu.liveu4R, el.vu.liveu4LPeak, el.vu.liveu4RPeak, vuState.liveu4);
     renderVUChannel(el.vu.vodL,  el.vu.vodR,  el.vu.vodLPeak,  el.vu.vodRPeak,  vuState.vod);
     renderVUChannel(el.vu.pgmL,  el.vu.pgmR,  el.vu.pgmLPeak,  el.vu.pgmRPeak,  vuState.pgm);
+    renderAudioMixer();
   }
 
   // ==========================================================================

@@ -7,7 +7,8 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 ## Current Demo Scope
 
 - `OPERATE`: operator-facing view with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Signal Path, Source Inspector, and AI Ops Assistant.
-- `ENGINEERING`: simulated cloud broadcast health dashboard for contribution inputs, NDI/SRT/WebRTC gateway, AWS MediaConnect, AWS MediaLive, CDN Edge, primary/backup path, RTT, bitrate, packet loss, jitter, region, encoder, and stream health.
+- `OPERATE`: includes a Program audio mixer with channel faders, mute, solo, PFL, manual PGM assignment, and Audio Follow Video mode.
+- `ENGINEERING`: simulated cloud broadcast health dashboard for contribution inputs, NDI/SRT/WebRTC gateway, switcher, audio mixer, CG keyer, replay, playout, encoder, AWS MediaLive, CDN Edge, primary/backup path, RTT, bitrate, packet loss, jitter, region, and stream health.
 - `EVENT / AUTOMATION`: simple rundown automation for pre-show, main live feed, graphics, break/SCTE marker, backup/filler, and end slate cues, plus the incident timeline.
 
 ## Graphics vs Playout
@@ -15,6 +16,16 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 The `CG / GRAPHICS ENGINE` tile represents a key/fill graphics system similar to a Vizrt-style CG engine. It does not replace the Program video route. Instead, operators can preview and take graphics layers such as lower-thirds, ticker, and bug overlays, which are keyed over the active Program source.
 
 Full-frame playout is a separate future concept. VOD, ad loops, filler, end slates, and emergency loops should eventually live in a dedicated playout/server module and route to Program like a normal video source.
+
+## Backend-Ready Model
+
+The current front end now carries a structured simulated backend model. It separates contribution sources, ingest gateway, video switcher, audio mixer, CG keyer, replay server, playout server, encoder, and distribution services. This makes the UI ready to be connected later to a real orchestrator API/WebSocket layer rather than keeping all state directly in the browser.
+
+The intended future API boundary is:
+
+- UI sends commands such as Preview, Take, Off Air, audio fader changes, CG Take, replay/playout triggers, and failover actions.
+- Orchestrator owns source state, Program/Preview routing, audio bus state, service health, alarms, and logs.
+- Media engines perform real ingest, switching, audio mixing, graphics keying, replay, playout, encoding, and distribution.
 
 ## Simulated vs Real
 

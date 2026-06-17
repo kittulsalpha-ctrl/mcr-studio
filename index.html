@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=cg-overlay-1" />
+  <link rel="stylesheet" href="styles.css?v=backend-model-1" />
 </head>
 
 <body>
@@ -710,6 +710,27 @@
           </div>
         </div>
 
+        <div class="control-panel panel-audio-mixer" data-view-panel="operate">
+          <div class="panel-header">
+            <h3>PROGRAM AUDIO MIXER</h3>
+            <div class="mixer-header-controls">
+              <label class="afv-toggle"><input type="checkbox" id="audio-afv-toggle" checked /> AFV</label>
+              <span class="badge-green font-fira" id="audio-pgm-bus">PGM AUDIO: —</span>
+            </div>
+          </div>
+          <div class="panel-body audio-mixer-body">
+            <div class="audio-mixer-channels" id="audio-mixer-channels"></div>
+            <div class="audio-pgm-strip">
+              <span>PGM AUDIO BUS</span>
+              <div class="audio-pgm-meter">
+                <div id="audio-pgm-meter-l"></div>
+                <div id="audio-pgm-meter-r"></div>
+              </div>
+              <strong id="audio-pgm-status">FOLLOW VIDEO</strong>
+            </div>
+          </div>
+        </div>
+
         <div class="control-panel panel-engineering" data-view-panel="engineering">
           <div class="panel-header">
             <h3>CLOUD BROADCAST HEALTH</h3>
@@ -725,6 +746,14 @@
             <div class="engineering-card"><span>Network Health</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter</small></div>
             <div class="engineering-card"><span>Region / Encoder</span><strong id="eng-region-status">us-east-1</strong><small>Primary contribution encoder</small></div>
           </div>
+        </div>
+
+        <div class="control-panel panel-cloud-topology" data-view-panel="engineering">
+          <div class="panel-header">
+            <h3>CLOUD PRODUCTION CHAIN</h3>
+            <span class="badge-blue font-fira">BACKEND MODEL</span>
+          </div>
+          <div class="panel-body cloud-topology-body" id="cloud-topology-body"></div>
         </div>
 
         <div class="control-panel panel-telemetry" data-view-panel="engineering">
@@ -891,6 +920,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=cg-overlay-1"></script>
+  <script src="app.js?v=backend-model-1"></script>
 </body>
 </html>
