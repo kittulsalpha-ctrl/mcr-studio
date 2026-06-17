@@ -986,6 +986,72 @@ body {
   color: var(--text-primary);
 }
 
+.source-inspector {
+  margin-top: 8px;
+  background: rgba(2, 6, 23, 0.58);
+  border: 1px solid rgba(0, 210, 255, 0.18);
+  border-radius: 6px;
+  padding: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.source-inspector-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.source-inspector-header span:last-child {
+  color: var(--neon-blue);
+}
+
+.source-inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.source-inspector-grid div {
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 5px;
+  padding: 5px 6px;
+}
+
+.source-inspector-grid span {
+  display: block;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.source-inspector-grid strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-inspector-meta {
+  color: var(--text-secondary);
+  font-size: 8px;
+  line-height: 1.35;
+}
+
 .source-state-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=operator-labels-1" />
+  <link rel="stylesheet" href="styles.css?v=source-inspector-1" />
 </head>
 
 <body>
@@ -568,6 +568,22 @@
               </span>
             </div>
 
+            <div class="source-inspector" id="source-inspector">
+              <div class="source-inspector-header">
+                <span>SOURCE INSPECTOR</span>
+                <span class="font-fira" id="source-inspector-tile">MULTIVIEW 1</span>
+              </div>
+              <div class="source-inspector-grid">
+                <div><span>ROUTE</span><strong id="source-inspector-route">Browser Cam</strong></div>
+                <div><span>STATE</span><strong id="source-inspector-state">OFFLINE</strong></div>
+                <div><span>PREVIEW</span><strong id="source-inspector-preview">NO</strong></div>
+                <div><span>PROGRAM</span><strong id="source-inspector-program">NO</strong></div>
+                <div><span>AUDIO</span><strong id="source-inspector-audio">OPEN</strong></div>
+                <div><span>SIGNAL</span><strong id="source-inspector-signal">NO SIGNAL</strong></div>
+              </div>
+              <div class="source-inspector-meta font-fira" id="source-inspector-meta">Select a tile or press PREVIEW to inspect its route.</div>
+            </div>
+
             <div class="source-state-grid">
               <label>LiveU 1
                 <select class="source-state-select" id="source-state-liveu1">
@@ -793,6 +809,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=operator-labels-1"></script>
+  <script src="app.js?v=source-inspector-1"></script>
 </body>
 </html>

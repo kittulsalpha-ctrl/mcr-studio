@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Multi-Viewer Settings
     previewFeed: null,
+    inspectedFeed: 'cam1',
     mutedFeeds: {
       cam1: false,
       cam2: false,
@@ -323,6 +324,14 @@ document.addEventListener('DOMContentLoaded', () => {
     dotSwitch: document.getElementById('dot-switch'),
     dotTrans: document.getElementById('dot-trans'),
     inspectorText: document.getElementById('inspector-text'),
+    sourceInspectorTile: document.getElementById('source-inspector-tile'),
+    sourceInspectorRoute: document.getElementById('source-inspector-route'),
+    sourceInspectorState: document.getElementById('source-inspector-state'),
+    sourceInspectorPreview: document.getElementById('source-inspector-preview'),
+    sourceInspectorProgram: document.getElementById('source-inspector-program'),
+    sourceInspectorAudio: document.getElementById('source-inspector-audio'),
+    sourceInspectorSignal: document.getElementById('source-inspector-signal'),
+    sourceInspectorMeta: document.getElementById('source-inspector-meta'),
     
     // VU meters
     vu: {
@@ -1257,6 +1266,47 @@ document.addEventListener('DOMContentLoaded', () => {
     return parseMbps(getFeedMetadata(feed).bitrate);
   }
 
+  function setMetricText(node, value, className = '') {
+    if (!node) return;
+    node.textContent = value;
+    node.className = className;
+  }
+
+  function inspectFeed(feed) {
+    if (!feed || !state.tileSources[feed]) return;
+    state.inspectedFeed = feed;
+    updateSourceInspector();
+  }
+
+  function updateSourceInspector() {
+    const feed = state.inspectedFeed || state.previewFeed || state.activeSource || 'cam1';
+    const metadata = getFeedMetadata(feed);
+    const status = getFeedStatus(feed);
+    const hasSignal = feedHasActiveSignal(feed);
+    const isPreview = state.previewFeed === feed;
+    const isProgram = state.activeSource === feed;
+    const muted = !!state.mutedFeeds[feed];
+    const sourceId = state.tileSourceIds[feed];
+    const routeLabel = sourceId === 'none' ? metadata.source : SOURCE_DETAILS[sourceId]?.label || getAssignmentLabel(feed);
+    const statusClass = status === 'ONLINE' || status === 'PLAYING'
+      ? 'text-green'
+      : status === 'STANDBY' || status === 'SIMULATED'
+        ? 'text-amber'
+        : 'text-red';
+
+    setMetricText(el.sourceInspectorTile, getTileName(feed), isProgram ? 'text-red' : isPreview ? 'text-amber' : 'text-blue');
+    setMetricText(el.sourceInspectorRoute, routeLabel || 'No Input', hasSignal ? 'text-green' : 'text-red');
+    setMetricText(el.sourceInspectorState, status, statusClass);
+    setMetricText(el.sourceInspectorPreview, isPreview ? 'YES' : 'NO', isPreview ? 'text-amber' : '');
+    setMetricText(el.sourceInspectorProgram, isProgram ? 'ON AIR' : 'NO', isProgram ? 'text-red' : '');
+    setMetricText(el.sourceInspectorAudio, muted ? 'MUTED' : 'OPEN', muted ? 'text-amber' : 'text-green');
+    setMetricText(el.sourceInspectorSignal, hasSignal ? 'LOCKED' : 'NO SIGNAL', hasSignal ? 'text-green' : 'text-red');
+
+    if (el.sourceInspectorMeta) {
+      el.sourceInspectorMeta.textContent = `${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
+    }
+  }
+
   function getAlertSummary() {
     const alarms = [];
     const warnings = [];
@@ -1496,6 +1546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
     el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
+    updateSourceInspector();
     updateHeaderMetrics();
   }
 
@@ -1665,6 +1716,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pendingLocalAssignTarget = null;
 
   function setPreview(feed) {
+    state.inspectedFeed = feed;
     state.previewFeed = feed;
     document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
     const btn = document.getElementById(`btn-solo-${feed}`);
@@ -1675,6 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTAKEButton();
     updateBadges();
     updatePGMFooter();
+    updateSourceInspector();
     addLog('info', 'MUX', `Preview set to ${getTileName(feed)}.`);
   }
 
@@ -1873,6 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTAKEButton();
     updateBadges();
     updatePGMFooter();
+    updateSourceInspector();
   }
 
   // TAKE button: route preview to program
@@ -1895,6 +1949,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePGMFooter();
     updateOrchestratorRouting();
     syncProgramEmbed();
+    updateSourceInspector();
     addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
   });
 
@@ -1907,6 +1962,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (attachBtn && selectEl) {
       attachBtn.addEventListener('click', async () => {
+        state.inspectedFeed = feed;
         const val = selectEl.value;
         if (val === 'none') {
           clearTileSource(feed);
@@ -2003,6 +2059,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (soloBtn) {
       soloBtn.addEventListener('click', () => setPreview(feed));
     }
+    document.getElementById(`screen-${feed}`)?.addEventListener('click', () => inspectFeed(feed));
+    selectEl?.addEventListener('change', () => inspectFeed(feed));
     // Mute toggle
     const muteBtn = document.getElementById(`btn-mute-${feed}`);
     if (muteBtn) {
@@ -2011,6 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.mutedFeeds[feed] = !cur;
         muteBtn.classList.toggle('btn-active-mute', !cur);
         applyYouTubeMute(feed);
+        updateSourceInspector();
         addLog('info', 'AUDIO', `${feed.toUpperCase()} ${!cur ? 'muted' : 'unmuted'}.`);
       });
     }
