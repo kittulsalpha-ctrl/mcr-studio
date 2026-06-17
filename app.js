@@ -1495,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusParts.push(`Video ➜ ${String(state.mediaAssignments.localVideo ?? 'NONE').toUpperCase()}`);
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
-    el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'Waiting for source...';
+    el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
     updateHeaderMetrics();
   }
 
@@ -1694,11 +1694,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateTAKEButton() {
     if (state.previewFeed) {
-      el.btnTake.textContent = 'TAKE TO PGM';
+      el.btnTake.textContent = 'TAKE TO AIR';
       el.btnTake.disabled = false;
       el.btnTake.style.opacity = '1.0';
     } else {
-      el.btnTake.textContent = 'TAKE PREVIEW';
+      el.btnTake.textContent = 'TAKE TO AIR';
       el.btnTake.disabled = true;
       el.btnTake.style.opacity = '0.5';
     }

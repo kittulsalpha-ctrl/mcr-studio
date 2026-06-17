@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=ndi-api-1" />
+  <link rel="stylesheet" href="styles.css?v=operator-labels-1" />
 </head>
 
 <body>
@@ -70,10 +70,10 @@
         </div>
 
         <div class="multiviewer-action-bar">
-          <button class="btn btn-secondary" id="btn-start-webcam">Start Webcam</button>
+          <button class="btn btn-secondary" id="btn-start-webcam">START WEBCAM</button>
           <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAM</button>
-          <button class="btn btn-secondary" id="btn-load-local-video">Load Local Video</button>
-          <button class="btn btn-secondary" id="btn-eject-video">EJECT VIDEO</button>
+          <button class="btn btn-secondary" id="btn-load-local-video">LOAD VIDEO</button>
+          <button class="btn btn-secondary" id="btn-eject-video">CLEAR VIDEO</button>
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
         </div>
         <div class="multiviewer-action-bar preset-controls">
@@ -94,7 +94,7 @@
           <span class="preset-link-status font-fira" id="preset-link-status">Shareable preset URLs use ?preset=name</span>
         </div>
         <div class="multiviewer-action-bar assign-controls">
-          <label class="action-select-label">Assign Webcam To:
+          <label class="action-select-label">Webcam Route:
             <select id="select-webcam-target">
               <option value="cam1">LiveU 1</option>
               <option value="cam2">LiveU 2</option>
@@ -102,7 +102,7 @@
               <option value="liveu4">LiveU 4</option>
             </select>
           </label>
-          <label class="action-select-label">Assign Video To:
+          <label class="action-select-label">Video Route:
             <select id="select-video-target">
               <option value="cam1">LiveU 1</option>
               <option value="cam2">LiveU 2</option>
@@ -110,7 +110,7 @@
               <option value="liveu4">LiveU 4</option>
             </select>
           </label>
-          <span class="action-status" id="action-status">Waiting for source...</span>
+          <span class="action-status" id="action-status">No source routed yet</span>
         </div>
 
         <div class="multiviewer-grid">
@@ -168,9 +168,9 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Assign the selected source to this monitor.">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Paste or change a custom media URL for this monitor.">URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-green font-fira" id="badge-state-cam1">OFFLINE</div>
@@ -228,9 +228,9 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Assign the selected source to this monitor.">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Paste or change a custom media URL for this monitor.">URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-blue font-fira" id="badge-state-cam2">OFFLINE</div>
@@ -288,9 +288,9 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Assign the selected source to this monitor.">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Paste or change a custom media URL for this monitor.">URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-pink font-fira" id="badge-state-liveu3">SIMULATED</div>
@@ -348,9 +348,9 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Edit or paste a custom media URL for this monitor.">EDIT</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Assign the selected source to this monitor.">ATTACH</button>
-                <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4" title="Remove the source from this monitor.">EJECT</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Paste or change a custom media URL for this monitor.">URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4" title="Mute or unmute this monitor source.">MUTE</button>
                 <div class="active-badge text-amber font-fira" id="badge-state-liveu4">SIMULATED</div>
@@ -437,7 +437,7 @@
 
             <div class="screen-footer">
               <div class="pgm-footer-top">
-                <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE PREVIEW</button>
+                <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
                 <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
                 <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
               </div>
@@ -779,20 +779,20 @@
   <div class="source-url-modal" id="source-url-modal" aria-hidden="true">
     <div class="source-url-dialog" role="dialog" aria-modal="true" aria-labelledby="source-url-title">
       <div class="source-url-header">
-        <h3 id="source-url-title">EDIT SOURCE</h3>
+        <h3 id="source-url-title">SOURCE URL</h3>
         <button class="btn-screen-control" id="source-url-close" type="button">CANCEL</button>
       </div>
       <label class="source-url-label" for="source-url-input">MEDIA URL</label>
       <input class="source-url-input" id="source-url-input" type="url" placeholder="https://www.youtube.com/watch?v=..." />
       <div class="source-url-actions">
         <span class="source-url-target font-fira" id="source-url-target">TARGET: —</span>
-        <button class="btn-screen-control btn-attach" id="source-url-attach" type="button" title="Attach this URL to the selected monitor.">ATTACH</button>
+        <button class="btn-screen-control btn-attach" id="source-url-attach" type="button" title="Route this URL to the selected monitor.">ROUTE URL</button>
       </div>
     </div>
   </div>
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=ndi-api-1"></script>
+  <script src="app.js?v=operator-labels-1"></script>
 </body>
 </html>
