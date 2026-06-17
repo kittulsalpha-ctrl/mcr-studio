@@ -493,6 +493,19 @@ document.addEventListener('DOMContentLoaded', () => {
   el.logTagFilter?.addEventListener('change', renderLogs);
   el.logSearchInput?.addEventListener('input', renderLogs);
 
+  function setOperatorView(view = 'operate') {
+    document.querySelectorAll('.operator-view-tab').forEach(button => {
+      button.classList.toggle('view-tab-active', button.dataset.view === view);
+    });
+    document.querySelectorAll('[data-view-panel]').forEach(panel => {
+      panel.classList.toggle('panel-hidden', panel.dataset.viewPanel !== view);
+    });
+  }
+
+  document.querySelectorAll('.operator-view-tab').forEach(button => {
+    button.addEventListener('click', () => setOperatorView(button.dataset.view || 'operate'));
+  });
+
   function safeRevokeVideoURL() {
     if (state.cam2FileURL) {
       URL.revokeObjectURL(state.cam2FileURL);
@@ -2136,6 +2149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDetectionControls();
   updateOrchestratorRouting();
   renderNdiBridge();
+  setOperatorView('operate');
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);

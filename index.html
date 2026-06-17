@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=program-clear-1" />
+  <link rel="stylesheet" href="styles.css?v=operator-views-1" />
 </head>
 
 <body>
@@ -453,11 +453,16 @@
       </section>
 
       <section class="controls-container">
+        <div class="operator-view-tabs">
+          <button class="operator-view-tab view-tab-active" data-view="operate" type="button">OPERATE</button>
+          <button class="operator-view-tab" data-view="advanced" type="button">ADVANCED</button>
+          <button class="operator-view-tab" data-view="logs" type="button">LOGS</button>
+        </div>
 
-        <div class="control-panel panel-orchestrator">
+        <div class="control-panel panel-orchestrator" data-view-panel="operate">
           <div class="panel-header">
-            <h3>CLOUD STREAM ORCHESTRATOR</h3>
-            <span class="badge-blue font-fira">AWS TRANSIT NODE GRID</span>
+            <h3>SIGNAL PATH</h3>
+            <span class="badge-blue font-fira">SOURCE → SWITCH → DELIVERY</span>
           </div>
 
           <div class="panel-body">
@@ -585,85 +590,88 @@
               <div class="source-inspector-meta font-fira" id="source-inspector-meta">Select a tile or press PREVIEW to inspect its route.</div>
             </div>
 
-            <div class="source-state-grid">
-              <label>LiveU 1
-                <select class="source-state-select" id="source-state-liveu1">
-                  <option value="ONLINE" selected>ONLINE</option>
-                  <option value="STANDBY">STANDBY</option>
-                  <option value="OFFLINE">OFFLINE</option>
-                  <option value="ALARM">ALARM</option>
-                </select>
-              </label>
-              <label>LiveU 2
-                <select class="source-state-select" id="source-state-liveu2">
-                  <option value="ONLINE">ONLINE</option>
-                  <option value="STANDBY" selected>STANDBY</option>
-                  <option value="OFFLINE">OFFLINE</option>
-                  <option value="ALARM">ALARM</option>
-                </select>
-              </label>
-              <label>LiveU 3
-                <select class="source-state-select" id="source-state-liveu3">
-                  <option value="ONLINE" selected>ONLINE</option>
-                  <option value="STANDBY">STANDBY</option>
-                  <option value="OFFLINE">OFFLINE</option>
-                  <option value="ALARM">ALARM</option>
-                </select>
-              </label>
-              <label>LiveU 4
-                <select class="source-state-select" id="source-state-liveu4">
-                  <option value="ONLINE" selected>ONLINE</option>
-                  <option value="STANDBY">STANDBY</option>
-                  <option value="OFFLINE">OFFLINE</option>
-                  <option value="ALARM">ALARM</option>
-                </select>
-              </label>
-            </div>
+            <details class="advanced-sim-controls">
+              <summary>Advanced source simulation</summary>
+              <div class="source-state-grid">
+                <label>LiveU 1
+                  <select class="source-state-select" id="source-state-liveu1">
+                    <option value="ONLINE" selected>ONLINE</option>
+                    <option value="STANDBY">STANDBY</option>
+                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ALARM">ALARM</option>
+                  </select>
+                </label>
+                <label>LiveU 2
+                  <select class="source-state-select" id="source-state-liveu2">
+                    <option value="ONLINE">ONLINE</option>
+                    <option value="STANDBY" selected>STANDBY</option>
+                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ALARM">ALARM</option>
+                  </select>
+                </label>
+                <label>LiveU 3
+                  <select class="source-state-select" id="source-state-liveu3">
+                    <option value="ONLINE" selected>ONLINE</option>
+                    <option value="STANDBY">STANDBY</option>
+                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ALARM">ALARM</option>
+                  </select>
+                </label>
+                <label>LiveU 4
+                  <select class="source-state-select" id="source-state-liveu4">
+                    <option value="ONLINE" selected>ONLINE</option>
+                    <option value="STANDBY">STANDBY</option>
+                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ALARM">ALARM</option>
+                  </select>
+                </label>
+              </div>
 
-            <div class="source-detection-grid">
-              <div class="source-detection-row">
-                <span>LiveU 1</span>
-                <label><input type="checkbox" id="detect-black-liveu1" /> BLACK</label>
-                <label><input type="checkbox" id="detect-silence-liveu1" /> SILENCE</label>
-                <label><input type="checkbox" id="detect-frozen-liveu1" /> FREEZE</label>
+              <div class="source-detection-grid">
+                <div class="source-detection-row">
+                  <span>LiveU 1</span>
+                  <label><input type="checkbox" id="detect-black-liveu1" /> BLACK</label>
+                  <label><input type="checkbox" id="detect-silence-liveu1" /> SILENCE</label>
+                  <label><input type="checkbox" id="detect-frozen-liveu1" /> FREEZE</label>
+                </div>
+                <div class="source-detection-row">
+                  <span>LiveU 2</span>
+                  <label><input type="checkbox" id="detect-black-liveu2" /> BLACK</label>
+                  <label><input type="checkbox" id="detect-silence-liveu2" /> SILENCE</label>
+                  <label><input type="checkbox" id="detect-frozen-liveu2" /> FREEZE</label>
+                </div>
+                <div class="source-detection-row">
+                  <span>LiveU 3</span>
+                  <label><input type="checkbox" id="detect-black-liveu3" /> BLACK</label>
+                  <label><input type="checkbox" id="detect-silence-liveu3" /> SILENCE</label>
+                  <label><input type="checkbox" id="detect-frozen-liveu3" /> FREEZE</label>
+                </div>
+                <div class="source-detection-row">
+                  <span>LiveU 4</span>
+                  <label><input type="checkbox" id="detect-black-liveu4" /> BLACK</label>
+                  <label><input type="checkbox" id="detect-silence-liveu4" /> SILENCE</label>
+                  <label><input type="checkbox" id="detect-frozen-liveu4" /> FREEZE</label>
+                </div>
               </div>
-              <div class="source-detection-row">
-                <span>LiveU 2</span>
-                <label><input type="checkbox" id="detect-black-liveu2" /> BLACK</label>
-                <label><input type="checkbox" id="detect-silence-liveu2" /> SILENCE</label>
-                <label><input type="checkbox" id="detect-frozen-liveu2" /> FREEZE</label>
-              </div>
-              <div class="source-detection-row">
-                <span>LiveU 3</span>
-                <label><input type="checkbox" id="detect-black-liveu3" /> BLACK</label>
-                <label><input type="checkbox" id="detect-silence-liveu3" /> SILENCE</label>
-                <label><input type="checkbox" id="detect-frozen-liveu3" /> FREEZE</label>
-              </div>
-              <div class="source-detection-row">
-                <span>LiveU 4</span>
-                <label><input type="checkbox" id="detect-black-liveu4" /> BLACK</label>
-                <label><input type="checkbox" id="detect-silence-liveu4" /> SILENCE</label>
-                <label><input type="checkbox" id="detect-frozen-liveu4" /> FREEZE</label>
-              </div>
-            </div>
 
-            <div class="ndi-bridge-panel">
-              <div class="ndi-bridge-header">
-                <span>NDI BRIDGE DISCOVERY</span>
-                <span class="font-fira" id="ndi-bridge-status">NOT SCANNED</span>
+              <div class="ndi-bridge-panel">
+                <div class="ndi-bridge-header">
+                  <span>NDI BRIDGE DISCOVERY</span>
+                  <span class="font-fira" id="ndi-bridge-status">NOT SCANNED</span>
+                </div>
+                <div class="ndi-bridge-controls">
+                  <button class="btn-filter" id="btn-scan-ndi">SCAN NDI</button>
+                  <select class="source-state-select" id="ndi-source-select">
+                    <option value="">No NDI sources discovered</option>
+                  </select>
+                </div>
+                <div class="ndi-bridge-hint font-fira" id="ndi-bridge-hint">Browser preview uses a future NDI-to-WebRTC/HLS bridge.</div>
               </div>
-              <div class="ndi-bridge-controls">
-                <button class="btn-filter" id="btn-scan-ndi">SCAN NDI</button>
-                <select class="source-state-select" id="ndi-source-select">
-                  <option value="">No NDI sources discovered</option>
-                </select>
-              </div>
-              <div class="ndi-bridge-hint font-fira" id="ndi-bridge-hint">Browser preview uses a future NDI-to-WebRTC/HLS bridge.</div>
-            </div>
+            </details>
           </div>
         </div>
 
-        <div class="control-panel panel-telemetry">
+        <div class="control-panel panel-telemetry" data-view-panel="advanced">
           <div class="panel-header">
             <h3>SRT CONTRIBUTOR TELEMETRY</h3>
             <span class="badge-amber font-fira">REAL-TIME MONITOR</span>
@@ -730,7 +738,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-dr-playout">
+        <div class="control-panel panel-dr-playout" data-view-panel="advanced">
           <div class="panel-header">
             <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
             <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
@@ -755,7 +763,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-logs">
+        <div class="control-panel panel-logs" data-view-panel="logs">
           <div class="panel-header">
             <h3>MCR PLAYOUT EVENTS CONSOLE</h3>
 
@@ -810,6 +818,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=program-clear-1"></script>
+  <script src="app.js?v=operator-views-1"></script>
 </body>
 </html>

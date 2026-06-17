@@ -965,6 +965,36 @@ body {
   filter: drop-shadow(0 0 4px currentColor);
 }
 
+.operator-view-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.operator-view-tab {
+  min-height: 30px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.operator-view-tab:hover,
+.operator-view-tab.view-tab-active {
+  color: var(--text-primary);
+  border-color: rgba(0, 210, 255, 0.42);
+  background: rgba(0, 210, 255, 0.12);
+}
+
+.control-panel.panel-hidden {
+  display: none;
+}
+
 .node-inspector {
   margin-top: 8px;
   background: rgba(15, 23, 42, 0.4);
@@ -1050,6 +1080,27 @@ body {
   color: var(--text-secondary);
   font-size: 8px;
   line-height: 1.35;
+}
+
+.advanced-sim-controls {
+  margin-top: 8px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  padding-top: 8px;
+}
+
+.advanced-sim-controls summary {
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  list-style-position: inside;
+  text-transform: uppercase;
+}
+
+.advanced-sim-controls[open] summary {
+  color: var(--neon-blue);
 }
 
 .source-state-grid {
