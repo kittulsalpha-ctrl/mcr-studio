@@ -138,6 +138,28 @@ document.addEventListener('DOMContentLoaded', () => {
         playout: { label: 'Playout EC2', fader: 0.68, mute: true, solo: false, pfl: false }
       }
     },
+    replayPlayout: {
+      returnLiveSource: 'cam1',
+      replay: {
+        source: 'cam1',
+        markIn: null,
+        markOut: null,
+        selectedClip: 'replay-001',
+        clips: [
+          { id: 'replay-001', label: 'Replay 001 - Goal angle', source: 'cam1', duration: '00:00:08' },
+          { id: 'replay-002', label: 'Replay 002 - Touchline ISO', source: 'liveu3', duration: '00:00:12' }
+        ]
+      },
+      playout: {
+        selectedAsset: 'slate-live',
+        assets: [
+          { id: 'slate-live', label: 'Holding Slate - Live Soon', type: 'SLATE', duration: 'LOOP' },
+          { id: 'filler-loop', label: 'Filler Loop - Cloud MCR', type: 'FILLER', duration: 'LOOP' },
+          { id: 'end-slate', label: 'End Slate - Transmission Complete', type: 'SLATE', duration: 'LOOP' },
+          { id: 'emergency-loop', label: 'Emergency Backup Loop', type: 'BACKUP', duration: 'LOOP' }
+        ]
+      }
+    },
 
     // LiveU Video Source State
     webcamStream: null,
@@ -383,6 +405,21 @@ document.addEventListener('DOMContentLoaded', () => {
     audioPgmMeterL: document.getElementById('audio-pgm-meter-l'),
     audioPgmMeterR: document.getElementById('audio-pgm-meter-r'),
     cloudTopologyBody: document.getElementById('cloud-topology-body'),
+    replayServerStatus: document.getElementById('replay-server-status'),
+    replaySourceSelect: document.getElementById('replay-source-select'),
+    replayClipSelect: document.getElementById('replay-clip-select'),
+    btnReplayMarkIn: document.getElementById('btn-replay-mark-in'),
+    btnReplayMarkOut: document.getElementById('btn-replay-mark-out'),
+    btnReplayCreate: document.getElementById('btn-replay-create'),
+    btnPreviewReplay: document.getElementById('btn-preview-replay'),
+    btnTakeReplay: document.getElementById('btn-take-replay'),
+    btnReturnLiveReplay: document.getElementById('btn-return-live-replay'),
+    playoutServerStatus: document.getElementById('playout-server-status'),
+    playoutAssetSelect: document.getElementById('playout-asset-select'),
+    playoutAssetStatus: document.getElementById('playout-asset-status'),
+    btnPreviewPlayout: document.getElementById('btn-preview-playout'),
+    btnTakePlayout: document.getElementById('btn-take-playout'),
+    btnReturnLivePlayout: document.getElementById('btn-return-live-playout'),
     engInputStatus: document.getElementById('eng-input-status'),
     engGatewayStatus: document.getElementById('eng-gateway-status'),
     engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
@@ -508,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function logMatchesTimelineFilter(log, filter) {
     if (filter === 'all') return true;
     if (filter === 'alarm') return log.severity === 'alarm';
-    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO'].includes(log.tag);
+    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO', 'REPLAY', 'PLYT'].includes(log.tag);
     if (filter === 'cloud') return ['SRT', 'SWT', 'TRANS', 'CDN', 'SRC'].includes(log.tag);
     if (filter === 'ai') return log.tag === 'AI';
     if (filter === 'scte') return log.tag === 'SCTE' || log.tag === 'PLYT';
@@ -945,6 +982,9 @@ document.addEventListener('DOMContentLoaded', () => {
     state.mutedFeeds = { cam1: false, cam2: false, liveu3: false, liveu4: false, vod: false, pgm: false, ...preset.mutedFeeds };
     state.audioMixer.audioFollowVideo = true;
     state.audioMixer.programBus = state.activeSource && state.audioMixer.channels[state.activeSource] ? state.activeSource : null;
+    state.replayPlayout.returnLiveSource = ['cam1', 'cam2', 'liveu3', 'liveu4'].includes(state.activeSource) ? state.activeSource : 'cam1';
+    state.replayPlayout.replay.selectedClip = state.replayPlayout.replay.clips[0]?.id || '';
+    state.replayPlayout.playout.selectedAsset = 'slate-live';
 
     if (el.btnFailPrimary) el.btnFailPrimary.disabled = state.primaryFailed;
     if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = !state.primaryFailed;
@@ -973,6 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOrchestratorRouting();
     renderAudioMixer();
     renderCloudTopology();
+    renderReplayPlayoutServers();
     syncProgramEmbed();
     addLog('info', 'DEMO', `${preset.label} preset loaded.`);
 
@@ -1349,6 +1390,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getFeedStatus(feed) {
+    if (feed === 'replay') return state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'READY';
+    if (feed === 'playout') return state.activeSource === 'playout' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'READY';
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return 'OFFLINE';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return getSourceState(state.tileSourceIds[feed]);
@@ -1361,6 +1404,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getAssignmentLabel(feed) {
+    if (feed === 'replay') return getSelectedReplayClip()?.label || 'Replay Server';
+    if (feed === 'playout') return getSelectedPlayoutAsset()?.label || 'Playout Server';
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return 'Browser Cam';
     if (assignment === 'localVideo') return getLocalVideo(feed)?.fileName || 'Local File';
@@ -1372,6 +1417,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getFeedMetadata(feed) {
+    if (feed === 'replay') {
+      const clip = getSelectedReplayClip();
+      return {
+        codec: 'REPLAY CLIP',
+        source: clip?.label || 'Replay Server',
+        resolution: '1080p60',
+        bitrate: '6.0 Mbps',
+        rtt: 'EC2'
+      };
+    }
+    if (feed === 'playout') {
+      const asset = getSelectedPlayoutAsset();
+      return {
+        codec: asset?.type || 'PLAYOUT',
+        source: asset?.label || 'Playout Server',
+        resolution: '1080p60',
+        bitrate: '5.0 Mbps',
+        rtt: 'EC2'
+      };
+    }
     const assignment = getFeedAssignment(feed);
     const sourceId = state.tileSourceIds[feed];
 
@@ -1497,6 +1562,87 @@ document.addEventListener('DOMContentLoaded', () => {
     return getTileName(feed);
   }
 
+  function getSelectedReplayClip() {
+    return state.replayPlayout.replay.clips.find(clip => clip.id === state.replayPlayout.replay.selectedClip) || state.replayPlayout.replay.clips[0];
+  }
+
+  function getSelectedPlayoutAsset() {
+    return state.replayPlayout.playout.assets.find(asset => asset.id === state.replayPlayout.playout.selectedAsset) || state.replayPlayout.playout.assets[0];
+  }
+
+  function captureReturnLiveSource() {
+    if (['cam1', 'cam2', 'liveu3', 'liveu4'].includes(state.activeSource)) {
+      state.replayPlayout.returnLiveSource = state.activeSource;
+    }
+  }
+
+  function renderReplayPlayoutServers() {
+    if (el.replayClipSelect) {
+      const current = state.replayPlayout.replay.selectedClip;
+      el.replayClipSelect.innerHTML = state.replayPlayout.replay.clips.map(clip => (
+        `<option value="${clip.id}">${clip.label} · ${clip.duration}</option>`
+      )).join('');
+      el.replayClipSelect.value = current;
+    }
+    if (el.playoutAssetSelect) {
+      const current = state.replayPlayout.playout.selectedAsset;
+      el.playoutAssetSelect.innerHTML = state.replayPlayout.playout.assets.map(asset => (
+        `<option value="${asset.id}">${asset.label} · ${asset.duration}</option>`
+      )).join('');
+      el.playoutAssetSelect.value = current;
+    }
+    if (el.replaySourceSelect) el.replaySourceSelect.value = state.replayPlayout.replay.source;
+    setMetricText(el.replayServerStatus, state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'STANDBY', state.activeSource === 'replay' ? 'text-red' : state.previewFeed === 'replay' ? 'text-amber' : 'text-green');
+    setMetricText(el.playoutServerStatus, state.activeSource === 'playout' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'READY', state.activeSource === 'playout' ? 'text-red' : state.previewFeed === 'playout' ? 'text-amber' : 'text-green');
+    if (el.playoutAssetStatus) {
+      const asset = getSelectedPlayoutAsset();
+      el.playoutAssetStatus.textContent = `${asset.label} · ${asset.type} · ${asset.duration}`;
+    }
+  }
+
+  function markReplayPoint(point) {
+    const timecode = getSMPTETimecode(framesCount);
+    state.replayPlayout.replay[point] = timecode;
+    addLog('info', 'REPLAY', `${point === 'markIn' ? 'Mark In' : 'Mark Out'} set at ${timecode} from ${getTileName(state.replayPlayout.replay.source)}.`);
+    renderReplayPlayoutServers();
+  }
+
+  function createReplayClip() {
+    const source = state.replayPlayout.replay.source;
+    const clipNumber = String(state.replayPlayout.replay.clips.length + 1).padStart(3, '0');
+    const clip = {
+      id: `replay-${clipNumber}`,
+      label: `Replay ${clipNumber} - ${getTileName(source)} clip`,
+      source,
+      duration: '00:00:10'
+    };
+    state.replayPlayout.replay.clips.push(clip);
+    state.replayPlayout.replay.selectedClip = clip.id;
+    addLog('info', 'REPLAY', `${clip.label} created from ${getTileName(source)}.`);
+    renderReplayPlayoutServers();
+  }
+
+  function previewServerSource(feed) {
+    captureReturnLiveSource();
+    setPreview(feed);
+    addLog('info', feed === 'replay' ? 'REPLAY' : 'PLYT', `${getProgramRouteLabel(feed)} cued to Preview.`);
+    renderReplayPlayoutServers();
+  }
+
+  function takeServerSource(feed) {
+    if (state.previewFeed !== feed) setPreview(feed);
+    routePreviewToProgram(feed === 'replay' ? 'TAKE REPLAY' : 'TAKE PLAYOUT');
+    renderReplayPlayoutServers();
+  }
+
+  function returnToLiveFromServer() {
+    const target = state.replayPlayout.returnLiveSource || 'cam1';
+    setPreview(target);
+    routePreviewToProgram('RETURN LIVE');
+    addLog('info', 'ROUTE', `Returned to live source ${getProgramRouteLabel(target)}.`);
+    renderReplayPlayoutServers();
+  }
+
   function setProgramAudioFeed(feed, reason = 'manual') {
     const nextFeed = feed && state.audioMixer.channels[feed] ? feed : null;
     if (state.audioMixer.programBus === nextFeed) return;
@@ -1517,8 +1663,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (serviceId === 'switcher') return state.activeSource ? 'ROUTING' : 'IDLE';
     if (serviceId === 'audio') return state.audioMixer.programBus ? 'PGM' : 'IDLE';
     if (serviceId === 'cg') return state.activeGraphics || state.tickerOn || state.bugOn ? 'KEYING' : 'STANDBY';
-    if (serviceId === 'replay') return 'STANDBY';
-    if (serviceId === 'playout') return state.activeSource === 'ad' ? 'ON AIR' : 'STANDBY';
+    if (serviceId === 'replay') return state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'STANDBY';
+    if (serviceId === 'playout') return state.activeSource === 'playout' || state.activeSource === 'ad' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'STANDBY';
     if (serviceId === 'encoder') return state.activeSource ? 'ENCODING' : 'IDLE';
     if (serviceId === 'distribution') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'ONLINE' : 'READY';
     return 'ONLINE';
@@ -1559,9 +1705,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const muted = !!state.mutedFeeds[feed];
     const sourceId = state.tileSourceIds[feed];
     const routeLabel = sourceId === 'none' ? metadata.source : SOURCE_DETAILS[sourceId]?.label || getAssignmentLabel(feed);
-    const statusClass = status === 'ONLINE' || status === 'PLAYING'
+    const statusClass = status === 'ONLINE' || status === 'PLAYING' || status === 'READY' || status === 'ON AIR'
       ? 'text-green'
-      : status === 'STANDBY' || status === 'SIMULATED'
+      : status === 'STANDBY' || status === 'SIMULATED' || status === 'CUED'
         ? 'text-amber'
         : 'text-red';
 
@@ -1661,6 +1807,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `PATH: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
     renderCloudTopology();
     renderAudioMixer();
+    renderReplayPlayoutServers();
   }
 
   function serviceStatusClass(status) {
@@ -1691,7 +1838,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const service = state.systemModel.services[serviceId];
       const node = el.cloudTopologyBody.querySelector(`[data-service="${serviceId}"]`);
       if (!node) return;
-      node.classList.toggle('topology-active', ['ROUTING', 'PGM', 'KEYING', 'ENCODING', 'ON AIR'].includes(service.status));
+      node.classList.toggle('topology-active', ['ROUTING', 'PGM', 'KEYING', 'ENCODING', 'ON AIR', 'CUED'].includes(service.status));
       node.classList.toggle('topology-alarm', ['ALARM', 'FAILED', 'DEGRADED'].includes(service.status));
       const status = node.querySelector('.topology-status');
       if (status) {
@@ -1825,6 +1972,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function feedHasActiveSignal(feed) {
+    if (feed === 'replay' || feed === 'playout') return true;
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return false;
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return sourceHasSignal(state.tileSourceIds[feed]);
@@ -2194,6 +2342,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getTileName(feed) {
+    if (feed === 'replay') return 'REPLAY SERVER';
+    if (feed === 'playout') return 'PLAYOUT SERVER';
     return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'CG / GRAPHICS ENGINE' : feed.toUpperCase();
   }
 
@@ -2401,9 +2551,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLiveu3 = source === 'liveu3';
     const isLiveu4 = source === 'liveu4';
     const hasGraphicsLayer = !!state.activeGraphics || state.tickerOn || state.bugOn;
-    const isPlayout = source === 'vod' || source === 'ad';
+    const isReplay = source === 'replay';
+    const isPlayout = source === 'vod' || source === 'ad' || source === 'playout';
     const hasProgram = !!source;
-    const routeColor = isCustomProgram ? '#00d2ff' : isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
+    const routeColor = isReplay ? '#f59e0b' : isCustomProgram ? '#00d2ff' : isLiveu2 || isLiveu2Source ? '#00d2ff' : isLiveu3 ? '#f59e0b' : isLiveu4 ? '#a78bfa' : isPlayout ? '#ec4899' : '#10b981';
     const sourceLinkState = (sourceId, isActive, activeState = 'active') => {
       if (!sourceHasSignal(sourceId)) return 'broken';
       return isActive ? activeState : 'standby';
@@ -2448,6 +2599,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (source === 'ad') {
       routeLabel = 'AD CUE';
       switcherLabel = 'SCTE-35';
+    } else if (source === 'replay') {
+      routeLabel = 'REPLAY';
+      switcherLabel = 'REPLAY SERVER';
+    } else if (source === 'playout') {
+      routeLabel = 'PLAYOUT';
+      switcherLabel = 'PLAYOUT SERVER';
     } else if (isCustomProgram) {
       routeLabel = activeCustomSource?.type === 'youtube' ? 'YOUTUBE' : 'CUSTOM';
       switcherLabel = routeLabel;
@@ -2666,6 +2823,30 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnToggleBug?.addEventListener('click', () => toggleGraphicsLayer('bug'));
   el.btnClearGraphics?.addEventListener('click', () => clearGraphics());
   document.getElementById('screen-vod')?.addEventListener('click', () => inspectFeed('vod'));
+  el.replaySourceSelect?.addEventListener('change', event => {
+    state.replayPlayout.replay.source = event.target.value;
+    addLog('info', 'REPLAY', `Replay ISO source selected: ${getTileName(event.target.value)}.`);
+    renderReplayPlayoutServers();
+  });
+  el.replayClipSelect?.addEventListener('change', event => {
+    state.replayPlayout.replay.selectedClip = event.target.value;
+    addLog('info', 'REPLAY', `Replay clip selected: ${getSelectedReplayClip()?.label}.`);
+    renderReplayPlayoutServers();
+  });
+  el.playoutAssetSelect?.addEventListener('change', event => {
+    state.replayPlayout.playout.selectedAsset = event.target.value;
+    addLog('info', 'PLYT', `Playout asset selected: ${getSelectedPlayoutAsset()?.label}.`);
+    renderReplayPlayoutServers();
+  });
+  el.btnReplayMarkIn?.addEventListener('click', () => markReplayPoint('markIn'));
+  el.btnReplayMarkOut?.addEventListener('click', () => markReplayPoint('markOut'));
+  el.btnReplayCreate?.addEventListener('click', createReplayClip);
+  el.btnPreviewReplay?.addEventListener('click', () => previewServerSource('replay'));
+  el.btnTakeReplay?.addEventListener('click', () => takeServerSource('replay'));
+  el.btnReturnLiveReplay?.addEventListener('click', returnToLiveFromServer);
+  el.btnPreviewPlayout?.addEventListener('click', () => previewServerSource('playout'));
+  el.btnTakePlayout?.addEventListener('click', () => takeServerSource('playout'));
+  el.btnReturnLivePlayout?.addEventListener('click', returnToLiveFromServer);
 
   el.sourceUrlAttach?.addEventListener('click', submitSourceUrlEditor);
   el.sourceUrlClose?.addEventListener('click', closeSourceUrlEditor);
@@ -2700,6 +2881,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDetectionControls();
   updateOrchestratorRouting();
   renderNdiBridge();
+  renderReplayPlayoutServers();
   setOperatorView('operate');
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
@@ -3033,6 +3215,55 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'left'; // Reset alignment
   }
 
+  function drawStreamReplay(ctx, w, h, frames) {
+    const clip = getSelectedReplayClip();
+    ctx.fillStyle = '#080612';
+    ctx.fillRect(0, 0, w, h);
+    const pulse = 0.5 + Math.sin(frames * 0.08) * 0.25;
+    ctx.strokeStyle = `rgba(245, 158, 11, ${0.24 + pulse * 0.2})`;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i += 1) {
+      ctx.strokeRect(20 + i * 12, 20 + i * 9, w - 40 - i * 24, h - 40 - i * 18);
+    }
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.92)';
+    ctx.fillRect(0, 0, w, 28);
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 13px Outfit';
+    ctx.fillText('REPLAY SERVER ON AIR', 16, 19);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText(clip?.label || 'Replay Clip', w / 2, h / 2 - 8);
+    ctx.font = '10px Fira Code';
+    ctx.fillStyle = '#fde68a';
+    ctx.fillText(`${getTileName(clip?.source || 'cam1')} · ${clip?.duration || '00:00:10'} · EC2 replay-a`, w / 2, h / 2 + 14);
+    ctx.textAlign = 'left';
+  }
+
+  function drawStreamPlayout(ctx, w, h, frames) {
+    const asset = getSelectedPlayoutAsset();
+    const isEmergency = asset?.type === 'BACKUP';
+    ctx.fillStyle = isEmergency ? '#160609' : '#07111d';
+    ctx.fillRect(0, 0, w, h);
+    const stripeW = 32;
+    for (let x = -stripeW; x < w + stripeW; x += stripeW) {
+      ctx.fillStyle = isEmergency ? 'rgba(239, 68, 68, 0.16)' : 'rgba(0, 210, 255, 0.1)';
+      ctx.fillRect(x + (frames % stripeW), 0, stripeW / 2, h);
+    }
+    ctx.fillStyle = isEmergency ? 'rgba(239, 68, 68, 0.86)' : 'rgba(15, 23, 42, 0.9)';
+    ctx.fillRect(24, h / 2 - 42, w - 48, 84);
+    ctx.strokeStyle = isEmergency ? '#fecaca' : '#7dd3fc';
+    ctx.strokeRect(30, h / 2 - 36, w - 60, 72);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText(asset?.label || 'Playout Asset', w / 2, h / 2 - 5);
+    ctx.font = '10px Fira Code';
+    ctx.fillStyle = isEmergency ? '#fee2e2' : '#bae6fd';
+    ctx.fillText(`${asset?.type || 'PLAYOUT'} · ${asset?.duration || 'LOOP'} · ec2-playout-a`, w / 2, h / 2 + 18);
+    ctx.textAlign = 'left';
+  }
+
   function drawStreamLossStatic(ctx, w, h) {
     // High-performance television static noise
     const imgData = ctx.createImageData(w, h);
@@ -3144,7 +3375,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pgmAudioFeed === 'cam2') activeSourceVU = vuState.cam2;
       else if (pgmAudioFeed === 'liveu3') activeSourceVU = vuState.liveu3;
       else if (pgmAudioFeed === 'liveu4') activeSourceVU = vuState.liveu4;
-      else if (state.activeSource === 'ad') {
+      else if (pgmAudioFeed === 'replay' || pgmAudioFeed === 'playout') {
+        const serverL = 0.58 + Math.sin(framesCount * 0.07) * 0.18 + Math.random() * 0.08;
+        const serverR = 0.58 + Math.cos(framesCount * 0.065) * 0.18 + Math.random() * 0.08;
+        const fader = pgmChannel?.fader ?? 1;
+        vuState.pgm.l = Math.min(0.99, serverL * fader);
+        vuState.pgm.r = Math.min(0.99, serverR * fader);
+        vuState.pgm.lp = Math.max(vuState.pgm.l, vuState.pgm.lp - 0.006);
+        vuState.pgm.rp = Math.max(vuState.pgm.r, vuState.pgm.rp - 0.006);
+      } else if (state.activeSource === 'ad') {
         // Custom active ad audio
         const adL = 0.7 + Math.sin(framesCount * 0.1) * 0.1 + Math.random() * 0.1;
         const adR = 0.7 + Math.cos(framesCount * 0.1) * 0.1 + Math.random() * 0.1;
@@ -3154,7 +3393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         vuState.pgm.rp = Math.max(vuState.pgm.r, vuState.pgm.rp - 0.006);
       }
       
-      if (state.activeSource !== 'ad') {
+      if (state.activeSource !== 'ad' && pgmAudioFeed !== 'replay' && pgmAudioFeed !== 'playout') {
         const fader = pgmChannel?.fader ?? 1;
         vuState.pgm.l = activeSourceVU.l * fader;
         vuState.pgm.r = activeSourceVU.r * fader;
@@ -3204,6 +3443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (state.activeSource === 'liveu4') el.tcPgm.textContent = el.tcLiveu4.textContent;
     else if (state.activeSource === 'vod') el.tcPgm.textContent = el.tcVod.textContent;
     else if (state.activeSource === 'ad') el.tcPgm.textContent = getSMPTETimecode(framesCount);
+    else if (state.activeSource === 'replay' || state.activeSource === 'playout') el.tcPgm.textContent = getSMPTETimecode(framesCount);
     else el.tcPgm.textContent = '--:--:--:--';
 
     // 1. Draw Feed 1 (Cam 1 / Primary)
@@ -3227,6 +3467,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const pgmCtx = canvases.pgm.ctx;
     if (state.activeSource === 'ad') {
       drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
+    } else if (state.activeSource === 'replay') {
+      drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
+    } else if (state.activeSource === 'playout') {
+      drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
     } else if (state.activeSource) {
       try {
         pgmCtx.clearRect(0, 0, pgmW, pgmH);
@@ -3235,6 +3479,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.activeSource === 'cam1') drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
         else if (state.activeSource === 'cam2' || state.activeSource === 'liveu3' || state.activeSource === 'liveu4') drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
         else if (state.activeSource === 'vod') drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
+        else if (state.activeSource === 'replay') drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
+        else if (state.activeSource === 'playout') drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
         else drawStreamLossStatic(pgmCtx, pgmW, pgmH);
       }
     } else {

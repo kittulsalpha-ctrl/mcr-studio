@@ -10,12 +10,13 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 - `OPERATE`: includes a Program audio mixer with channel faders, mute, solo, PFL, manual PGM assignment, and Audio Follow Video mode.
 - `ENGINEERING`: simulated cloud broadcast health dashboard for contribution inputs, NDI/SRT/WebRTC gateway, switcher, audio mixer, CG keyer, replay, playout, encoder, AWS MediaLive, CDN Edge, primary/backup path, RTT, bitrate, packet loss, jitter, region, and stream health.
 - `EVENT / AUTOMATION`: simple rundown automation for pre-show, main live feed, graphics, break/SCTE marker, backup/filler, and end slate cues, plus the incident timeline.
+- `EVENT / AUTOMATION`: includes simulated Replay Server and Playout Server modules with mark in/out, clip creation, preview, take to Program, and return-to-live workflows.
 
 ## Graphics vs Playout
 
 The `CG / GRAPHICS ENGINE` tile represents a key/fill graphics system similar to a Vizrt-style CG engine. It does not replace the Program video route. Instead, operators can preview and take graphics layers such as lower-thirds, ticker, and bug overlays, which are keyed over the active Program source.
 
-Full-frame playout is a separate future concept. VOD, ad loops, filler, end slates, and emergency loops should eventually live in a dedicated playout/server module and route to Program like a normal video source.
+Full-frame playout is separate from CG. The current demo includes a simulated Playout Server for slates, filler, end slate, and emergency loop assets. These replace the Program video route like normal full-frame sources.
 
 ## Backend-Ready Model
 
@@ -58,7 +59,7 @@ See `NDI_BRIDGE_API.md` for the placeholder bridge contract.
 
 ## Roadmap
 
-- Dedicated playout/server module for full-frame VOD, filler, ad loops, and end slates.
+- Real replay and playout media engines with recording, clip storage, asset playback, and return-to-live routing.
 - Real NDI/SRT/WebRTC gateway bridge.
 - FFmpeg or GStreamer backend for media ingest, transcode, preview generation, and QC probes.
 - Browser audio meters, silence detection, black/freeze detection, and stream stats.

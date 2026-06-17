@@ -1283,6 +1283,67 @@ body {
   gap: 8px;
 }
 
+.replay-playout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.server-module {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.62);
+  padding: 9px;
+}
+
+.server-module-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.server-module-head span,
+.server-controls label,
+.server-status-line {
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.server-module-head strong {
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.server-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.server-controls select {
+  width: 100%;
+  margin-top: 4px;
+  min-height: 24px;
+  background: rgba(2, 6, 23, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 3px 6px;
+}
+
+.server-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
 .ai-ops-summary {
   color: var(--text-secondary);
   font-size: 9px;
@@ -2047,7 +2108,8 @@ body {
   .engineering-grid,
   .route-summary-strip,
   .rundown-cue,
-  .audio-mixer-body {
+  .audio-mixer-body,
+  .replay-playout-grid {
     grid-template-columns: 1fr;
   }
 
