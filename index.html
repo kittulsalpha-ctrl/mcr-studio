@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=multi-local-video-1" />
+  <link rel="stylesheet" href="styles.css?v=cloud-mcr-demo-1" />
 </head>
 
 <body>
@@ -41,6 +41,11 @@
         <div class="badge" id="badge-alerts">
           <span class="badge-label">ALERTS</span>
           <span class="badge-value text-green" id="matrix-alarm-value">OK</span>
+        </div>
+
+        <div class="badge badge-on-air" id="badge-on-air">
+          <span class="badge-label">ON AIR</span>
+          <span class="badge-value text-red" id="on-air-value">OFF</span>
         </div>
       </div>
 
@@ -440,11 +445,16 @@
             <div class="screen-footer">
               <div class="pgm-footer-top">
                 <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
+                <button class="btn-screen-control" id="btn-cut" title="Cut the current Preview source directly to Program Out.">CUT</button>
+                <button class="btn-screen-control btn-danger-control" id="btn-fade-black" title="Fade Program Out to black.">FADE TO BLACK</button>
                 <button class="btn-screen-control btn-eject" id="btn-clear-program" title="Clear Program Out and return it to black.">OFF AIR</button>
+                <button class="btn-screen-control btn-emergency" id="btn-emergency-backup" title="Route the backup source to Program immediately.">EMERGENCY BACKUP</button>
                 <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
                 <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
               </div>
               <div class="pgm-footer-status">
+                <div class="pgm-status-line pgm-status-current font-fira" id="pgm-status-current">CURRENT / PROGRAM: —</div>
+                <div class="pgm-status-line pgm-status-next font-fira" id="pgm-status-next">NEXT / PREVIEW: —</div>
                 <div class="pgm-status-line font-fira" id="pgm-status-preview">PREVIEW READY: —</div>
                 <div class="pgm-status-line font-fira" id="pgm-status-program">PROGRAM ON AIR: —</div>
               </div>
@@ -457,8 +467,8 @@
       <section class="controls-container">
         <div class="operator-view-tabs">
           <button class="operator-view-tab view-tab-active" data-view="operate" type="button">OPERATE</button>
-          <button class="operator-view-tab" data-view="advanced" type="button">ADVANCED</button>
-          <button class="operator-view-tab" data-view="logs" type="button">LOGS</button>
+          <button class="operator-view-tab" data-view="engineering" type="button">ENGINEERING</button>
+          <button class="operator-view-tab" data-view="event" type="button">EVENT / AUTOMATION</button>
         </div>
 
         <div class="control-panel panel-orchestrator" data-view-panel="operate">
@@ -468,6 +478,18 @@
           </div>
 
           <div class="panel-body">
+            <div class="signal-flow-strip">
+              <div><span>SOURCE</span><strong id="signal-flow-source">—</strong></div>
+              <div><span>GATEWAY</span><strong id="signal-flow-gateway">NDI/SRT/WebRTC</strong></div>
+              <div><span>CLOUD SWITCHER</span><strong id="signal-flow-switcher">IDLE</strong></div>
+              <div><span>MEDIALIVE</span><strong id="signal-flow-medialive">READY</strong></div>
+              <div><span>CDN EDGE</span><strong id="signal-flow-cdn">READY</strong></div>
+            </div>
+            <div class="route-summary-strip font-fira">
+              <span id="route-summary-program">PROGRAM: —</span>
+              <span id="route-summary-preview">PREVIEW: —</span>
+              <span id="route-summary-path">PATH: PRIMARY/BACKUP READY</span>
+            </div>
             <div class="node-editor-wrapper">
               <svg id="node-svg" viewBox="0 0 540 280" preserveAspectRatio="xMidYMid meet">
                 <defs>
@@ -673,7 +695,35 @@
           </div>
         </div>
 
-        <div class="control-panel panel-telemetry" data-view-panel="advanced">
+        <div class="control-panel panel-ai-ops" data-view-panel="operate">
+          <div class="panel-header">
+            <h3>AI OPS ASSISTANT</h3>
+            <span class="badge-blue font-fira">INCIDENT COPILOT</span>
+          </div>
+          <div class="panel-body ai-ops-body">
+            <div class="ai-ops-summary font-fira" id="ai-ops-summary">Monitoring source health and routing state.</div>
+            <div class="ai-ops-list" id="ai-ops-list"></div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-engineering" data-view-panel="engineering">
+          <div class="panel-header">
+            <h3>CLOUD BROADCAST HEALTH</h3>
+            <span class="badge-blue font-fira">HYBRID MCR / PCR / NOC</span>
+          </div>
+          <div class="panel-body engineering-grid">
+            <div class="engineering-card"><span>Contribution Inputs</span><strong id="eng-input-status">4 ONLINE</strong><small>LiveU / file / webcam / URL sources</small></div>
+            <div class="engineering-card"><span>NDI/SRT/WebRTC Gateway</span><strong id="eng-gateway-status">STANDBY</strong><small>Bridge endpoint /api/ndi/sources</small></div>
+            <div class="engineering-card"><span>AWS MediaConnect Flow</span><strong id="eng-mediaconnect-status">PRIMARY</strong><small>us-east-1 active, us-east-2 backup</small></div>
+            <div class="engineering-card"><span>AWS MediaLive Channel</span><strong id="eng-medialive-status">RUNNING</strong><small>1080p60 AVC ladder simulation</small></div>
+            <div class="engineering-card"><span>CDN Edge Output</span><strong id="eng-cdn-status">HEALTHY</strong><small>HLS/DASH edge delivery</small></div>
+            <div class="engineering-card"><span>Primary / Backup Path</span><strong id="eng-path-status">A/B READY</strong><small>Hitless switching model</small></div>
+            <div class="engineering-card"><span>Network Health</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter</small></div>
+            <div class="engineering-card"><span>Region / Encoder</span><strong id="eng-region-status">us-east-1</strong><small>Primary contribution encoder</small></div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-telemetry" data-view-panel="engineering">
           <div class="panel-header">
             <h3>SRT CONTRIBUTOR TELEMETRY</h3>
             <span class="badge-amber font-fira">REAL-TIME MONITOR</span>
@@ -740,7 +790,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-dr-playout" data-view-panel="advanced">
+        <div class="control-panel panel-dr-playout" data-view-panel="engineering">
           <div class="panel-header">
             <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
             <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
@@ -765,15 +815,32 @@
           </div>
         </div>
 
-        <div class="control-panel panel-logs" data-view-panel="logs">
+        <div class="control-panel panel-event" data-view-panel="event">
           <div class="panel-header">
-            <h3>MCR PLAYOUT EVENTS CONSOLE</h3>
+            <h3>EVENT RUNDOWN / AUTOMATION</h3>
+            <span class="badge-pink font-fira">CUE CONTROL</span>
+          </div>
+          <div class="panel-body rundown-list" id="rundown-list">
+            <div class="rundown-cue" data-cue-source="vod"><span>PRE-SHOW</span><strong>Graphics / test slate</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+            <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+            <div class="rundown-cue" data-cue-source="vod"><span>GRAPHICS</span><strong>Lower-third / slate source</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="graphics">TRIGGER</button></div>
+            <div class="rundown-cue" data-cue-source="ad"><span>BREAK</span><strong>SCTE-35 ad marker</strong><button class="btn-filter" data-cue-action="scte">SCTE</button></div>
+            <div class="rundown-cue" data-cue-source="cam2"><span>BACKUP / FILLER</span><strong>Backup contribution path</strong><button class="btn-filter" data-cue-action="backup">BACKUP</button></div>
+            <div class="rundown-cue" data-cue-source="vod"><span>END SLATE</span><strong>Built-in graphics source</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-logs" data-view-panel="event">
+          <div class="panel-header">
+            <h3>INCIDENT TIMELINE</h3>
 
             <div class="logs-filter-group">
               <button class="btn-filter filter-active" data-filter="all" id="filter-all">ALL</button>
-              <button class="btn-filter" data-filter="info" id="filter-info">INFO</button>
-              <button class="btn-filter" data-filter="warning" id="filter-warning">WARN</button>
+              <button class="btn-filter" data-filter="operator" id="filter-info">OPERATOR</button>
               <button class="btn-filter" data-filter="alarm" id="filter-alarm">ALARM</button>
+              <button class="btn-filter" data-filter="cloud" id="filter-warning">CLOUD</button>
+              <button class="btn-filter" data-filter="ai">AI</button>
+              <button class="btn-filter" data-filter="scte">SCTE</button>
               <select class="log-tag-filter" id="log-tag-filter">
                 <option value="all">ALL TAGS</option>
                 <option value="QC">QC</option>
@@ -820,6 +887,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=multi-local-video-1"></script>
+  <script src="app.js?v=cloud-mcr-demo-1"></script>
 </body>
 </html>

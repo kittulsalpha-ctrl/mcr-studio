@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     txRoute: document.getElementById('tx-route-value'),
     matrixAlarm: document.getElementById('matrix-alarm-value'),
     systemHealth: document.getElementById('system-health-value'),
+    onAirValue: document.getElementById('on-air-value'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -266,7 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     cam1Video: document.getElementById('video-cam1'),
     cam2Video: document.getElementById('video-cam2'),
     btnTake: document.getElementById('btn-take'),
+    btnCut: document.getElementById('btn-cut'),
+    btnFadeBlack: document.getElementById('btn-fade-black'),
     btnClearProgram: document.getElementById('btn-clear-program'),
+    btnEmergencyBackup: document.getElementById('btn-emergency-backup'),
     badgeStateCam1: document.getElementById('badge-state-cam1'),
     badgeStateCam2: document.getElementById('badge-state-cam2'),
     badgeStateLiveu3: document.getElementById('badge-state-liveu3'),
@@ -334,6 +338,25 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceInspectorAudio: document.getElementById('source-inspector-audio'),
     sourceInspectorSignal: document.getElementById('source-inspector-signal'),
     sourceInspectorMeta: document.getElementById('source-inspector-meta'),
+    aiOpsSummary: document.getElementById('ai-ops-summary'),
+    aiOpsList: document.getElementById('ai-ops-list'),
+    engInputStatus: document.getElementById('eng-input-status'),
+    engGatewayStatus: document.getElementById('eng-gateway-status'),
+    engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
+    engMediaLiveStatus: document.getElementById('eng-medialive-status'),
+    engCdnStatus: document.getElementById('eng-cdn-status'),
+    engPathStatus: document.getElementById('eng-path-status'),
+    engNetworkStatus: document.getElementById('eng-network-status'),
+    engNetworkDetail: document.getElementById('eng-network-detail'),
+    engRegionStatus: document.getElementById('eng-region-status'),
+    signalFlowSource: document.getElementById('signal-flow-source'),
+    signalFlowGateway: document.getElementById('signal-flow-gateway'),
+    signalFlowSwitcher: document.getElementById('signal-flow-switcher'),
+    signalFlowMediaLive: document.getElementById('signal-flow-medialive'),
+    signalFlowCdn: document.getElementById('signal-flow-cdn'),
+    routeSummaryProgram: document.getElementById('route-summary-program'),
+    routeSummaryPreview: document.getElementById('route-summary-preview'),
+    routeSummaryPath: document.getElementById('route-summary-path'),
     
     // VU meters
     vu: {
@@ -436,17 +459,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.logs.length > 100) state.logs.shift();
     
     renderLogs();
+    renderAIOpsAssistant();
+  }
+
+  function logMatchesTimelineFilter(log, filter) {
+    if (filter === 'all') return true;
+    if (filter === 'alarm') return log.severity === 'alarm';
+    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP'].includes(log.tag);
+    if (filter === 'cloud') return ['SRT', 'SWT', 'TRANS', 'CDN', 'SRC'].includes(log.tag);
+    if (filter === 'ai') return log.tag === 'AI';
+    if (filter === 'scte') return log.tag === 'SCTE' || log.tag === 'PLYT';
+    return log.severity === filter;
   }
 
   function renderLogs() {
-    const activeFilter = document.querySelector('.btn-filter.filter-active').getAttribute('data-filter');
+    const activeFilter = document.querySelector('.logs-filter-group .btn-filter.filter-active')?.getAttribute('data-filter') || 'all';
     const activeTag = el.logTagFilter?.value || 'all';
     const searchTerm = (el.logSearchInput?.value || '').trim().toLowerCase();
     el.consoleLogs.innerHTML = '';
     let visibleCount = 0;
     
     state.logs.forEach(log => {
-      if (activeFilter !== 'all' && log.severity !== activeFilter) return;
+      if (!logMatchesTimelineFilter(log, activeFilter)) return;
       if (activeTag !== 'all' && log.tag !== activeTag) return;
       if (searchTerm) {
         const haystack = `${log.timestamp} ${log.severity} ${log.tag} ${log.message}`.toLowerCase();
@@ -478,9 +512,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Wire up log filters
-  [el.filterAll, el.filterInfo, el.filterWarning, el.filterAlarm].forEach(btn => {
+  document.querySelectorAll('.logs-filter-group .btn-filter[data-filter]').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.btn-filter').forEach(f => f.classList.remove('filter-active'));
+      document.querySelectorAll('.logs-filter-group .btn-filter[data-filter]').forEach(f => f.classList.remove('filter-active'));
       e.target.classList.add('filter-active');
       renderLogs();
     });
@@ -505,6 +539,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
     button.addEventListener('click', () => setOperatorView(button.dataset.view || 'operate'));
+  });
+
+  function handleRundownCue(action, source) {
+    if (action === 'preview') {
+      setPreview(source);
+      addLog('info', 'ROUTE', `Rundown cue previewed: ${getTileName(source)}.`);
+      return;
+    }
+    if (action === 'take') {
+      setPreview(source);
+      routePreviewToProgram('RUNDOWN TAKE');
+      return;
+    }
+    if (action === 'graphics') {
+      setPreview('vod');
+      addLog('info', 'MIX', 'Graphics cue armed from rundown.');
+      return;
+    }
+    if (action === 'scte') {
+      el.btnInjectScte?.click();
+      addLog('info', 'SCTE', 'Rundown triggered SCTE/ad break marker.');
+      return;
+    }
+    if (action === 'backup') {
+      routeEmergencyBackup();
+    }
+  }
+
+  document.querySelectorAll('[data-cue-action]').forEach(button => {
+    button.addEventListener('click', event => {
+      const cue = event.target.closest('.rundown-cue');
+      handleRundownCue(button.dataset.cueAction, cue?.dataset.cueSource || 'vod');
+    });
   });
 
   function teardownLocalVideo(feed) {
@@ -1350,6 +1417,88 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.sourceInspectorMeta) {
       el.sourceInspectorMeta.textContent = `${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
     }
+    renderAIOpsAssistant();
+    renderEngineeringDashboard();
+  }
+
+  function getActiveAlarmSummary() {
+    const alarms = [];
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      const sourceState = getSourceState(sourceId);
+      if (sourceState === 'OFFLINE') alarms.push(`${SOURCE_DETAILS[sourceId].shortLabel} INPUT LOSS`);
+      if (sourceState === 'ALARM') alarms.push(`${SOURCE_DETAILS[sourceId].shortLabel} QC ALARM`);
+      const detections = getActiveDetections(sourceId);
+      detections.forEach(detection => alarms.push(`${SOURCE_DETAILS[sourceId].shortLabel} ${detection}`));
+    });
+    if (state.rttMs >= 160) alarms.push('HIGH RTT');
+    if (state.lossPercent >= 5) alarms.push('PACKET LOSS');
+    if (state.primaryFailed) alarms.push('PRIMARY PATH FAILED');
+    if (state.isUnderflow) alarms.push('SRT UNDERFLOW');
+    return alarms;
+  }
+
+  function renderAIOpsAssistant() {
+    if (!el.aiOpsList || !el.aiOpsSummary) return;
+    const alarms = getActiveAlarmSummary();
+    const recommendations = [];
+
+    if (alarms.length) {
+      recommendations.push({ level: 'alarm', text: `Incident detected: ${alarms.slice(0, 3).join(', ')}${alarms.length > 3 ? '...' : ''}` });
+    }
+    if (state.activeSource && !feedHasActiveSignal(state.activeSource)) {
+      recommendations.push({ level: 'alarm', text: `Program source ${getTileName(state.activeSource)} is unavailable. Route backup or take OFF AIR.` });
+    }
+    if (state.primaryFailed || getSourceState('liveu1') === 'OFFLINE' || getSourceState('liveu1') === 'ALARM') {
+      recommendations.push({ level: 'warning', text: 'Recommend Emergency Backup: route LiveU Feed 2 or Playout / Graphics while primary recovers.' });
+    }
+    if (state.rttMs >= 160) {
+      recommendations.push({ level: 'warning', text: `High RTT at ${state.rttMs}ms. Increase SRT latency buffer and avoid route changes during packet recovery.` });
+    }
+    if (state.lossPercent >= 5) {
+      recommendations.push({ level: 'warning', text: `Packet loss ${state.lossPercent.toFixed(1)}%. Check contribution uplink and prepare backup source.` });
+    }
+    const activeProgramHasSignal = state.activeSource && feedHasActiveSignal(state.activeSource);
+    if (state.previewFeed && activeProgramHasSignal) {
+      recommendations.push({ level: 'info', text: `Ready: ${getTileName(state.previewFeed)} is next, ${getTileName(state.activeSource)} is currently on air.` });
+    } else if (activeProgramHasSignal) {
+      recommendations.push({ level: 'info', text: `Program stable on ${getProgramRouteLabel(state.activeSource)}. No preview source armed.` });
+    } else if (state.activeSource) {
+      recommendations.push({ level: 'warning', text: `Program route is active but ${getTileName(state.activeSource)} is not healthy. Prepare backup or go OFF AIR.` });
+    } else {
+      recommendations.push({ level: 'info', text: 'Program is off air. Select a source, PREVIEW it, then TAKE TO AIR.' });
+    }
+    if (!alarms.length && !state.primaryFailed && !state.isUnderflow) {
+      recommendations.push({ level: 'info', text: 'No active incident. Signal path and cloud distribution are nominal.' });
+    }
+
+    el.aiOpsSummary.textContent = alarms.length
+      ? `${alarms.length} active condition${alarms.length === 1 ? '' : 's'} require operator attention.`
+      : 'No active incident. Monitoring contribution, switching, and cloud delivery.';
+    el.aiOpsList.innerHTML = recommendations.slice(0, 5).map(item => (
+      `<div class="ai-ops-item ai-${item.level}"><span>${item.level.toUpperCase()}</span><strong>${item.text}</strong></div>`
+    )).join('');
+  }
+
+  function renderEngineeringDashboard() {
+    const onlineInputs = TILE_FEEDS.filter(feed => feedHasActiveSignal(feed)).length;
+    const alarms = getActiveAlarmSummary();
+    setMetricText(el.engInputStatus, `${onlineInputs}/4 ONLINE`, onlineInputs >= 3 ? 'text-green' : onlineInputs >= 2 ? 'text-amber' : 'text-red');
+    setMetricText(el.engGatewayStatus, state.ndiBridge.backendConnected ? 'CONNECTED' : state.ndiBridge.discovered ? 'SIMULATED' : 'STANDBY', state.ndiBridge.backendConnected ? 'text-green' : 'text-amber');
+    setMetricText(el.engMediaConnectStatus, state.primaryFailed ? 'BACKUP PATH' : 'PRIMARY', state.primaryFailed ? 'text-amber' : 'text-green');
+    setMetricText(el.engMediaLiveStatus, state.activeSource ? 'RUNNING' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
+    setMetricText(el.engCdnStatus, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'HEALTHY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
+    setMetricText(el.engPathStatus, state.primaryFailed ? 'A FAIL / B ACTIVE' : 'A/B READY', state.primaryFailed ? 'text-red' : 'text-green');
+    setMetricText(el.engNetworkStatus, `RTT ${state.rttMs}ms`, state.rttMs >= 160 ? 'text-red' : state.rttMs >= 90 ? 'text-amber' : 'text-green');
+    if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${state.lossPercent.toFixed(1)}% loss · ${state.jitterMs}ms jitter · ${alarms.length} alarms`;
+    setMetricText(el.engRegionStatus, state.primaryFailed ? 'us-east-2' : 'us-east-1', state.primaryFailed ? 'text-amber' : 'text-green');
+    setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
+    setMetricText(el.signalFlowGateway, state.ndiBridge.backendConnected ? 'NDI BRIDGE LIVE' : 'NDI/SRT/WebRTC', state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
+    setMetricText(el.signalFlowMediaLive, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowCdn, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
+    if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `PROGRAM: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : '—'}`;
+    if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
+    if (el.routeSummaryPath) el.routeSummaryPath.textContent = `PATH: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
   }
 
   function getAlertSummary() {
@@ -1394,6 +1543,11 @@ document.addEventListener('DOMContentLoaded', () => {
       setMetricClass(el.matrixAlarm, 'text-green');
     }
 
+    if (el.onAirValue) {
+      el.onAirValue.textContent = state.activeSource ? 'LIVE' : 'OFF';
+      setMetricClass(el.onAirValue, state.activeSource ? 'text-red pulse-red' : 'text-muted');
+    }
+
     if (!el.systemHealth) return;
     if (alarms.length) {
       el.systemHealth.textContent = 'ALARM';
@@ -1414,6 +1568,8 @@ document.addEventListener('DOMContentLoaded', () => {
       el.systemHealth.textContent = 'READY';
       setMetricClass(el.systemHealth, 'text-green');
     }
+    renderAIOpsAssistant();
+    renderEngineeringDashboard();
   }
 
   function feedHasActiveSignal(feed) {
@@ -1837,7 +1993,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePGMFooter() {
     const previewLine = document.getElementById('pgm-status-preview');
     const programLine = document.getElementById('pgm-status-program');
+    const currentLine = document.getElementById('pgm-status-current');
+    const nextLine = document.getElementById('pgm-status-next');
     
+    if (currentLine) {
+      currentLine.textContent = state.activeSource ? `CURRENT / PROGRAM: ${getProgramRouteLabel(state.activeSource)}` : 'CURRENT / PROGRAM: OFF AIR';
+    }
+    if (nextLine) {
+      nextLine.textContent = state.previewFeed ? `NEXT / PREVIEW: ${getProgramRouteLabel(state.previewFeed)}` : 'NEXT / PREVIEW: —';
+    }
     if (previewLine) {
       previewLine.textContent = state.previewFeed ? `PREVIEW READY: ${getTileName(state.previewFeed)}` : 'PREVIEW READY: —';
     }
@@ -1848,6 +2012,8 @@ document.addEventListener('DOMContentLoaded', () => {
       el.btnClearProgram.disabled = !state.activeSource;
       el.btnClearProgram.style.opacity = state.activeSource ? '1.0' : '0.5';
     }
+    renderAIOpsAssistant();
+    renderEngineeringDashboard();
   }
 
   function syncProgramEmbed() {
@@ -1987,17 +2153,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceInspector();
   }
 
-  // TAKE button: route preview to program
-  el.btnTake.addEventListener('click', () => {
+  function routePreviewToProgram(actionLabel = 'TAKE') {
     if (!state.previewFeed) {
       addLog('warning', 'MIX', 'No preview source selected to take.');
-      return;
+      return false;
     }
     if (!feedHasActiveSignal(state.previewFeed)) {
       const sourceId = state.tileSourceIds[state.previewFeed];
       const sourceLabel = SOURCE_DETAILS[sourceId]?.label || getTileName(state.previewFeed);
       addLog('warning', 'MIX', `TAKE blocked: ${sourceLabel} is not available.`);
-      return;
+      return false;
     }
     state.activeSource = state.previewFeed;
     state.programSourceOverride = null;
@@ -2008,8 +2173,24 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOrchestratorRouting();
     syncProgramEmbed();
     updateSourceInspector();
-    addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
+    addLog('info', 'MIX', `${actionLabel} executed. Program switched to ${getTileName(state.activeSource)}.`);
+    return true;
+  }
+
+  function routeEmergencyBackup() {
+    const backupFeed = feedHasActiveSignal('cam2') ? 'cam2' : 'vod';
+    setPreview(backupFeed);
+    routePreviewToProgram('EMERGENCY BACKUP');
+    addLog('alarm', 'MIX', `Emergency backup routed: ${getProgramRouteLabel(backupFeed)}.`);
+  }
+
+  // TAKE button: route preview to program
+  el.btnTake.addEventListener('click', () => routePreviewToProgram('TAKE'));
+  el.btnCut?.addEventListener('click', () => routePreviewToProgram('CUT'));
+  el.btnFadeBlack?.addEventListener('click', () => {
+    clearProgramOut('Program Out faded to black by operator.');
   });
+  el.btnEmergencyBackup?.addEventListener('click', routeEmergencyBackup);
 
   el.btnClearProgram?.addEventListener('click', () => {
     clearProgramOut('Program Out cleared to black by operator.');
