@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     liveu3: { label: 'LiveU Feed 3', shortLabel: 'LIVEU 3', codec: 'H.264', color: '#f59e0b', rttOffset: 3 },
     liveu4: { label: 'LiveU Feed 4', shortLabel: 'LIVEU 4', codec: 'H.264', color: '#a78bfa', rttOffset: 6 }
   };
+  const NDI_SOURCES = {
+    ndi1: { label: 'NDI-CAM-01 Field TX', shortLabel: 'NDI CAM 1', codec: 'NDI HX3', resolution: '1080p60', bitrate: 7.6, rttOffset: 8, location: 'Stadium Touchline' },
+    ndi2: { label: 'NDI-CAM-02 Interview RF', shortLabel: 'NDI CAM 2', codec: 'NDI HX2', resolution: '1080p30', bitrate: 5.8, rttOffset: 14, location: 'Mixed Zone' },
+    ndi3: { label: 'NDI-GFX-01 Scorebug', shortLabel: 'NDI GFX', codec: 'NDI Full', resolution: '1080p60', bitrate: 11.2, rttOffset: 4, location: 'Graphics Node' }
+  };
   const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
   const DEMO_PRESETS = {
     clean: {
@@ -151,6 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
     customSources: {
       // feedId: { type: string, url: string, embedUrl?: string, videoEl?: HTMLVideoElement, frameEl?: HTMLIFrameElement, ready: boolean }
     },
+    ndiBridge: {
+      discovered: false,
+      selectedSourceId: 'ndi1',
+      sourceStates: {
+        ndi1: 'ONLINE',
+        ndi2: 'STANDBY',
+        ndi3: 'ONLINE'
+      },
+      assignments: {}
+    },
     programEmbedFrame: null,
     activeEditFeed: null,
     
@@ -281,6 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceUrlAttach: document.getElementById('source-url-attach'),
     sourceUrlClose: document.getElementById('source-url-close'),
     sourceUrlTarget: document.getElementById('source-url-target'),
+    btnScanNdi: document.getElementById('btn-scan-ndi'),
+    ndiSourceSelect: document.getElementById('ndi-source-select'),
+    ndiBridgeStatus: document.getElementById('ndi-bridge-status'),
+    ndiBridgeHint: document.getElementById('ndi-bridge-hint'),
     
     // Node SVG elements
     rectSwitcher: document.getElementById('rect-switcher'),
@@ -682,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function getSelectValueForSourceId(sourceId) {
     if (sourceId === 'localVideo') return 'local';
     if (sourceId === 'custom') return 'none';
+    if (isNdiSourceId(sourceId)) return 'ndi';
     return sourceId;
   }
 
@@ -697,6 +717,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.btnInjectScte) el.btnInjectScte.disabled = false;
     if (el.btnCancelScte) el.btnCancelScte.disabled = true;
     resetScenarioMedia();
+    state.ndiBridge = {
+      ...state.ndiBridge,
+      ...preset.ndiBridge,
+      sourceStates: { ...state.ndiBridge.sourceStates, ...preset.ndiBridge?.sourceStates },
+      assignments: { ...preset.ndiBridge?.assignments }
+    };
+    renderNdiBridge();
 
     TILE_FEEDS.forEach(feed => {
       const sourceId = preset.tileSourceIds?.[feed] || 'none';
@@ -775,6 +802,12 @@ document.addEventListener('DOMContentLoaded', () => {
       sourceBaseStates: { ...state.sourceBaseStates },
       sourceDetections: JSON.parse(JSON.stringify(state.sourceDetections)),
       customSources,
+      ndiBridge: {
+        discovered: state.ndiBridge.discovered,
+        selectedSourceId: state.ndiBridge.selectedSourceId,
+        sourceStates: { ...state.ndiBridge.sourceStates },
+        assignments: { ...state.ndiBridge.assignments }
+      },
       previewFeed: state.previewFeed,
       activeSource: state.activeSource,
       programSourceOverride: state.programSourceOverride,
@@ -810,6 +843,12 @@ document.addEventListener('DOMContentLoaded', () => {
       sourceBaseStates: scenario.sourceBaseStates || {},
       sourceDetections: scenario.sourceDetections || {},
       customSources: scenario.customSources || {},
+      ndiBridge: {
+        ...state.ndiBridge,
+        ...scenario.ndiBridge,
+        sourceStates: { ...state.ndiBridge.sourceStates, ...scenario.ndiBridge?.sourceStates },
+        assignments: { ...scenario.ndiBridge?.assignments }
+      },
       previewFeed: scenario.previewFeed || null,
       activeSource: scenario.activeSource || null,
       programSourceOverride: scenario.programSourceOverride || null,
@@ -849,10 +888,78 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
+  function isNdiSourceId(sourceId) {
+    return typeof sourceId === 'string' && sourceId.startsWith('ndi:');
+  }
+
+  function getNdiSourceId(sourceId) {
+    return isNdiSourceId(sourceId) ? sourceId.slice(4) : null;
+  }
+
+  function getTileNdiSourceId(feed) {
+    return getNdiSourceId(state.tileSourceIds[feed]);
+  }
+
+  function renderNdiBridge() {
+    const discoveredIds = state.ndiBridge.discovered ? Object.keys(NDI_SOURCES) : [];
+    if (el.ndiBridgeStatus) {
+      el.ndiBridgeStatus.textContent = state.ndiBridge.discovered
+        ? `${discoveredIds.length} SOURCES ONLINE`
+        : 'NOT SCANNED';
+    }
+    if (el.ndiBridgeHint) {
+      const selected = NDI_SOURCES[state.ndiBridge.selectedSourceId];
+      el.ndiBridgeHint.textContent = selected
+        ? `${selected.label} · ${selected.codec} · ${selected.resolution} · ${selected.location}`
+        : 'Browser preview uses a future NDI-to-WebRTC/HLS bridge.';
+    }
+    if (!el.ndiSourceSelect) return;
+    el.ndiSourceSelect.innerHTML = '';
+    if (!discoveredIds.length) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No NDI sources discovered';
+      el.ndiSourceSelect.appendChild(option);
+      return;
+    }
+    discoveredIds.forEach(sourceId => {
+      const source = NDI_SOURCES[sourceId];
+      const option = document.createElement('option');
+      option.value = sourceId;
+      option.textContent = `${source.shortLabel} · ${state.ndiBridge.sourceStates[sourceId] || 'OFFLINE'}`;
+      el.ndiSourceSelect.appendChild(option);
+    });
+    el.ndiSourceSelect.value = state.ndiBridge.selectedSourceId;
+  }
+
+  function scanNdiBridge() {
+    state.ndiBridge.discovered = true;
+    renderNdiBridge();
+    addLog('info', 'NDI', `NDI bridge discovery complete. ${Object.keys(NDI_SOURCES).length} sources available.`);
+  }
+
+  function attachNdiSource(feed) {
+    if (!state.ndiBridge.discovered) scanNdiBridge();
+    const sourceId = el.ndiSourceSelect?.value || state.ndiBridge.selectedSourceId;
+    const source = NDI_SOURCES[sourceId];
+    if (!source) {
+      addLog('warning', 'NDI', `No NDI source selected for ${getTileName(feed)}.`);
+      return;
+    }
+    state.ndiBridge.selectedSourceId = sourceId;
+    state.ndiBridge.assignments[sourceId] = feed;
+    setTileSource(feed, `ndi:${sourceId}`);
+    addLog('info', 'NDI', `${source.label} attached to ${getTileName(feed)} through NDI bridge.`);
+    updateSourceOverlays();
+    updateOrchestratorRouting();
+    renderNdiBridge();
+  }
+
   function getFeedAssignment(feed) {
     // Custom per-tile source takes precedence
     if (state.customSources && state.customSources[feed]) return 'custom';
     const sourceId = state.tileSourceIds[feed];
+    if (isNdiSourceId(sourceId)) return 'ndi';
     if (sourceId === 'custom') return 'none';
     if (LIVEU_SOURCE_IDS.includes(sourceId)) return 'simulated';
     if (sourceId === 'none') return 'none';
@@ -863,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state.tileSources[feed]) return;
     const nextSourceId = sourceId || 'none';
     state.tileSourceIds[feed] = nextSourceId;
-    state.tileSources[feed] = LIVEU_SOURCE_IDS.includes(nextSourceId) ? 'simulated' : nextSourceId;
+    state.tileSources[feed] = LIVEU_SOURCE_IDS.includes(nextSourceId) ? 'simulated' : isNdiSourceId(nextSourceId) ? 'ndi' : nextSourceId;
   }
 
   function clearTileSource(feed) {
@@ -891,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getSourceState(sourceId) {
     if (LIVEU_SOURCE_IDS.includes(sourceId)) return state.sourceStates[sourceId] || 'OFFLINE';
+    if (isNdiSourceId(sourceId)) return state.ndiBridge.sourceStates[getNdiSourceId(sourceId)] || 'OFFLINE';
     return sourceId === 'none' ? 'OFFLINE' : 'ONLINE';
   }
 
@@ -967,6 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'localVideo') return state.cam2VideoReady ? 'PLAYING' : 'OFFLINE';
     if (assignment === 'custom') return state.customSources[feed]?.ready ? 'ONLINE' : 'OFFLINE';
+    if (assignment === 'ndi') return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'vod') return 'PLAYING';
     return 'SIMULATED';
   }
@@ -976,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'webcam') return 'Browser Cam';
     if (assignment === 'localVideo') return state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'Local File';
     if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : 'Custom Source';
+    if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.label || 'NDI Bridge';
     if (feed === 'vod') return 'PLAYOUT';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
     return 'SIMULATED';
@@ -1035,6 +1145,20 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
+    if (assignment === 'ndi') {
+      const ndiId = getTileNdiSourceId(feed);
+      const details = NDI_SOURCES[ndiId];
+      const sourceState = getSourceState(state.tileSourceIds[feed]);
+      const hasSignal = sourceHasSignal(state.tileSourceIds[feed]);
+      return {
+        codec: hasSignal ? details?.codec || 'NDI' : 'NO LOCK',
+        source: details?.label || 'NDI Bridge',
+        resolution: hasSignal ? details?.resolution || '1080p60' : 'N/A',
+        bitrate: hasSignal ? `${((details?.bitrate || 6.4) + Math.random() * 0.5).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: hasSignal ? `${state.rttMs + (details?.rttOffset || 10)}ms` : sourceState
+      };
+    }
+
     if (LIVEU_SOURCE_IDS.includes(sourceId)) {
       const details = SOURCE_DETAILS[sourceId];
       const sourceState = getSourceState(sourceId);
@@ -1069,6 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'custom') {
       return state.customSources[feed]?.type === 'youtube' ? 5.0 : 4.2;
     }
+    if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.bitrate || 6.5;
     if (assignment === 'vod') return 3.8;
     return parseMbps(getFeedMetadata(feed).bitrate);
   }
@@ -1141,6 +1266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'none') return false;
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return sourceHasSignal(state.tileSourceIds[feed]);
+    if (assignment === 'ndi') return sourceHasSignal(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady && el.cam1Video.readyState >= 2;
     if (assignment === 'localVideo') return state.cam2VideoReady && el.cam2Video.readyState >= 2;
     if (assignment === 'custom') return !!state.customSources[feed]?.ready;
@@ -1175,6 +1301,43 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'left';
   }
 
+  function drawNdiBridgeStream(ctx, width, height, frames, source = {}) {
+    ctx.fillStyle = '#050816';
+    ctx.fillRect(0, 0, width, height);
+
+    const sweepX = (frames * 2.2) % width;
+    const colors = ['#00d2ff', '#10b981', '#ec4899'];
+    for (let i = 0; i < 9; i += 1) {
+      ctx.strokeStyle = `${colors[i % colors.length]}33`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const y = (height / 10) * (i + 1);
+      for (let x = 0; x <= width; x += 12) {
+        const wave = Math.sin((x + frames * 3 + i * 18) * 0.025) * 8;
+        if (x === 0) ctx.moveTo(x, y + wave);
+        else ctx.lineTo(x, y + wave);
+      }
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.12)';
+    ctx.fillRect(sweepX - 18, 0, 36, height);
+    ctx.strokeStyle = '#00d2ff';
+    ctx.strokeRect(12, 12, width - 24, height - 24);
+
+    ctx.fillStyle = '#00d2ff';
+    ctx.font = 'bold 13px Outfit';
+    ctx.fillText('NDI BRIDGE PREVIEW', 18, 32);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '10px Fira Code';
+    ctx.fillText(source.label || 'NDI source', 18, 50);
+    ctx.fillText(`${source.codec || 'NDI'} · ${source.resolution || '1080p60'} · ${source.location || 'Bridge'}`, 18, 66);
+
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
+    ctx.font = '9px Fira Code';
+    ctx.fillText('DISCOVERED BY MCR NDI GATEWAY', 18, height - 22);
+  }
+
   function drawFeedCanvas(feed, ctx, w, h, frames) {
     const assignment = getFeedAssignment(feed);
     if (!feedHasActiveSignal(feed) && feed !== 'vod') {
@@ -1202,6 +1365,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'localVideo') {
       if (state.cam2VideoReady && drawVideoFrame(el.cam2Video, ctx, w, h)) return;
       drawStreamLossStatic(ctx, w, h);
+      return;
+    }
+
+    if (assignment === 'ndi') {
+      const ndiId = getTileNdiSourceId(feed);
+      drawNdiBridgeStream(ctx, w, h, frames, NDI_SOURCES[ndiId]);
       return;
     }
 
@@ -1723,6 +1892,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        if (val === 'ndi') {
+          attachNdiSource(feed);
+          return;
+        }
+
         // For simulated/other network sources, assign logically
         if (val.startsWith('liveu') || val === 'obs' || val === 'rtsp') {
           // Assign the selected source identity to this monitor tile.
@@ -1753,6 +1927,12 @@ document.addEventListener('DOMContentLoaded', () => {
           addLog('info', 'ROUTE', `Custom source detached from ${feed.toUpperCase()}.`);
           clearTileSource(feed);
         }
+        Object.entries(state.ndiBridge.assignments).forEach(([sourceId, assignedFeed]) => {
+          if (assignedFeed === feed) {
+            delete state.ndiBridge.assignments[sourceId];
+            addLog('info', 'NDI', `${NDI_SOURCES[sourceId]?.label || sourceId} detached from ${feed.toUpperCase()}.`);
+          }
+        });
         if (!hadCustomSource && state.mediaAssignments.webcam !== feed && state.mediaAssignments.localVideo !== feed && !state.customSources[feed]) {
           clearTileSource(feed);
         }
@@ -1784,6 +1964,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   el.sourceUrlAttach?.addEventListener('click', submitSourceUrlEditor);
   el.sourceUrlClose?.addEventListener('click', closeSourceUrlEditor);
+  el.btnScanNdi?.addEventListener('click', scanNdiBridge);
+  el.ndiSourceSelect?.addEventListener('change', () => {
+    state.ndiBridge.selectedSourceId = el.ndiSourceSelect.value || state.ndiBridge.selectedSourceId;
+    renderNdiBridge();
+  });
   el.sourceUrlModal?.addEventListener('click', event => {
     if (event.target === el.sourceUrlModal) closeSourceUrlEditor();
   });
@@ -1809,6 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSourceStateControls();
   updateDetectionControls();
   updateOrchestratorRouting();
+  renderNdiBridge();
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);

@@ -1054,6 +1054,44 @@ body {
   accent-color: var(--neon-red);
 }
 
+.ndi-bridge-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 210, 255, 0.16);
+  display: grid;
+  gap: 7px;
+}
+
+.ndi-bridge-header,
+.ndi-bridge-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ndi-bridge-header {
+  justify-content: space-between;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.ndi-bridge-header span:last-child {
+  color: var(--neon-blue);
+}
+
+.ndi-bridge-controls .source-state-select {
+  flex: 1;
+}
+
+.ndi-bridge-hint {
+  min-height: 14px;
+  color: var(--text-secondary);
+  font-size: 8px;
+}
+
 /* Telemetry */
 .telemetry-controls {
   display: flex;

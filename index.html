@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=scenario-import-1" />
+  <link rel="stylesheet" href="styles.css?v=ndi-bridge-1" />
 </head>
 
 <body>
@@ -160,6 +160,7 @@
                   <option value="local">Local Video</option>
                   <option value="obs">OBS Virtual Camera</option>
                   <option value="rtsp">RTSP Stream</option>
+                  <option value="ndi">NDI Bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -219,6 +220,7 @@
                   <option value="local" selected>Local Video</option>
                   <option value="obs">OBS Virtual Camera</option>
                   <option value="rtsp">RTSP Stream</option>
+                  <option value="ndi">NDI Bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -278,6 +280,7 @@
                   <option value="local">Local Video</option>
                   <option value="obs">OBS Virtual Camera</option>
                   <option value="rtsp">RTSP Stream</option>
+                  <option value="ndi">NDI Bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3" selected>LiveU Feed 3</option>
@@ -337,6 +340,7 @@
                   <option value="local">Local Video</option>
                   <option value="obs">OBS Virtual Camera</option>
                   <option value="rtsp">RTSP Stream</option>
+                  <option value="ndi">NDI Bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -625,6 +629,20 @@
                 <label><input type="checkbox" id="detect-frozen-liveu4" /> FREEZE</label>
               </div>
             </div>
+
+            <div class="ndi-bridge-panel">
+              <div class="ndi-bridge-header">
+                <span>NDI BRIDGE DISCOVERY</span>
+                <span class="font-fira" id="ndi-bridge-status">NOT SCANNED</span>
+              </div>
+              <div class="ndi-bridge-controls">
+                <button class="btn-filter" id="btn-scan-ndi">SCAN NDI</button>
+                <select class="source-state-select" id="ndi-source-select">
+                  <option value="">No NDI sources discovered</option>
+                </select>
+              </div>
+              <div class="ndi-bridge-hint font-fira" id="ndi-bridge-hint">Browser preview uses a future NDI-to-WebRTC/HLS bridge.</div>
+            </div>
           </div>
         </div>
 
@@ -775,6 +793,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=scenario-import-1"></script>
+  <script src="app.js?v=ndi-bridge-1"></script>
 </body>
 </html>
