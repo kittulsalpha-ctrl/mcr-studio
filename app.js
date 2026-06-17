@@ -236,6 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
     selectDemoPreset: document.getElementById('select-demo-preset'),
     btnLoadPreset: document.getElementById('btn-load-preset'),
     btnCopyPresetLink: document.getElementById('btn-copy-preset-link'),
+    btnExportScenario: document.getElementById('btn-export-scenario'),
+    btnImportScenario: document.getElementById('btn-import-scenario'),
+    scenarioImportInput: document.getElementById('scenario-import-input'),
     presetLinkStatus: document.getElementById('preset-link-status'),
     selectWebcamTarget: document.getElementById('select-webcam-target'),
     selectVideoTarget: document.getElementById('select-video-target'),
@@ -735,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
       applyYouTubeMute(feed);
     });
 
-    if (el.selectDemoPreset) el.selectDemoPreset.value = id;
+    if (el.selectDemoPreset && id !== 'imported') el.selectDemoPreset.value = id;
     el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
     updateSourceStateControls();
     updateDetectionControls();
@@ -752,6 +755,82 @@ document.addEventListener('DOMContentLoaded', () => {
       url.searchParams.set('preset', id);
       window.history.replaceState({}, '', url.toString());
     }
+  }
+
+  function serializeCurrentScenario() {
+    const customSources = {};
+    Object.entries(state.customSources).forEach(([feed, src]) => {
+      if (!src?.url) return;
+      customSources[feed] = {
+        type: src.type || 'video',
+        url: src.url
+      };
+    });
+
+    return {
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      label: 'MCR Studio Custom Scenario',
+      tileSourceIds: { ...state.tileSourceIds },
+      sourceBaseStates: { ...state.sourceBaseStates },
+      sourceDetections: JSON.parse(JSON.stringify(state.sourceDetections)),
+      customSources,
+      previewFeed: state.previewFeed,
+      activeSource: state.activeSource,
+      programSourceOverride: state.programSourceOverride,
+      mutedFeeds: { ...state.mutedFeeds },
+      primaryFailed: state.primaryFailed
+    };
+  }
+
+  function downloadScenarioJson() {
+    const scenario = serializeCurrentScenario();
+    const blob = new Blob([JSON.stringify(scenario, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `mcr-studio-scenario-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    addLog('info', 'DEMO', 'Scenario exported as JSON.');
+  }
+
+  function importScenarioFromObject(scenario) {
+    if (!scenario || typeof scenario !== 'object' || !scenario.tileSourceIds) {
+      addLog('alarm', 'DEMO', 'Scenario import failed: invalid JSON structure.');
+      return;
+    }
+
+    DEMO_PRESETS.imported = {
+      label: scenario.label || 'Imported Scenario',
+      tileSourceIds: scenario.tileSourceIds,
+      sourceBaseStates: scenario.sourceBaseStates || {},
+      sourceDetections: scenario.sourceDetections || {},
+      customSources: scenario.customSources || {},
+      previewFeed: scenario.previewFeed || null,
+      activeSource: scenario.activeSource || null,
+      programSourceOverride: scenario.programSourceOverride || null,
+      mutedFeeds: scenario.mutedFeeds || {},
+      primaryFailed: !!scenario.primaryFailed
+    };
+    applyDemoPreset('imported', { updateUrl: false });
+    if (el.presetLinkStatus) el.presetLinkStatus.textContent = 'Imported scenario JSON loaded';
+  }
+
+  function importScenarioFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      try {
+        importScenarioFromObject(JSON.parse(reader.result));
+      } catch (error) {
+        addLog('alarm', 'DEMO', `Scenario import failed: ${error.message}`);
+      }
+    });
+    reader.readAsText(file);
   }
 
   function copyPresetLink() {
@@ -1716,6 +1795,12 @@ document.addEventListener('DOMContentLoaded', () => {
     applyDemoPreset(el.selectDemoPreset?.value || 'clean', { updateUrl: true });
   });
   el.btnCopyPresetLink?.addEventListener('click', copyPresetLink);
+  el.btnExportScenario?.addEventListener('click', downloadScenarioJson);
+  el.btnImportScenario?.addEventListener('click', () => el.scenarioImportInput?.click());
+  el.scenarioImportInput?.addEventListener('change', () => {
+    importScenarioFile(el.scenarioImportInput.files?.[0]);
+    el.scenarioImportInput.value = '';
+  });
 
   updateSourceOverlays();
   updateTAKEButton();

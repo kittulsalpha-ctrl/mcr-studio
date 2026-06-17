@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=demo-presets-2" />
+  <link rel="stylesheet" href="styles.css?v=scenario-import-1" />
 </head>
 
 <body>
@@ -88,6 +88,9 @@
           </label>
           <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD PRESET</button>
           <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this preset.">COPY LINK</button>
+          <button class="btn btn-secondary" id="btn-export-scenario" title="Download the current scenario as a JSON file.">EXPORT SCENARIO</button>
+          <button class="btn btn-secondary" id="btn-import-scenario" title="Import a saved scenario JSON file.">IMPORT SCENARIO</button>
+          <input type="file" id="scenario-import-input" accept="application/json,.json" hidden />
           <span class="preset-link-status font-fira" id="preset-link-status">Shareable preset URLs use ?preset=name</span>
         </div>
         <div class="multiviewer-action-bar assign-controls">
@@ -772,6 +775,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=demo-presets-2"></script>
+  <script src="app.js?v=scenario-import-1"></script>
 </body>
 </html>
