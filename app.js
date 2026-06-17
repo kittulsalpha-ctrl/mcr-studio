@@ -265,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cam1Video: document.getElementById('video-cam1'),
     cam2Video: document.getElementById('video-cam2'),
     btnTake: document.getElementById('btn-take'),
+    btnClearProgram: document.getElementById('btn-clear-program'),
     badgeStateCam1: document.getElementById('badge-state-cam1'),
     badgeStateCam2: document.getElementById('badge-state-cam2'),
     badgeStateLiveu3: document.getElementById('badge-state-liveu3'),
@@ -1046,15 +1047,29 @@ document.addEventListener('DOMContentLoaded', () => {
     setTileSource(feed, feed === 'vod' ? 'vod' : 'none');
     if (state.previewFeed === feed) clearPreviewUI();
     if (state.activeSource === feed) {
-      state.activeSource = null;
-      state.programSourceOverride = null;
-      el.pgmActiveSource.textContent = 'SOURCE: NONE';
-      addLog('info', 'ROUTE', `${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
-      updateOrchestratorRouting();
-      updateBadges();
-      updatePGMFooter();
-      syncProgramEmbed();
+      clearProgramOut(`${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
     }
+  }
+
+  function clearProgramOut(message = 'Program Out cleared to black.') {
+    const previousSource = state.activeSource;
+    if (state.adIntervalId) clearInterval(state.adIntervalId);
+    state.adIntervalId = null;
+    state.adActive = false;
+    state.adTimeRemaining = 0;
+    state.preAdRoute = null;
+    state.activeSource = null;
+    state.programSourceOverride = null;
+    if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
+    if (el.btnInjectScte) el.btnInjectScte.disabled = false;
+    if (el.btnCancelScte) el.btnCancelScte.disabled = true;
+    el.pgmActiveSource.textContent = 'SOURCE: NONE';
+    addLog(previousSource ? 'info' : 'warning', 'MIX', message);
+    updateOrchestratorRouting();
+    updateBadges();
+    updatePGMFooter();
+    syncProgramEmbed();
+    updateSourceInspector();
   }
 
   function getProgramSourceId() {
@@ -1790,6 +1805,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (programLine) {
       programLine.textContent = state.activeSource ? `PROGRAM ON AIR: ${getTileName(state.activeSource)}` : 'PROGRAM ON AIR: —';
     }
+    if (el.btnClearProgram) {
+      el.btnClearProgram.disabled = !state.activeSource;
+      el.btnClearProgram.style.opacity = state.activeSource ? '1.0' : '0.5';
+    }
   }
 
   function syncProgramEmbed() {
@@ -1951,6 +1970,10 @@ document.addEventListener('DOMContentLoaded', () => {
     syncProgramEmbed();
     updateSourceInspector();
     addLog('info', 'MIX', `TAKE executed. Program switched to ${getTileName(state.activeSource)}.`);
+  });
+
+  el.btnClearProgram?.addEventListener('click', () => {
+    clearProgramOut('Program Out cleared to black by operator.');
   });
 
   // Per-tile attach/eject/solo wiring

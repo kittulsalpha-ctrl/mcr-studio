@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=source-inspector-1" />
+  <link rel="stylesheet" href="styles.css?v=program-clear-1" />
 </head>
 
 <body>
@@ -438,6 +438,7 @@
             <div class="screen-footer">
               <div class="pgm-footer-top">
                 <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
+                <button class="btn-screen-control btn-eject" id="btn-clear-program" title="Clear Program Out and return it to black.">OFF AIR</button>
                 <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
                 <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
               </div>
@@ -809,6 +810,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=source-inspector-1"></script>
+  <script src="app.js?v=program-clear-1"></script>
 </body>
 </html>
