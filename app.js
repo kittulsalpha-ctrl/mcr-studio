@@ -104,6 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // MCR Playout Routing
     activeSource: null, // null when no program source is on-air, otherwise 'cam1','cam2','liveu3','liveu4','vod','ad'
     primaryFailed: false,
+    backend: {
+      enabled: new URLSearchParams(window.location.search).get('backend') === '1',
+      connected: false,
+      lastState: null,
+      eventSource: null
+    },
 
     // Preview / Program state
     previewFeed: null,
@@ -258,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     matrixAlarm: document.getElementById('matrix-alarm-value'),
     systemHealth: document.getElementById('system-health-value'),
     onAirValue: document.getElementById('on-air-value'),
+    controlApiValue: document.getElementById('control-api-value'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -542,10 +549,61 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAIOpsAssistant();
   }
 
+  function updateBackendStatus(connected, label = null) {
+    state.backend.connected = connected;
+    if (!el.controlApiValue) return;
+    el.controlApiValue.textContent = label || (state.backend.enabled ? connected ? 'LIVE' : 'OFFLINE' : 'SIM');
+    el.controlApiValue.className = `badge-value ${connected ? 'text-green' : state.backend.enabled ? 'text-red' : 'text-amber'}`;
+  }
+
+  async function backendCommand(endpoint, payload = {}) {
+    if (!state.backend.enabled) return null;
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await response.json();
+      updateBackendStatus(response.ok);
+      if (!response.ok) {
+        addLog('warning', 'API', `Backend command failed: ${json.error || endpoint}.`);
+      }
+      return json;
+    } catch (error) {
+      updateBackendStatus(false);
+      addLog('warning', 'API', `Backend unavailable: ${error.message}.`);
+      return null;
+    }
+  }
+
+  async function connectBackendOrchestrator() {
+    if (!state.backend.enabled) {
+      updateBackendStatus(false, 'SIM');
+      return;
+    }
+    try {
+      const response = await fetch('/api/state', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      state.backend.lastState = await response.json();
+      updateBackendStatus(true);
+      addLog('info', 'API', 'Control Orchestrator backend connected.');
+      state.backend.eventSource = new EventSource('/api/events');
+      state.backend.eventSource.addEventListener('state', event => {
+        state.backend.lastState = JSON.parse(event.data);
+        updateBackendStatus(true);
+      });
+      state.backend.eventSource.onerror = () => updateBackendStatus(false);
+    } catch (error) {
+      updateBackendStatus(false);
+      addLog('warning', 'API', `Control Orchestrator backend not connected: ${error.message}.`);
+    }
+  }
+
   function logMatchesTimelineFilter(log, filter) {
     if (filter === 'all') return true;
     if (filter === 'alarm') return log.severity === 'alarm';
-    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO', 'REPLAY', 'PLYT'].includes(log.tag);
+    if (filter === 'operator') return ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO', 'REPLAY', 'PLYT', 'API'].includes(log.tag);
     if (filter === 'cloud') return ['SRT', 'SWT', 'TRANS', 'CDN', 'SRC'].includes(log.tag);
     if (filter === 'ai') return log.tag === 'AI';
     if (filter === 'scte') return log.tag === 'SCTE' || log.tag === 'PLYT';
@@ -612,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.audioMixer.audioFollowVideo = event.target.checked;
     addLog('info', 'AUDIO', `Audio Follow Video ${state.audioMixer.audioFollowVideo ? 'enabled' : 'disabled'}.`);
     syncAudioFollowVideo('AFV enabled');
+    backendCommand('/api/audio-afv', { enabled: state.audioMixer.audioFollowVideo });
     renderAudioMixer();
     renderEngineeringDashboard();
   });
@@ -621,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const feed = row?.dataset.audioFeed;
     if (!feed || event.target.dataset.audioAction !== 'fader') return;
     state.audioMixer.channels[feed].fader = Number(event.target.value);
+    backendCommand('/api/audio-fader', { source: feed, value: state.audioMixer.channels[feed].fader });
     renderAudioMixer();
   });
 
@@ -1308,6 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePGMFooter();
     syncProgramEmbed();
     updateSourceInspector();
+    backendCommand('/api/off-air');
   }
 
   function getProgramSourceId() {
@@ -1619,6 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.replayPlayout.replay.clips.push(clip);
     state.replayPlayout.replay.selectedClip = clip.id;
     addLog('info', 'REPLAY', `${clip.label} created from ${getTileName(source)}.`);
+    backendCommand('/api/replay-create', { source, duration: clip.duration });
     renderReplayPlayoutServers();
   }
 
@@ -1632,6 +1694,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function takeServerSource(feed) {
     if (state.previewFeed !== feed) setPreview(feed);
     routePreviewToProgram(feed === 'replay' ? 'TAKE REPLAY' : 'TAKE PLAYOUT');
+    if (feed === 'replay') backendCommand('/api/replay-take');
+    if (feed === 'playout') backendCommand('/api/playout-take', { assetId: state.replayPlayout.playout.selectedAsset });
     renderReplayPlayoutServers();
   }
 
@@ -1640,6 +1704,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setPreview(target);
     routePreviewToProgram('RETURN LIVE');
     addLog('info', 'ROUTE', `Returned to live source ${getProgramRouteLabel(target)}.`);
+    backendCommand('/api/return-live');
     renderReplayPlayoutServers();
   }
 
@@ -1649,6 +1714,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.audioMixer.programBus = nextFeed;
     renderAudioMixer();
     addLog(nextFeed ? 'info' : 'warning', 'AUDIO', nextFeed ? `PGM audio routed to ${getAudioLabel(nextFeed)} (${reason}).` : `PGM audio cleared (${reason}).`);
+    if (reason.includes('manual')) backendCommand('/api/audio-program', { source: nextFeed, reason });
   }
 
   function syncAudioFollowVideo(reason = 'AFV') {
@@ -2339,6 +2405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePGMFooter();
     updateSourceInspector();
     addLog('info', 'MUX', `Preview set to ${getTileName(feed)}.`);
+    backendCommand('/api/preview', { source: feed });
   }
 
   function getTileName(feed) {
@@ -2469,6 +2536,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.graphicsPreview = type;
     updateGraphicsUI();
     addLog('info', 'CG', `${graphicsLabel(type)} loaded to CG preview.`);
+    backendCommand('/api/cg-preview', { layer: type });
   }
 
   function takeGraphic() {
@@ -2477,6 +2545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.graphicsPreview = null;
     updateGraphicsUI();
     addLog('info', 'CG', `${graphicsLabel(graphic)} keyed over Program.`);
+    backendCommand('/api/cg-take', { layer: graphic });
   }
 
   function clearGraphics(message = 'All graphics cleared from Program.') {
@@ -2487,6 +2556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.bugOn = false;
     updateGraphicsUI();
     if (hadGraphics) addLog('info', 'CG', message);
+    backendCommand('/api/cg-clear');
   }
 
   function toggleGraphicsLayer(layer) {
@@ -2664,6 +2734,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncProgramEmbed();
     updateSourceInspector();
     addLog('info', 'MIX', `${actionLabel} executed. Program switched to ${getTileName(state.activeSource)}.`);
+    backendCommand('/api/take', { source: state.activeSource, action: actionLabel });
     return true;
   }
 
@@ -2882,6 +2953,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOrchestratorRouting();
   renderNdiBridge();
   renderReplayPlayoutServers();
+  connectBackendOrchestrator();
   setOperatorView('operate');
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=replay-playout-1" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-1" />
 </head>
 
 <body>
@@ -46,6 +46,10 @@
         <div class="badge badge-on-air" id="badge-on-air">
           <span class="badge-label">ON AIR</span>
           <span class="badge-value text-red" id="on-air-value">OFF</span>
+        </div>
+        <div class="badge" id="badge-control-api">
+          <span class="badge-label">CONTROL API</span>
+          <span class="badge-value text-amber" id="control-api-value">SIM</span>
         </div>
       </div>
 
@@ -973,6 +977,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=replay-playout-1"></script>
+  <script src="app.js?v=orchestrator-1"></script>
 </body>
 </html>

@@ -28,6 +28,24 @@ The intended future API boundary is:
 - Orchestrator owns source state, Program/Preview routing, audio bus state, service health, alarms, and logs.
 - Media engines perform real ingest, switching, audio mixing, graphics keying, replay, playout, encoding, and distribution.
 
+## Control Orchestrator Backend
+
+The repo includes a dependency-free Node.js Control Orchestrator prototype:
+
+```bash
+npm start
+```
+
+Open backend-connected mode:
+
+```text
+http://127.0.0.1:8080/?backend=1&preset=football
+```
+
+The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, and `/api/events` for live Server-Sent Events. It is still simulated, but it creates the real product boundary between the browser control surface and future media engines.
+
+See `ORCHESTRATOR_API.md` for the API contract.
+
 ## Simulated vs Real
 
 The browser app currently simulates several broadcast/cloud systems so the workflow can be demonstrated without dedicated infrastructure:
@@ -83,3 +101,5 @@ http://127.0.0.1:8080/
 ```
 
 For GitHub Pages deployment, enable Pages for the repository and point it at the branch/folder containing `index.html`.
+
+For backend mode, use `npm start` instead of a static file server.
