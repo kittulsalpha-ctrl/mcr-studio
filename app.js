@@ -116,11 +116,12 @@ document.addEventListener('DOMContentLoaded', () => {
     cam2VideoReady: false,
     cam2FileURL: null,
     cam2FileName: null,
+    localVideos: {},
 
     // Media assignments for dynamic source targeting
     mediaAssignments: {
       webcam: 'cam1',
-      localVideo: 'cam2'
+      localVideo: null
     },
     tileSources: {
       cam1: 'webcam',
@@ -506,12 +507,26 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', () => setOperatorView(button.dataset.view || 'operate'));
   });
 
-  function safeRevokeVideoURL() {
-    if (state.cam2FileURL) {
-      URL.revokeObjectURL(state.cam2FileURL);
+  function teardownLocalVideo(feed) {
+    const local = state.localVideos[feed];
+    if (!local) return false;
+    local.videoEl.pause();
+    local.videoEl.removeAttribute('src');
+    local.videoEl.load();
+    local.videoEl.remove();
+    URL.revokeObjectURL(local.url);
+    delete state.localVideos[feed];
+    if (state.mediaAssignments.localVideo === feed) state.mediaAssignments.localVideo = null;
+    if (feed === 'cam2') {
+      state.cam2VideoReady = false;
       state.cam2FileURL = null;
       state.cam2FileName = null;
     }
+    return true;
+  }
+
+  function teardownAllLocalVideos() {
+    Object.keys(state.localVideos).forEach(feed => teardownLocalVideo(feed));
   }
 
   function getVideoResolution(video) {
@@ -702,12 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.cam1Video.srcObject = null;
     state.webcamReady = false;
     state.cam1VideoReady = false;
-    if (state.cam2FileURL) {
-      el.cam2Video.pause();
-      el.cam2Video.removeAttribute('src');
-      el.cam2Video.load();
-      safeRevokeVideoURL();
-    }
+    teardownAllLocalVideos();
     state.cam2VideoReady = false;
     state.cam2FileName = null;
     state.mediaAssignments.webcam = null;
@@ -1048,6 +1058,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return state.tileSources[feed] || 'simulated';
   }
 
+  function getLocalVideo(feed) {
+    return state.localVideos[feed] || null;
+  }
+
   function setTileSource(feed, sourceId) {
     if (!state.tileSources[feed]) return;
     const nextSourceId = sourceId || 'none';
@@ -1057,7 +1071,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function clearTileSource(feed) {
     if (!state.tileSources[feed]) return;
+    const wasLocalVideo = getFeedAssignment(feed) === 'localVideo';
     setTileSource(feed, feed === 'vod' ? 'vod' : 'none');
+    if (wasLocalVideo) teardownLocalVideo(feed);
     if (state.previewFeed === feed) clearPreviewUI();
     if (state.activeSource === feed) {
       clearProgramOut(`${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
@@ -1169,7 +1185,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assignment === 'none') return 'OFFLINE';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
-    if (assignment === 'localVideo') return state.cam2VideoReady ? 'PLAYING' : 'OFFLINE';
+    if (assignment === 'localVideo') return getLocalVideo(feed)?.ready ? 'PLAYING' : 'OFFLINE';
     if (assignment === 'custom') return state.customSources[feed]?.ready ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'ndi') return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'vod') return 'PLAYING';
@@ -1179,10 +1195,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function getAssignmentLabel(feed) {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return 'Browser Cam';
-    if (assignment === 'localVideo') return state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'Local File';
+    if (assignment === 'localVideo') return getLocalVideo(feed)?.fileName || 'Local File';
     if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : 'Custom Source';
     if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.label || 'NDI Bridge';
-    if (feed === 'vod') return 'PLAYOUT';
+    if (feed === 'vod') return 'Built-in Graphics';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
     return 'SIMULATED';
   }
@@ -1212,12 +1228,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (assignment === 'localVideo') {
+      const local = getLocalVideo(feed);
       return {
         codec: 'Local File',
-        source: state.cam2VideoReady ? (state.cam2FileName || 'Local File') : 'No File',
-        resolution: state.cam2VideoReady ? getVideoResolution(el.cam2Video) : 'N/A',
-        bitrate: state.cam2VideoReady ? `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps` : '0.0 Mbps',
-        rtt: state.cam2VideoReady ? `${state.rttMs}ms` : '--'
+        source: local?.fileName || 'No File',
+        resolution: local?.ready ? getVideoResolution(local.videoEl) : 'N/A',
+        bitrate: local?.ready ? `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps` : '0.0 Mbps',
+        rtt: local?.ready ? `${state.rttMs}ms` : '--'
       };
     }
 
@@ -1405,7 +1422,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return sourceHasSignal(state.tileSourceIds[feed]);
     if (assignment === 'ndi') return sourceHasSignal(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady && el.cam1Video.readyState >= 2;
-    if (assignment === 'localVideo') return state.cam2VideoReady && el.cam2Video.readyState >= 2;
+    if (assignment === 'localVideo') {
+      const local = getLocalVideo(feed);
+      return !!local?.ready && local.videoEl.readyState >= 2;
+    }
     if (assignment === 'custom') return !!state.customSources[feed]?.ready;
     if (assignment === 'vod') return true;
     return true;
@@ -1500,7 +1520,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (assignment === 'localVideo') {
-      if (state.cam2VideoReady && drawVideoFrame(el.cam2Video, ctx, w, h)) return;
+      const local = getLocalVideo(feed);
+      if (local?.ready && drawVideoFrame(local.videoEl, ctx, w, h)) return;
       drawStreamLossStatic(ctx, w, h);
       return;
     }
@@ -1572,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusParts.push(`Webcam ➜ ${String(state.mediaAssignments.webcam ?? 'NONE').toUpperCase()}`);
     statusParts.push(`Video ➜ ${String(state.mediaAssignments.localVideo ?? 'NONE').toUpperCase()}`);
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
-    if (state.cam2VideoReady) statusParts.unshift('Local video PLAYING');
+    if (Object.values(state.localVideos).some(local => local.ready)) statusParts.unshift('Local video PLAYING');
     el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
     updateSourceInspector();
     updateHeaderMetrics();
@@ -1639,20 +1660,34 @@ document.addEventListener('DOMContentLoaded', () => {
   el.localVideoFileInput.addEventListener('change', () => {
     const file = el.localVideoFileInput.files?.[0];
     if (!file) return;
-    safeRevokeVideoURL();
-    state.cam2FileName = file.name;
-    state.cam2FileURL = URL.createObjectURL(file);
-    el.cam2Video.src = state.cam2FileURL;
-    state.cam2VideoReady = false;
-    el.cam2Video.load();
-    el.cam2Video.play().catch(() => {});
-    // If a tile requested this local file attach, assign it now
-    if (pendingLocalAssignTarget) {
-      assignMediaTarget('localVideo', pendingLocalAssignTarget);
-      pendingLocalAssignTarget = null;
+    const target = pendingLocalAssignTarget || el.selectVideoTarget.value || 'cam2';
+    teardownLocalVideo(target);
+    const url = URL.createObjectURL(file);
+    const videoEl = document.createElement('video');
+    videoEl.autoplay = true;
+    videoEl.loop = true;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.className = 'hidden-video';
+    videoEl.src = url;
+    document.body.appendChild(videoEl);
+    state.localVideos[target] = { fileName: file.name, url, videoEl, ready: false };
+    if (target === 'cam2') {
+      state.cam2FileName = file.name;
+      state.cam2FileURL = url;
+      state.cam2VideoReady = false;
     }
+    videoEl.addEventListener('loadedmetadata', () => {
+      state.localVideos[target].ready = true;
+      if (target === 'cam2') state.cam2VideoReady = true;
+      updateSourceOverlays();
+    }, { once: true });
+    videoEl.load();
+    videoEl.play().catch(() => {});
+    assignMediaTarget('localVideo', target);
+    pendingLocalAssignTarget = null;
     updateSourceOverlays();
-    addLog('info', 'VIDEO', `Local file selected: ${file.name}`);
+    addLog('info', 'VIDEO', `Local file loaded to ${getTileName(target)}: ${file.name}`);
     el.localVideoFileInput.value = '';
   });
 
@@ -1669,15 +1704,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function assignMediaTarget(mediaType, target) {
     const otherType = mediaType === 'webcam' ? 'localVideo' : 'webcam';
-    if (state.mediaAssignments[otherType] === target) {
-      addLog('warning', 'ROUTE', `${mediaType === 'webcam' ? 'Webcam' : 'Local Video'} cannot be assigned to ${target.toUpperCase()} because it is already occupied.`);
-      if (mediaType === 'webcam') el.selectWebcamTarget.value = state.mediaAssignments.webcam;
-      else el.selectVideoTarget.value = state.mediaAssignments.localVideo;
-      return;
+    const existingAssignment = getFeedAssignment(target);
+    const shouldClearTarget = state.mediaAssignments[otherType] === target || (existingAssignment !== 'none' && existingAssignment !== mediaType);
+    if (shouldClearTarget) {
+      clearTileSource(target);
     }
 
     const previousTarget = state.mediaAssignments[mediaType];
-    if (previousTarget && previousTarget !== target && getFeedAssignment(previousTarget) === mediaType) {
+    if (mediaType === 'webcam' && previousTarget && previousTarget !== target && getFeedAssignment(previousTarget) === mediaType) {
       clearTileSource(previousTarget);
     }
 
@@ -1714,27 +1748,19 @@ document.addEventListener('DOMContentLoaded', () => {
     clearCanvas(assignedFeed);
   }
 
-  function ejectLocalVideo() {
-    if (!state.cam2FileURL) {
-      addLog('warning', 'VIDEO', 'No local video loaded to eject.');
+  function ejectLocalVideo(feed = el.selectVideoTarget.value || state.mediaAssignments.localVideo) {
+    if (!feed || !state.localVideos[feed]) {
+      addLog('warning', 'VIDEO', 'No local video loaded on the selected route.');
       return;
     }
 
-    const assignedFeed = state.mediaAssignments.localVideo;
-
-    el.cam2Video.pause();
-    el.cam2Video.removeAttribute('src');
-    el.cam2Video.load();
-    safeRevokeVideoURL();
-    state.cam2VideoReady = false;
-
-    addLog('info', 'VIDEO', 'Local video ejected from assigned source.');
-
-    if (assignedFeed) clearTileSource(assignedFeed);
-    state.mediaAssignments.localVideo = null;
+    const fileName = state.localVideos[feed].fileName;
+    teardownLocalVideo(feed);
+    clearTileSource(feed);
+    addLog('info', 'VIDEO', `Local video cleared from ${getTileName(feed)}: ${fileName}.`);
 
     updateSourceOverlays();
-    clearCanvas(assignedFeed);
+    clearCanvas(feed);
   }
 
   el.btnStopWebcam.addEventListener('click', stopWebcam);
@@ -1760,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getTileName(feed) {
-    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'PLAYOUT' : feed.toUpperCase();
+    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'PLAYOUT / GRAPHICS' : feed.toUpperCase();
   }
 
   function getProgramRouteLabel(feed) {
@@ -1786,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateBadges() {
-    const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4'];
+    const tileFeeds = ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'];
     tileFeeds.forEach(feed => {
       const previewBadge = document.getElementById(`preview-badge-${feed}`);
       const programBadge = document.getElementById(`program-badge-${feed}`);
@@ -1919,8 +1945,8 @@ document.addEventListener('DOMContentLoaded', () => {
       routeLabel = 'LIVEU 4';
       switcherLabel = 'LIVEU 4';
     } else if (source === 'vod') {
-      routeLabel = 'PLAYOUT';
-      switcherLabel = 'PLAYOUT';
+      routeLabel = 'GRAPHICS';
+      switcherLabel = 'GRAPHICS';
     } else if (source === 'ad') {
       routeLabel = 'AD CUE';
       switcherLabel = 'SCTE-35';
@@ -2031,7 +2057,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (val === 'local') {
-          if (state.cam2FileURL) {
+          if (state.localVideos[feed]) {
             assignMediaTarget('localVideo', feed);
             updateSourceOverlays();
             return;
@@ -2068,9 +2094,8 @@ document.addEventListener('DOMContentLoaded', () => {
           state.mediaAssignments.webcam = null;
           addLog('info', 'ROUTE', `Webcam unassigned from ${feed.toUpperCase()}.`);
         }
-        if (state.mediaAssignments.localVideo === feed && getFeedAssignment(feed) === 'localVideo') {
-          ejectLocalVideo();
-          state.mediaAssignments.localVideo = null;
+        if (getFeedAssignment(feed) === 'localVideo') {
+          ejectLocalVideo(feed);
           addLog('info', 'ROUTE', `Local video unassigned from ${feed.toUpperCase()}.`);
         }
         const hadCustomSource = teardownCustomSource(feed);
@@ -2114,6 +2139,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editBtn) {
       editBtn.addEventListener('click', () => openSourceUrlEditor(feed));
     }
+  });
+
+  document.getElementById('btn-solo-vod')?.addEventListener('click', () => setPreview('vod'));
+  document.getElementById('screen-vod')?.addEventListener('click', () => inspectFeed('vod'));
+  document.getElementById('btn-mute-vod')?.addEventListener('click', () => {
+    const cur = !!state.mutedFeeds.vod;
+    state.mutedFeeds.vod = !cur;
+    document.getElementById('btn-mute-vod')?.classList.toggle('btn-active-mute', !cur);
+    updateSourceInspector();
+    addLog('info', 'AUDIO', `PLAYOUT / GRAPHICS ${!cur ? 'muted' : 'unmuted'}.`);
   });
 
   el.sourceUrlAttach?.addEventListener('click', submitSourceUrlEditor);

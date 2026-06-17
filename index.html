@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=operator-views-1" />
+  <link rel="stylesheet" href="styles.css?v=multi-local-video-1" />
 </head>
 
 <body>
@@ -360,11 +360,11 @@
             <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 5: Playout Graphics / VOD -->
+          <!-- Screen 5: Playout Graphics / Test Source -->
           <div class="screen-card active-stream" id="screen-vod">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-pink"></span>PLAYOUT (GRAPHICS / VOD)
+                <span class="channel-indicator bg-pink"></span>PLAYOUT / GRAPHICS
               </span>
               <span class="screen-timecode font-fira" id="tc-vod">00:00:00:00</span>
             </div>
@@ -386,15 +386,17 @@
               <div class="stream-stats-overlay">
                 <div class="stat-row"><span>codec:</span><span class="text-blue">PRORES</span></div>
                 <div class="stat-row"><span>res:</span><span>1080p60</span></div>
-                <div class="stat-row"><span>source:</span><span class="text-pink">S3_BUCKET</span></div>
+                <div class="stat-row"><span>source:</span><span class="text-pink">BUILT-IN TEST</span></div>
               </div>
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod" title="Select Playout as Preview before sending it to Program.">PREVIEW</button>
+              <button class="btn-screen-control btn-solo" data-feed="vod" id="btn-solo-vod" title="Select the built-in graphics/test source as Preview before sending it to Program.">PREVIEW</button>
               <button class="btn-screen-control btn-mute" data-feed="vod" id="btn-mute-vod" title="Mute or unmute Playout audio.">MUTE</button>
-              <div class="active-badge text-pink font-fira" id="badge-state-vod">PLAYING</div>
+              <div class="active-badge text-pink font-fira" id="badge-state-vod">TEST SRC</div>
             </div>
+            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">ON AIR</div>
           </div>
 
           <!-- Screen 6: Program Out -->
@@ -818,6 +820,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=operator-views-1"></script>
+  <script src="app.js?v=multi-local-video-1"></script>
 </body>
 </html>
