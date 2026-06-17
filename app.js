@@ -12,11 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     liveu3: { label: 'LiveU Feed 3', shortLabel: 'LIVEU 3', codec: 'H.264', color: '#f59e0b', rttOffset: 3 },
     liveu4: { label: 'LiveU Feed 4', shortLabel: 'LIVEU 4', codec: 'H.264', color: '#a78bfa', rttOffset: 6 }
   };
-  const NDI_SOURCES = {
+  const NDI_BRIDGE_ENDPOINT = '/api/ndi/sources';
+  const DEFAULT_NDI_SOURCES = {
     ndi1: { label: 'NDI-CAM-01 Field TX', shortLabel: 'NDI CAM 1', codec: 'NDI HX3', resolution: '1080p60', bitrate: 7.6, rttOffset: 8, location: 'Stadium Touchline' },
     ndi2: { label: 'NDI-CAM-02 Interview RF', shortLabel: 'NDI CAM 2', codec: 'NDI HX2', resolution: '1080p30', bitrate: 5.8, rttOffset: 14, location: 'Mixed Zone' },
     ndi3: { label: 'NDI-GFX-01 Scorebug', shortLabel: 'NDI GFX', codec: 'NDI Full', resolution: '1080p60', bitrate: 11.2, rttOffset: 4, location: 'Graphics Node' }
   };
+  const NDI_SOURCES = JSON.parse(JSON.stringify(DEFAULT_NDI_SOURCES));
   const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
   const DEMO_PRESETS = {
     clean: {
@@ -900,18 +902,67 @@ document.addEventListener('DOMContentLoaded', () => {
     return getNdiSourceId(state.tileSourceIds[feed]);
   }
 
+  function normalizeNdiBridgeSource(source, index) {
+    const id = String(source.id || source.name || `ndi${index + 1}`).replace(/^ndi:/, '');
+    return {
+      id,
+      label: source.label || source.name || `NDI Source ${index + 1}`,
+      shortLabel: source.shortLabel || source.short_label || source.name || `NDI ${index + 1}`,
+      codec: source.codec || 'NDI HX',
+      resolution: source.resolution || source.format || '1080p60',
+      bitrate: Number(source.bitrate || source.bitrateMbps || source.bitrate_mbps || 6.5),
+      rttOffset: Number(source.rttOffset || source.rtt_offset || source.latencyMs || source.latency_ms || 10),
+      location: source.location || source.group || 'NDI Bridge',
+      previewUrl: source.previewUrl || source.preview_url || source.webrtcUrl || source.webrtc_url || null,
+      state: source.state || source.status || 'ONLINE'
+    };
+  }
+
+  function applyNdiBridgeSources(sources, { fromBackend = false } = {}) {
+    Object.keys(NDI_SOURCES).forEach(sourceId => delete NDI_SOURCES[sourceId]);
+    sources.forEach((source, index) => {
+      const normalized = normalizeNdiBridgeSource(source, index);
+      NDI_SOURCES[normalized.id] = normalized;
+      state.ndiBridge.sourceStates[normalized.id] = normalized.state;
+    });
+    const firstSourceId = Object.keys(NDI_SOURCES)[0] || '';
+    if (!NDI_SOURCES[state.ndiBridge.selectedSourceId]) {
+      state.ndiBridge.selectedSourceId = firstSourceId;
+    }
+    state.ndiBridge.discovered = !!firstSourceId;
+    state.ndiBridge.backendConnected = fromBackend;
+  }
+
+  async function fetchNdiBridgeSources() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1800);
+    try {
+      const response = await fetch(NDI_BRIDGE_ENDPOINT, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      const sources = Array.isArray(payload) ? payload : payload.sources;
+      if (!Array.isArray(sources)) throw new Error('missing sources array');
+      return sources;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   function renderNdiBridge() {
     const discoveredIds = state.ndiBridge.discovered ? Object.keys(NDI_SOURCES) : [];
     if (el.ndiBridgeStatus) {
       el.ndiBridgeStatus.textContent = state.ndiBridge.discovered
-        ? `${discoveredIds.length} SOURCES ONLINE`
+        ? `${discoveredIds.length} SOURCES ${state.ndiBridge.backendConnected ? 'FROM BRIDGE' : 'SIMULATED'}`
         : 'NOT SCANNED';
     }
     if (el.ndiBridgeHint) {
       const selected = NDI_SOURCES[state.ndiBridge.selectedSourceId];
       el.ndiBridgeHint.textContent = selected
         ? `${selected.label} · ${selected.codec} · ${selected.resolution} · ${selected.location}`
-        : 'Browser preview uses a future NDI-to-WebRTC/HLS bridge.';
+        : 'Browser preview expects an NDI-to-WebRTC/HLS bridge at /api/ndi/sources.';
     }
     if (!el.ndiSourceSelect) return;
     el.ndiSourceSelect.innerHTML = '';
@@ -932,14 +983,22 @@ document.addEventListener('DOMContentLoaded', () => {
     el.ndiSourceSelect.value = state.ndiBridge.selectedSourceId;
   }
 
-  function scanNdiBridge() {
-    state.ndiBridge.discovered = true;
-    renderNdiBridge();
-    addLog('info', 'NDI', `NDI bridge discovery complete. ${Object.keys(NDI_SOURCES).length} sources available.`);
+  async function scanNdiBridge() {
+    if (el.ndiBridgeStatus) el.ndiBridgeStatus.textContent = 'SCANNING...';
+    try {
+      const bridgeSources = await fetchNdiBridgeSources();
+      applyNdiBridgeSources(bridgeSources, { fromBackend: true });
+      renderNdiBridge();
+      addLog('info', 'NDI', `NDI bridge API connected. ${Object.keys(NDI_SOURCES).length} sources discovered.`);
+    } catch (error) {
+      applyNdiBridgeSources(Object.values(DEFAULT_NDI_SOURCES), { fromBackend: false });
+      renderNdiBridge();
+      addLog('warning', 'NDI', `NDI bridge API unavailable (${error.message}). Using simulated discovery sources.`);
+    }
   }
 
-  function attachNdiSource(feed) {
-    if (!state.ndiBridge.discovered) scanNdiBridge();
+  async function attachNdiSource(feed) {
+    if (!state.ndiBridge.discovered) await scanNdiBridge();
     const sourceId = el.ndiSourceSelect?.value || state.ndiBridge.selectedSourceId;
     const source = NDI_SOURCES[sourceId];
     if (!source) {
@@ -1893,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (val === 'ndi') {
-          attachNdiSource(feed);
+          await attachNdiSource(feed);
           return;
         }
 
