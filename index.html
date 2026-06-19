@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-10" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-11" />
 </head>
 
 <body class="workspace-operations">
@@ -377,46 +377,35 @@
             <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 5: CG / Graphics Engine -->
+          <!-- Screen 5: Graphics overlay preview and keyer controls -->
           <div class="screen-card active-stream graphics-engine-card" id="screen-vod">
             <div class="screen-header">
               <span class="screen-label">
-                <span class="channel-indicator bg-pink"></span>CG / GRAPHICS ENGINE
+                <span class="channel-indicator bg-pink"></span>GRAPHICS OVERLAY
               </span>
-              <span class="screen-timecode font-fira" id="tc-vod">00:00:00:00</span>
+              <span class="screen-timecode font-fira" id="tc-vod">KEY / FILL</span>
             </div>
 
             <div class="canvas-wrapper">
               <canvas id="canvas-vod"></canvas>
 
-              <div class="vu-meter-overlay">
-                <div class="vu-channel">
-                  <div class="vu-bar" id="vu-vod-l"></div>
-                  <div class="vu-peak" id="vu-vod-l-peak"></div>
-                </div>
-                <div class="vu-channel">
-                  <div class="vu-bar" id="vu-vod-r"></div>
-                  <div class="vu-peak" id="vu-vod-r-peak"></div>
-                </div>
-              </div>
-
               <div class="stream-stats-overlay">
-                <div class="stat-row"><span>engine:</span><span class="text-blue">CG KEY/FILL</span></div>
-                <div class="stat-row"><span>res:</span><span>1080p60</span></div>
-                <div class="stat-row"><span>layer:</span><span class="text-pink" id="cg-engine-layer">STANDBY</span></div>
+                <div class="stat-row"><span>mode:</span><span class="text-blue">PROGRAM OVERLAY</span></div>
+                <div class="stat-row"><span>format:</span><span>1080p60 KEY/FILL</span></div>
+                <div class="stat-row"><span>status:</span><span class="text-pink" id="cg-engine-layer">STANDBY</span></div>
               </div>
             </div>
 
             <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" id="btn-preview-lower-third" title="Preview a lower-third graphic in the CG engine.">PREVIEW CG</button>
-              <button class="btn-screen-control" id="btn-take-graphics" title="Key the previewed graphic over Program Out.">TAKE CG</button>
+              <button class="btn-screen-control btn-solo" id="btn-preview-lower-third" title="Load a lower-third into the graphics preview.">PREVIEW LOWER THIRD</button>
+              <button class="btn-screen-control" id="btn-take-graphics" title="Key the previewed graphic over Program Out.">TAKE OVERLAY</button>
               <button class="btn-screen-control" id="btn-toggle-ticker" title="Toggle the ticker graphic over Program Out.">TICKER</button>
               <button class="btn-screen-control" id="btn-toggle-bug" title="Toggle the live/score bug over Program Out.">BUG</button>
-              <button class="btn-screen-control btn-eject" id="btn-clear-graphics" title="Clear all graphics from Program Out.">CLEAR CG</button>
-              <div class="active-badge text-pink font-fira" id="badge-state-vod">CG STBY</div>
+              <button class="btn-screen-control btn-eject" id="btn-clear-graphics" title="Clear all graphics from Program Out.">CLEAR ALL</button>
+              <div class="active-badge text-pink font-fira" id="badge-state-vod">OVERLAY STBY</div>
             </div>
-            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">CG PREVIEW</div>
-            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">CG ON AIR</div>
+            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">OVERLAY PREVIEW</div>
+            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">OVERLAY ON AIR</div>
           </div>
 
           <!-- Screen 6: Program Out -->
@@ -1055,6 +1044,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-10"></script>
+  <script src="app.js?v=orchestrator-11"></script>
 </body>
 </html>

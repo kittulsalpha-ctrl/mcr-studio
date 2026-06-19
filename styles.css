@@ -417,13 +417,17 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
 
 .screen-card.graphics-engine-card .screen-footer {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
 }
 
 .screen-card.graphics-engine-card .active-badge {
   grid-column: 1 / -1;
   justify-self: end;
+}
+
+.screen-card.graphics-engine-card .btn-screen-control:first-child {
+  grid-column: 1 / -1;
 }
 
 .screen-card.graphics-engine-card .btn-screen-control {

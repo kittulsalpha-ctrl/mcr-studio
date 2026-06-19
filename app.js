@@ -2620,7 +2620,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function getTileName(feed) {
     if (feed === 'replay') return 'REPLAY SERVER';
     if (feed === 'playout') return 'PLAYOUT SERVER';
-    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'CG / GRAPHICS ENGINE' : feed.toUpperCase();
+    return feed === 'cam1' ? 'MULTIVIEW 1' : feed === 'cam2' ? 'MULTIVIEW 2' : feed === 'liveu3' ? 'MULTIVIEW 3' : feed === 'liveu4' ? 'MULTIVIEW 4' : feed === 'vod' ? 'GRAPHICS OVERLAY' : feed.toUpperCase();
   }
 
   function getProgramRouteLabel(feed) {
@@ -2728,7 +2728,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.classList.toggle('program-active', layers.length > 0);
     }
     if (badge) {
-      badge.textContent = layers.length ? 'CG ON AIR' : state.graphicsPreview ? 'CG PREVIEW' : 'CG STBY';
+      badge.textContent = layers.length ? 'OVERLAY ON AIR' : state.graphicsPreview ? 'OVERLAY PREVIEW' : 'OVERLAY STBY';
       badge.classList.toggle('text-red', layers.length > 0);
       badge.classList.toggle('text-pink', layers.length === 0);
     }
@@ -3451,7 +3451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(0, 0, w, 24);
     ctx.fillStyle = '#fbcfe8';
     ctx.font = 'bold 10px Outfit';
-    ctx.fillText('CG ENGINE / KEY + FILL OUTPUT', 14, 16);
+    ctx.fillText('GRAPHICS OVERLAY / KEY + FILL PREVIEW', 14, 16);
 
     drawGraphicsOverlay(ctx, w, h, {
       lowerThird: state.graphicsPreview === 'lowerThird' || state.activeGraphics === 'lowerThird',
@@ -3756,6 +3756,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply UI rendering updates
     function renderVUChannel(lEl, rEl, lpEl, rpEl, feedVU) {
+      if (!lEl || !rEl || !lpEl || !rpEl) return;
       lEl.style.height = `${feedVU.l * 100}%`;
       rEl.style.height = `${feedVU.r * 100}%`;
       lpEl.style.bottom = `${feedVU.lp * 100}%`;
@@ -3785,8 +3786,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // LiveU 3 & 4 with varied network drift
     el.tcLiveu3.textContent = getSMPTETimecode(framesCount - 3);
     el.tcLiveu4.textContent = getSMPTETimecode(framesCount - 4);
-    // VOD loops
-    el.tcVod.textContent = getSMPTETimecode(framesCount % (60 * 60 * 2)); // Loop every 2 minutes
+    // Graphics is an overlay keyer, not a timed video source.
+    el.tcVod.textContent = 'KEY / FILL';
     
     // PGM timecode reflects currently routed active source
     if (state.activeSource === 'cam1') el.tcPgm.textContent = el.tcCam1.textContent;
