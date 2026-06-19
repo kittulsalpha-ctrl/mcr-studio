@@ -219,7 +219,7 @@ body.workspace-monitoring .multiviewer-container {
 
 body.workspace-monitoring .controls-container {
   display: grid;
-  grid-template-columns: minmax(420px, 0.95fr) minmax(460px, 1.05fr);
+  grid-template-columns: minmax(340px, 440px) minmax(560px, 1fr);
   align-items: start;
   min-width: 0;
 }
@@ -1421,8 +1421,28 @@ body.workspace-monitoring .panel-telemetry .panel-body {
   max-width: none;
 }
 
+body.workspace-monitoring .panel-orchestrator .signal-flow-strip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.workspace-monitoring .panel-orchestrator .route-summary-strip {
+  grid-template-columns: 1fr;
+}
+
 body.workspace-monitoring .panel-orchestrator .node-editor-wrapper {
-  min-height: 320px;
+  min-height: 0;
+  padding: 6px;
+}
+
+body.workspace-monitoring .panel-orchestrator #node-svg {
+  max-height: 260px;
+  min-height: 0;
+}
+
+body.workspace-monitoring .panel-orchestrator .node-inspector,
+body.workspace-monitoring .panel-orchestrator .source-inspector,
+body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
+  font-size: 8px;
 }
 
 .node-inspector {
