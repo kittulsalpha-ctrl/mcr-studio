@@ -7,7 +7,7 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 ## Current Demo Scope
 
 - `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, CG graphics controls, Program audio mixer, rundown cues, Replay Server, and Playout Server.
-- `MONITORING`: NOC-style workspace for signal path, Source Inspector, NDI bridge placeholder, AI Ops Assistant, cloud broadcast health, production chain topology, SRT telemetry, disaster recovery controls, SCTE cue simulation, alarms/QC, and incident timeline.
+- `MONITORING`: NOC-style workspace for signal path, Source Inspector, NDI bridge placeholder, AI Ops Assistant, client integration readiness, cloud broadcast health, production chain topology, SRT telemetry, disaster recovery controls, SCTE cue simulation, alarms/QC, and incident timeline.
 - `index.html` is the Operations screen. `monitoring.html` is the dedicated Monitoring/NOC screen. Open both URLs in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
 
 ## Graphics vs Playout
@@ -45,6 +45,12 @@ The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, and
 When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Control Orchestrator. This is the intended dual-screen MCR demo mode.
 
 See `ORCHESTRATOR_API.md` for the API contract.
+
+## Client Integration Blueprint
+
+See `CLIENT_INTEGRATION_BLUEPRINT.md` for the client-facing architecture plan. It explains what is real today, what needs backend services, what information a client must provide, and how to phase the product from demo to gateway pilot to production control plane.
+
+A custom domain is not required for the current GitHub Pages demo. It becomes useful after API hosting, HTTPS, authentication, and backend gateway services are ready.
 
 ## Simulated vs Real
 

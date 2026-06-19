@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-6" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-7" />
 </head>
 
 <body class="workspace-operations">
@@ -826,6 +826,45 @@
           </div>
         </div>
 
+        <div class="control-panel panel-client-integration" data-workspace-panel="monitoring">
+          <div class="panel-header">
+            <h3>CLIENT INTEGRATION READINESS</h3>
+            <span class="badge-blue font-fira">CONNECTOR PLAN</span>
+          </div>
+          <div class="panel-body client-integration-body">
+            <div class="integration-summary">
+              <span>PRODUCTION TARGET</span>
+              <strong>Cloud control surface connected to real contribution, switching, audio, graphics, replay, playout, encode, CDN, QC, and AI incident services.</strong>
+            </div>
+            <div class="integration-grid">
+              <div class="integration-card">
+                <span>Contribution</span>
+                <strong>LiveU / NDI / SRT / WebRTC</strong>
+                <small>Requires gateway discovery, preview proxy, auth, and source-health events.</small>
+              </div>
+              <div class="integration-card">
+                <span>Production Core</span>
+                <strong>Switcher / Audio / CG / Replay</strong>
+                <small>Control APIs route Preview, Program, AFV, faders, key/fill, clips, and full-frame playout.</small>
+              </div>
+              <div class="integration-card">
+                <span>Cloud Delivery</span>
+                <strong>MediaConnect / MediaLive / CDN</strong>
+                <small>Cloud status, failover, encoder ladder, origin health, and edge alarms feed Monitoring.</small>
+              </div>
+              <div class="integration-card">
+                <span>AI Operations</span>
+                <strong>Runbooks / QC / Incident Timeline</strong>
+                <small>AI recommendations should use live telemetry, alarm history, and approved operator actions.</small>
+              </div>
+            </div>
+            <div class="integration-footer font-fira">
+              <span>REAL BACKEND REQUIRED FOR LIVE MEDIA I/O</span>
+              <span>DOMAIN: USE AFTER API HOSTING + AUTH ARE READY</span>
+            </div>
+          </div>
+        </div>
+
         <div class="control-panel panel-engineering" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>CLOUD BROADCAST HEALTH</h3>
@@ -1000,6 +1039,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-6"></script>
+  <script src="app.js?v=orchestrator-7"></script>
 </body>
 </html>
