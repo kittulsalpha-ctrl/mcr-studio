@@ -42,6 +42,8 @@ http://127.0.0.1:8080/?backend=1&preset=football
 
 The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, and `/api/events` for live Server-Sent Events. It is still simulated, but it creates the real product boundary between the browser control surface and future media engines.
 
+When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Control Orchestrator. This is the intended dual-screen MCR demo mode.
+
 See `ORCHESTRATOR_API.md` for the API contract.
 
 ## Simulated vs Real

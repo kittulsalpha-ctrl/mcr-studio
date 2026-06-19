@@ -56,6 +56,18 @@ POST /api/audio-afv
 { "enabled": true }
 ```
 
+## Source Health / QC
+
+```text
+POST /api/source-state
+{ "source": "liveu1|liveu2|liveu3|liveu4", "state": "ONLINE|STANDBY|OFFLINE|ALARM" }
+
+POST /api/source-detection
+{ "source": "liveu1|liveu2|liveu3|liveu4", "detection": "black|silence|frozen", "active": true }
+```
+
+These commands allow Operations and Monitoring pages to share alarm/QC state through `/api/events`.
+
 ## Graphics
 
 ```text

@@ -35,6 +35,12 @@ const state = {
     replay: { label: 'Replay Server EC2', state: 'STANDBY', type: 'replay' },
     playout: { label: 'Playout Server EC2', state: 'READY', type: 'playout' }
   },
+  detections: {
+    liveu1: { black: false, silence: false, frozen: false },
+    liveu2: { black: false, silence: false, frozen: false },
+    liveu3: { black: false, silence: false, frozen: false },
+    liveu4: { black: false, silence: false, frozen: false }
+  },
   routing: {
     preview: 'liveu3',
     program: 'cam1',
@@ -146,6 +152,16 @@ function isKnownProgramSource(source) {
   return ['cam1', 'cam2', 'liveu3', 'liveu4', 'replay', 'playout', 'ad'].includes(source);
 }
 
+function normalizeContributionSource(source) {
+  const aliases = { liveu1: 'cam1', liveu2: 'cam2', cam1: 'cam1', cam2: 'cam2', liveu3: 'liveu3', liveu4: 'liveu4' };
+  return aliases[source] || null;
+}
+
+function detectionSourceId(source) {
+  const aliases = { cam1: 'liveu1', cam2: 'liveu2', liveu1: 'liveu1', liveu2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' };
+  return aliases[source] || null;
+}
+
 const commandHandlers = {
   preview(body) {
     const source = body.source;
@@ -213,6 +229,35 @@ const commandHandlers = {
       state.audio.followVideo = !!body.enabled;
       if (state.audio.followVideo) state.audio.programBus = state.audio.channels[state.routing.program] ? state.routing.program : null;
       const log = addLog('info', 'AUDIO', `Audio Follow Video ${state.audio.followVideo ? 'enabled' : 'disabled'}.`, 'audio-afv');
+      return { body: { ok: true, state: publicState(), log } };
+    });
+  },
+
+  sourceState(body) {
+    const source = normalizeContributionSource(body.source);
+    const nextState = String(body.state || '').toUpperCase();
+    if (!source || !['ONLINE', 'STANDBY', 'OFFLINE', 'ALARM'].includes(nextState)) {
+      return { status: 400, body: { error: 'Invalid source state command' } };
+    }
+    return mutate('source-state', () => {
+      state.sources[source].state = nextState;
+      const log = addLog(nextState === 'ALARM' || nextState === 'OFFLINE' ? 'alarm' : nextState === 'STANDBY' ? 'warning' : 'info', 'SRC', `${state.sources[source].label} state set to ${nextState}.`, 'source-state');
+      return { body: { ok: true, state: publicState(), log } };
+    });
+  },
+
+  sourceDetection(body) {
+    const source = detectionSourceId(body.source);
+    const detection = body.detection;
+    if (!source || !['black', 'silence', 'frozen'].includes(detection)) {
+      return { status: 400, body: { error: 'Invalid source detection command' } };
+    }
+    return mutate('source-detection', () => {
+      state.detections[source][detection] = !!body.active;
+      const hasDetection = Object.values(state.detections[source]).some(Boolean);
+      const routeSource = normalizeContributionSource(source);
+      if (routeSource) state.sources[routeSource].state = hasDetection ? 'ALARM' : state.sources[routeSource].state === 'ALARM' ? 'ONLINE' : state.sources[routeSource].state;
+      const log = addLog(body.active ? 'alarm' : 'info', 'QC', `${source.toUpperCase()} ${detection.toUpperCase()} detection ${body.active ? 'triggered' : 'cleared'}.`, 'source-detection');
       return { body: { ok: true, state: publicState(), log } };
     });
   },
@@ -364,6 +409,8 @@ async function handleApi(req, res, url) {
       audioprogram: 'audioProgram',
       audiofader: 'audioFader',
       audioafv: 'audioAfv',
+      sourcestate: 'sourceState',
+      sourcedetection: 'sourceDetection',
       cgpreview: 'cgPreview',
       cgtake: 'cgTake',
       cgclear: 'cgClear',

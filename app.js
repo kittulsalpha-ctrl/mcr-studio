@@ -108,7 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
       enabled: new URLSearchParams(window.location.search).get('backend') === '1',
       connected: false,
       lastState: null,
-      eventSource: null
+      eventSource: null,
+      applyingRemoteState: false
     },
 
     // Preview / Program state
@@ -577,12 +578,124 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) {
         addLog('warning', 'API', `Backend command failed: ${json.error || endpoint}.`);
       }
+      if (response.ok && json.state) applyBackendState(json.state);
       return json;
     } catch (error) {
       updateBackendStatus(false);
       addLog('warning', 'API', `Backend unavailable: ${error.message}.`);
       return null;
     }
+  }
+
+  function formatBackendTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return timestamp || '--:--:-- UTC';
+    return [
+      String(date.getUTCHours()).padStart(2, '0'),
+      String(date.getUTCMinutes()).padStart(2, '0'),
+      String(date.getUTCSeconds()).padStart(2, '0')
+    ].join(':') + ' UTC';
+  }
+
+  function mapBackendLog(entry) {
+    return {
+      timestamp: formatBackendTimestamp(entry.timestamp),
+      severity: entry.severity || 'info',
+      tag: entry.area || entry.tag || 'API',
+      message: entry.operatorAction ? `${entry.message} (${entry.operatorAction})` : entry.message
+    };
+  }
+
+  function updatePreviewClassesFromState() {
+    document.querySelectorAll('.btn-solo').forEach(button => button.classList.remove('btn-active-solo'));
+    document.querySelectorAll('.screen-card').forEach(card => card.classList.remove('preview-active'));
+    if (!state.previewFeed) return;
+    document.getElementById(`btn-solo-${state.previewFeed}`)?.classList.add('btn-active-solo');
+    document.getElementById(`screen-${state.previewFeed}`)?.classList.add('preview-active');
+  }
+
+  function applyBackendState(remoteState) {
+    if (!remoteState || state.backend.applyingRemoteState) return;
+    state.backend.applyingRemoteState = true;
+    state.backend.lastState = remoteState;
+
+    state.previewFeed = remoteState.routing?.preview || null;
+    state.activeSource = remoteState.routing?.program || null;
+    state.programSourceOverride = null;
+    state.replayPlayout.returnLiveSource = remoteState.routing?.returnLive || state.replayPlayout.returnLiveSource;
+
+    if (remoteState.audio) {
+      state.audioMixer.audioFollowVideo = !!remoteState.audio.followVideo;
+      state.audioMixer.programBus = remoteState.audio.programBus || null;
+      Object.entries(remoteState.audio.channels || {}).forEach(([feed, channel]) => {
+        if (!state.audioMixer.channels[feed]) return;
+        state.audioMixer.channels[feed] = { ...state.audioMixer.channels[feed], ...channel };
+      });
+    }
+
+    if (remoteState.graphics) {
+      state.graphicsPreview = remoteState.graphics.preview || null;
+      state.activeGraphics = remoteState.graphics.active || null;
+      state.tickerOn = !!remoteState.graphics.ticker;
+      state.bugOn = !!remoteState.graphics.bug;
+    }
+
+    if (remoteState.replay) {
+      state.replayPlayout.replay.selectedClip = remoteState.replay.selectedClip || state.replayPlayout.replay.selectedClip;
+      state.replayPlayout.replay.clips = Array.isArray(remoteState.replay.clips)
+        ? remoteState.replay.clips
+        : state.replayPlayout.replay.clips;
+    }
+    if (remoteState.playout) {
+      state.replayPlayout.playout.selectedAsset = remoteState.playout.selectedAsset || state.replayPlayout.playout.selectedAsset;
+      state.replayPlayout.playout.assets = Array.isArray(remoteState.playout.assets)
+        ? remoteState.playout.assets
+        : state.replayPlayout.playout.assets;
+    }
+
+    const sourceMap = {
+      cam1: 'liveu1',
+      cam2: 'liveu2',
+      liveu3: 'liveu3',
+      liveu4: 'liveu4'
+    };
+    Object.entries(sourceMap).forEach(([remoteId, localId]) => {
+      const remoteSource = remoteState.sources?.[remoteId];
+      if (remoteSource?.state) {
+        state.sourceBaseStates[localId] = remoteSource.state === 'READY' ? 'ONLINE' : remoteSource.state;
+        state.sourceStates[localId] = deriveSourceState(localId);
+      }
+    });
+    Object.entries(remoteState.detections || {}).forEach(([sourceId, detections]) => {
+      if (!state.sourceDetections[sourceId]) return;
+      state.sourceDetections[sourceId] = { ...state.sourceDetections[sourceId], ...detections };
+      state.sourceStates[sourceId] = deriveSourceState(sourceId);
+    });
+
+    if (Array.isArray(remoteState.logs)) {
+      state.logs = remoteState.logs.slice(-100).map(mapBackendLog);
+    }
+
+    updatePreviewClassesFromState();
+    updateTAKEButton();
+    updateBadges();
+    updatePGMFooter();
+    updateGraphicsUI();
+    updateSourceStateControls();
+    updateDetectionControls();
+    updateSourceOverlays();
+    updateOrchestratorRouting();
+    syncProgramEmbed();
+    updateSourceInspector();
+    renderReplayPlayoutServers();
+    renderAudioMixer();
+    renderLogs();
+    renderAIOpsAssistant();
+    if (el.pgmActiveSource) {
+      el.pgmActiveSource.textContent = `SOURCE: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'NONE'}`;
+    }
+
+    state.backend.applyingRemoteState = false;
   }
 
   async function connectBackendOrchestrator() {
@@ -593,12 +706,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch('/api/state', { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      state.backend.lastState = await response.json();
+      applyBackendState(await response.json());
       updateBackendStatus(true);
       addLog('info', 'API', 'Control Orchestrator backend connected.');
       state.backend.eventSource = new EventSource('/api/events');
       state.backend.eventSource.addEventListener('state', event => {
-        state.backend.lastState = JSON.parse(event.data);
+        applyBackendState(JSON.parse(event.data));
         updateBackendStatus(true);
       });
       state.backend.eventSource.onerror = () => updateBackendStatus(false);
@@ -1433,6 +1546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceOverlays();
     updateOrchestratorRouting();
     renderAIOpsAssistant();
+    backendCommand('/api/source-state', { source: sourceId, state: nextState });
   }
 
   function setSourceDetection(sourceId, detectionName, active) {
@@ -1452,6 +1566,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceOverlays();
     updateOrchestratorRouting();
     renderAIOpsAssistant();
+    backendCommand('/api/source-detection', { source: sourceId, detection: detectionName, active });
   }
 
   function updateSourceStateControls() {
