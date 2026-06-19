@@ -782,7 +782,19 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
 
 .screen-footer-row-1 {
   display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
+  flex-shrink: 0;
+}
+
+.screen-footer-row-1::before {
+  content: "INPUT";
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   flex-shrink: 0;
 }
 
@@ -887,6 +899,17 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
   border-color: var(--neon-red);
   color: #ffffff;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.btn-screen-control.btn-attach {
+  color: #a7f3d0;
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.btn-screen-control.btn-edit {
+  color: #bae6fd;
+  border-color: rgba(0, 210, 255, 0.24);
 }
 
 .btn-screen-control.btn-active-graphics {

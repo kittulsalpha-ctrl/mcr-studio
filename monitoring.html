@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-9" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-10" />
 </head>
 
 <body class="workspace-monitoring">
@@ -84,10 +84,10 @@
         </div>
 
         <div class="multiviewer-action-bar">
-          <button class="btn btn-secondary" id="btn-start-webcam">START WEBCAM</button>
-          <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAM</button>
-          <button class="btn btn-secondary" id="btn-load-local-video">LOAD VIDEO</button>
-          <button class="btn btn-secondary" id="btn-eject-video">CLEAR VIDEO</button>
+          <button class="btn btn-secondary" id="btn-start-webcam">START CAMERA</button>
+          <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAMERA</button>
+          <button class="btn btn-secondary" id="btn-load-local-video">LOAD LOCAL FILE</button>
+          <button class="btn btn-secondary" id="btn-eject-video">CLEAR LOCAL FILE</button>
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
         </div>
         <div class="multiviewer-action-bar preset-controls">
@@ -111,7 +111,7 @@
           <span class="preset-link-status font-fira" id="preset-link-status">Preset links use ?preset=name</span>
         </div>
         <div class="multiviewer-action-bar assign-controls">
-          <label class="action-select-label">Webcam Route:
+          <label class="action-select-label">Camera target:
             <select id="select-webcam-target">
               <option value="cam1">LiveU 1</option>
               <option value="cam2">LiveU 2</option>
@@ -119,7 +119,7 @@
               <option value="liveu4">LiveU 4</option>
             </select>
           </label>
-          <label class="action-select-label">Video Route:
+          <label class="action-select-label">File target:
             <select id="select-video-target">
               <option value="cam1">LiveU 1</option>
               <option value="cam2">LiveU 2</option>
@@ -127,7 +127,7 @@
               <option value="liveu4">LiveU 4</option>
             </select>
           </label>
-          <span class="action-status" id="action-status">No source routed yet</span>
+          <span class="action-status" id="action-status">No source connected</span>
         </div>
 
         <div class="multiviewer-grid">
@@ -172,12 +172,12 @@
             <div class="screen-footer">
               <div class="screen-footer-row-1">
                 <select class="tile-source-select" id="select-source-cam1">
-                  <option value="none">NONE</option>
-                  <option value="webcam" selected>Webcam</option>
-                  <option value="local">Local Video</option>
-                  <option value="obs">OBS Virtual Camera</option>
-                  <option value="rtsp">RTSP Stream</option>
-                  <option value="ndi">NDI Bridge</option>
+                  <option value="none">No input</option>
+                  <option value="webcam" selected>Webcam (this computer)</option>
+                  <option value="local">Local video file</option>
+                  <option value="obs">OBS virtual camera</option>
+                  <option value="rtsp">RTSP network stream</option>
+                  <option value="ndi">NDI source via bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -185,8 +185,8 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Paste or change a custom media URL for this monitor.">URL</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Add or change a custom media URL for this monitor.">ADD URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="cam1" id="btn-solo-cam1" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1" title="Mute or unmute this monitor source.">MUTE</button>
@@ -232,12 +232,12 @@
             <div class="screen-footer">
               <div class="screen-footer-row-1">
                 <select class="tile-source-select" id="select-source-cam2">
-                  <option value="none">NONE</option>
-                  <option value="webcam">Webcam</option>
-                  <option value="local" selected>Local Video</option>
-                  <option value="obs">OBS Virtual Camera</option>
-                  <option value="rtsp">RTSP Stream</option>
-                  <option value="ndi">NDI Bridge</option>
+                  <option value="none">No input</option>
+                  <option value="webcam">Webcam (this computer)</option>
+                  <option value="local" selected>Local video file</option>
+                  <option value="obs">OBS virtual camera</option>
+                  <option value="rtsp">RTSP network stream</option>
+                  <option value="ndi">NDI source via bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -245,8 +245,8 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Paste or change a custom media URL for this monitor.">URL</button>
-                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Add or change a custom media URL for this monitor.">ADD URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="cam2" id="btn-solo-cam2" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2" title="Mute or unmute this monitor source.">MUTE</button>
@@ -292,12 +292,12 @@
             <div class="screen-footer">
               <div class="screen-footer-row-1">
                 <select class="tile-source-select" id="select-source-liveu3">
-                  <option value="none">NONE</option>
-                  <option value="webcam">Webcam</option>
-                  <option value="local">Local Video</option>
-                  <option value="obs">OBS Virtual Camera</option>
-                  <option value="rtsp">RTSP Stream</option>
-                  <option value="ndi">NDI Bridge</option>
+                  <option value="none">No input</option>
+                  <option value="webcam">Webcam (this computer)</option>
+                  <option value="local">Local video file</option>
+                  <option value="obs">OBS virtual camera</option>
+                  <option value="rtsp">RTSP network stream</option>
+                  <option value="ndi">NDI source via bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3" selected>LiveU Feed 3</option>
@@ -305,8 +305,8 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Paste or change a custom media URL for this monitor.">URL</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Add or change a custom media URL for this monitor.">ADD URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="liveu3" id="btn-solo-liveu3" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3" title="Mute or unmute this monitor source.">MUTE</button>
@@ -352,12 +352,12 @@
             <div class="screen-footer">
               <div class="screen-footer-row-1">
                 <select class="tile-source-select" id="select-source-liveu4">
-                  <option value="none">NONE</option>
-                  <option value="webcam">Webcam</option>
-                  <option value="local">Local Video</option>
-                  <option value="obs">OBS Virtual Camera</option>
-                  <option value="rtsp">RTSP Stream</option>
-                  <option value="ndi">NDI Bridge</option>
+                  <option value="none">No input</option>
+                  <option value="webcam">Webcam (this computer)</option>
+                  <option value="local">Local video file</option>
+                  <option value="obs">OBS virtual camera</option>
+                  <option value="rtsp">RTSP network stream</option>
+                  <option value="ndi">NDI source via bridge</option>
                   <option value="liveu1">LiveU Feed 1</option>
                   <option value="liveu2">LiveU Feed 2</option>
                   <option value="liveu3">LiveU Feed 3</option>
@@ -365,8 +365,8 @@
                 </select>
               </div>
               <div class="screen-footer-row-2">
-                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Paste or change a custom media URL for this monitor.">URL</button>
-                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Route the selected source to this monitor.">ROUTE</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Add or change a custom media URL for this monitor.">ADD URL</button>
+                <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-solo" data-feed="liveu4" id="btn-solo-liveu4" title="Select this monitor as Preview before sending it to Program.">PREVIEW</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4" title="Mute or unmute this monitor source.">MUTE</button>
@@ -1055,6 +1055,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-9"></script>
+  <script src="app.js?v=orchestrator-10"></script>
 </body>
 </html>
