@@ -221,6 +221,11 @@ body.workspace-monitoring .controls-container {
   min-width: 0;
 }
 
+body.workspace-operations [data-workspace-panel="monitoring"],
+body.workspace-monitoring [data-workspace-panel="operations"] {
+  display: none;
+}
+
 .multiviewer-container,
 .controls-container {
   display: flex;

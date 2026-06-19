@@ -716,11 +716,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.toLowerCase().endsWith('monitoring.html')) {
       return 'monitoring';
     }
-    const hash = window.location.hash.replace('#', '').toLowerCase();
-    return hash === 'monitoring' ? 'monitoring' : 'operations';
+    return 'operations';
   }
 
-  function setWorkspaceView(view = 'operations', updateHash = true) {
+  function setWorkspaceView(view = 'operations') {
     const activeView = view === 'monitoring' ? 'monitoring' : 'operations';
     document.querySelectorAll('.operator-view-tab').forEach(button => {
       button.classList.toggle('view-tab-active', button.dataset.workspace === activeView);
@@ -730,10 +729,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.body.classList.toggle('workspace-monitoring', activeView === 'monitoring');
     document.body.classList.toggle('workspace-operations', activeView === 'operations');
-
-    if (updateHash && window.location.hash !== `#${activeView}`) {
-      window.history.replaceState(null, '', `#${activeView}`);
-    }
   }
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
@@ -744,8 +739,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setWorkspaceView(button.dataset.workspace || 'operations');
     });
   });
-
-  window.addEventListener('hashchange', () => setWorkspaceView(getRequestedWorkspace(), false));
 
   function handleRundownCue(action, source) {
     if (action === 'preview') {
@@ -2976,7 +2969,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderNdiBridge();
   renderReplayPlayoutServers();
   connectBackendOrchestrator();
-  setWorkspaceView(getRequestedWorkspace(), false);
+  setWorkspaceView(getRequestedWorkspace());
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);
