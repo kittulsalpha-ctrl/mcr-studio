@@ -8,7 +8,7 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 
 - `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, CG graphics controls, Program audio mixer, rundown cues, Replay Server, and Playout Server.
 - `MONITORING`: NOC-style workspace for signal path, Source Inspector, NDI bridge placeholder, AI Ops Assistant, cloud broadcast health, production chain topology, SRT telemetry, disaster recovery controls, SCTE cue simulation, alarms/QC, and incident timeline.
-- The workspace switcher supports direct links with `#operations` and `#monitoring`, which makes it easier to use separate browser windows on a control-room laptop or dual-screen demo setup.
+- `index.html` is the Operations screen. `monitoring.html` is the dedicated Monitoring/NOC screen. Open both pages in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
 
 ## Graphics vs Playout
 

@@ -713,6 +713,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function getRequestedWorkspace() {
+    if (window.location.pathname.toLowerCase().endsWith('monitoring.html')) {
+      return 'monitoring';
+    }
     const hash = window.location.hash.replace('#', '').toLowerCase();
     return hash === 'monitoring' ? 'monitoring' : 'operations';
   }
@@ -734,7 +737,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
-    button.addEventListener('click', () => setWorkspaceView(button.dataset.workspace || 'operations'));
+    button.addEventListener('click', event => {
+      const href = button.getAttribute('href');
+      if (href && !href.startsWith('#')) return;
+      event.preventDefault();
+      setWorkspaceView(button.dataset.workspace || 'operations');
+    });
   });
 
   window.addEventListener('hashchange', () => setWorkspaceView(getRequestedWorkspace(), false));

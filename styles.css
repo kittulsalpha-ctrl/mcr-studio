@@ -1045,6 +1045,9 @@ body.workspace-monitoring .controls-container {
 }
 
 .operator-view-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 30px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 6px;
@@ -1055,6 +1058,8 @@ body.workspace-monitoring .controls-container {
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
 }
 
 .operator-view-tab:hover,
