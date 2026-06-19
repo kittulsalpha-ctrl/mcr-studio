@@ -565,6 +565,12 @@ document.addEventListener('DOMContentLoaded', () => {
     el.controlApiValue.className = `badge-value ${connected ? 'text-green' : state.backend.enabled ? 'text-red' : 'text-amber'}`;
   }
 
+  function hydratePageSwitcherLinks() {
+    const suffix = `${window.location.search || ''}${window.location.hash || ''}`;
+    document.getElementById('nav-operations')?.setAttribute('href', `index.html${suffix}`);
+    document.getElementById('nav-monitoring')?.setAttribute('href', `monitoring.html${suffix}`);
+  }
+
   async function backendCommand(endpoint, payload = {}) {
     if (!state.backend.enabled) return null;
     try {
@@ -3217,6 +3223,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   updateSourceOverlays();
+  hydratePageSwitcherLinks();
   updateTAKEButton();
   updateBadges();
   updatePGMFooter();
