@@ -218,7 +218,28 @@ body.workspace-monitoring .multiviewer-container {
 }
 
 body.workspace-monitoring .controls-container {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.95fr) minmax(460px, 1.05fr);
+  align-items: start;
   min-width: 0;
+}
+
+body.workspace-monitoring .panel-orchestrator {
+  grid-column: 1;
+  grid-row: 1 / span 8;
+  position: sticky;
+  top: 86px;
+  max-height: calc(100vh - 102px);
+  overflow: auto;
+}
+
+body.workspace-monitoring .panel-ai-ops,
+body.workspace-monitoring .panel-engineering,
+body.workspace-monitoring .panel-cloud-topology,
+body.workspace-monitoring .panel-telemetry,
+body.workspace-monitoring .panel-dr-playout,
+body.workspace-monitoring .panel-logs {
+  grid-column: 2;
 }
 
 body.workspace-operations [data-workspace-panel="monitoring"],
@@ -1401,7 +1422,7 @@ body.workspace-monitoring .panel-telemetry .panel-body {
 }
 
 body.workspace-monitoring .panel-orchestrator .node-editor-wrapper {
-  min-height: 360px;
+  min-height: 320px;
 }
 
 .node-inspector {
@@ -2107,6 +2128,16 @@ body.workspace-monitoring .panel-orchestrator .node-editor-wrapper {
 
   .controls-container {
     min-width: 0;
+  }
+
+  body.workspace-monitoring .controls-container {
+    display: flex;
+  }
+
+  body.workspace-monitoring .panel-orchestrator {
+    position: static;
+    max-height: none;
+    overflow: hidden;
   }
 
   .multiviewer-grid {
