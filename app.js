@@ -712,18 +712,32 @@ document.addEventListener('DOMContentLoaded', () => {
     renderEngineeringDashboard();
   });
 
-  function setOperatorView(view = 'operate') {
+  function getRequestedWorkspace() {
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    return hash === 'monitoring' ? 'monitoring' : 'operations';
+  }
+
+  function setWorkspaceView(view = 'operations', updateHash = true) {
+    const activeView = view === 'monitoring' ? 'monitoring' : 'operations';
     document.querySelectorAll('.operator-view-tab').forEach(button => {
-      button.classList.toggle('view-tab-active', button.dataset.view === view);
+      button.classList.toggle('view-tab-active', button.dataset.workspace === activeView);
     });
-    document.querySelectorAll('[data-view-panel]').forEach(panel => {
-      panel.classList.toggle('panel-hidden', panel.dataset.viewPanel !== view);
+    document.querySelectorAll('[data-workspace-panel]').forEach(panel => {
+      panel.classList.toggle('panel-hidden', panel.dataset.workspacePanel !== activeView);
     });
+    document.body.classList.toggle('workspace-monitoring', activeView === 'monitoring');
+    document.body.classList.toggle('workspace-operations', activeView === 'operations');
+
+    if (updateHash && window.location.hash !== `#${activeView}`) {
+      window.history.replaceState(null, '', `#${activeView}`);
+    }
   }
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
-    button.addEventListener('click', () => setOperatorView(button.dataset.view || 'operate'));
+    button.addEventListener('click', () => setWorkspaceView(button.dataset.workspace || 'operations'));
   });
+
+  window.addEventListener('hashchange', () => setWorkspaceView(getRequestedWorkspace(), false));
 
   function handleRundownCue(action, source) {
     if (action === 'preview') {
@@ -2954,7 +2968,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderNdiBridge();
   renderReplayPlayoutServers();
   connectBackendOrchestrator();
-  setOperatorView('operate');
+  setWorkspaceView(getRequestedWorkspace(), false);
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);

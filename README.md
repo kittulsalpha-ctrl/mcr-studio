@@ -6,11 +6,9 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 
 ## Current Demo Scope
 
-- `OPERATE`: operator-facing view with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Signal Path, Source Inspector, and AI Ops Assistant.
-- `OPERATE`: includes a Program audio mixer with channel faders, mute, solo, PFL, manual PGM assignment, and Audio Follow Video mode.
-- `ENGINEERING`: simulated cloud broadcast health dashboard for contribution inputs, NDI/SRT/WebRTC gateway, switcher, audio mixer, CG keyer, replay, playout, encoder, AWS MediaLive, CDN Edge, primary/backup path, RTT, bitrate, packet loss, jitter, region, and stream health.
-- `EVENT / AUTOMATION`: simple rundown automation for pre-show, main live feed, graphics, break/SCTE marker, backup/filler, and end slate cues, plus the incident timeline.
-- `EVENT / AUTOMATION`: includes simulated Replay Server and Playout Server modules with mark in/out, clip creation, preview, take to Program, and return-to-live workflows.
+- `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, CG graphics controls, Program audio mixer, rundown cues, Replay Server, and Playout Server.
+- `MONITORING`: NOC-style workspace for signal path, Source Inspector, NDI bridge placeholder, AI Ops Assistant, cloud broadcast health, production chain topology, SRT telemetry, disaster recovery controls, SCTE cue simulation, alarms/QC, and incident timeline.
+- The workspace switcher supports direct links with `#operations` and `#monitoring`, which makes it easier to use separate browser windows on a control-room laptop or dual-screen demo setup.
 
 ## Graphics vs Playout
 

@@ -209,6 +209,18 @@ body {
   align-items: start;
 }
 
+body.workspace-monitoring .mcr-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.workspace-monitoring .multiviewer-container {
+  display: none;
+}
+
+body.workspace-monitoring .controls-container {
+  min-width: 0;
+}
+
 .multiviewer-container,
 .controls-container {
   display: flex;
@@ -1028,7 +1040,7 @@ body {
 
 .operator-view-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -1369,6 +1381,17 @@ body {
 
 .control-panel.panel-hidden {
   display: none;
+}
+
+body.workspace-monitoring .panel-orchestrator .panel-body,
+body.workspace-monitoring .panel-engineering .panel-body,
+body.workspace-monitoring .panel-cloud-topology .panel-body,
+body.workspace-monitoring .panel-telemetry .panel-body {
+  max-width: none;
+}
+
+body.workspace-monitoring .panel-orchestrator .node-editor-wrapper {
+  min-height: 360px;
 }
 
 .node-inspector {

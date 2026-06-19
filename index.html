@@ -474,12 +474,100 @@
 
       <section class="controls-container">
         <div class="operator-view-tabs">
-          <button class="operator-view-tab view-tab-active" data-view="operate" type="button">OPERATE</button>
-          <button class="operator-view-tab" data-view="engineering" type="button">ENGINEERING</button>
-          <button class="operator-view-tab" data-view="event" type="button">EVENT / AUTOMATION</button>
+          <button class="operator-view-tab view-tab-active" data-workspace="operations" type="button">OPERATIONS</button>
+          <button class="operator-view-tab" data-workspace="monitoring" type="button">MONITORING</button>
         </div>
 
-        <div class="control-panel panel-orchestrator" data-view-panel="operate">
+        <div class="control-panel panel-audio-mixer" data-workspace-panel="operations">
+          <div class="panel-header">
+            <h3>PROGRAM AUDIO MIXER</h3>
+            <div class="mixer-header-controls">
+              <label class="afv-toggle"><input type="checkbox" id="audio-afv-toggle" checked /> AFV</label>
+              <span class="badge-green font-fira" id="audio-pgm-bus">PGM AUDIO: —</span>
+            </div>
+          </div>
+          <div class="panel-body audio-mixer-body">
+            <div class="audio-mixer-channels" id="audio-mixer-channels"></div>
+            <div class="audio-pgm-strip">
+              <span>PGM AUDIO BUS</span>
+              <div class="audio-pgm-meter">
+                <div id="audio-pgm-meter-l"></div>
+                <div id="audio-pgm-meter-r"></div>
+              </div>
+              <strong id="audio-pgm-status">FOLLOW VIDEO</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-event" data-workspace-panel="operations">
+          <div class="panel-header">
+            <h3>EVENT RUNDOWN / AUTOMATION</h3>
+            <span class="badge-pink font-fira">CUE CONTROL</span>
+          </div>
+          <div class="panel-body rundown-list" id="rundown-list">
+            <div class="rundown-cue" data-cue-source="playout"><span>PRE-SHOW</span><strong>Full-frame slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+            <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+            <div class="rundown-cue" data-cue-source="graphics"><span>GRAPHICS</span><strong>Key lower-third over Program</strong><button class="btn-filter" data-cue-action="preview-graphic">PREVIEW CG</button><button class="btn-filter" data-cue-action="graphics">TAKE CG</button></div>
+            <div class="rundown-cue" data-cue-source="ad"><span>BREAK</span><strong>SCTE-35 ad marker</strong><button class="btn-filter" data-cue-action="scte">SCTE</button></div>
+            <div class="rundown-cue" data-cue-source="cam2"><span>BACKUP / FILLER</span><strong>Backup contribution path</strong><button class="btn-filter" data-cue-action="backup">BACKUP</button></div>
+            <div class="rundown-cue" data-cue-source="playout"><span>END SLATE</span><strong>End slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-replay-playout" data-workspace-panel="operations">
+          <div class="panel-header">
+            <h3>REPLAY / PLAYOUT SERVERS</h3>
+            <span class="badge-blue font-fira">FULL-FRAME SOURCES</span>
+          </div>
+          <div class="panel-body replay-playout-grid">
+            <div class="server-module" id="replay-module">
+              <div class="server-module-head">
+                <span>REPLAY SERVER EC2</span>
+                <strong id="replay-server-status">STANDBY</strong>
+              </div>
+              <div class="server-controls">
+                <label>ISO Source
+                  <select id="replay-source-select">
+                    <option value="cam1">MULTIVIEW 1 / LiveU 1</option>
+                    <option value="cam2">MULTIVIEW 2 / Backup</option>
+                    <option value="liveu3">MULTIVIEW 3 / LiveU 3</option>
+                    <option value="liveu4">MULTIVIEW 4 / LiveU 4</option>
+                  </select>
+                </label>
+                <div class="server-button-row">
+                  <button class="btn-filter" id="btn-replay-mark-in">MARK IN</button>
+                  <button class="btn-filter" id="btn-replay-mark-out">MARK OUT</button>
+                  <button class="btn-filter" id="btn-replay-create">CREATE CLIP</button>
+                </div>
+                <select id="replay-clip-select"></select>
+                <div class="server-button-row">
+                  <button class="btn-filter" id="btn-preview-replay">PREVIEW REPLAY</button>
+                  <button class="btn-filter" id="btn-take-replay">TAKE REPLAY</button>
+                  <button class="btn-filter" id="btn-return-live-replay">RETURN LIVE</button>
+                </div>
+              </div>
+            </div>
+            <div class="server-module" id="playout-module">
+              <div class="server-module-head">
+                <span>PLAYOUT SERVER EC2</span>
+                <strong id="playout-server-status">READY</strong>
+              </div>
+              <div class="server-controls">
+                <label>Asset
+                  <select id="playout-asset-select"></select>
+                </label>
+                <div class="server-button-row">
+                  <button class="btn-filter" id="btn-preview-playout">PREVIEW PLAYOUT</button>
+                  <button class="btn-filter" id="btn-take-playout">TAKE PLAYOUT</button>
+                  <button class="btn-filter" id="btn-return-live-playout">RETURN LIVE</button>
+                </div>
+                <div class="server-status-line font-fira" id="playout-asset-status">Asset server ready</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>SIGNAL PATH</h3>
             <span class="badge-blue font-fira">SOURCE → SWITCH → DELIVERY</span>
@@ -703,7 +791,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-ai-ops" data-view-panel="operate">
+        <div class="control-panel panel-ai-ops" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>AI OPS ASSISTANT</h3>
             <span class="badge-blue font-fira">INCIDENT COPILOT</span>
@@ -714,28 +802,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-audio-mixer" data-view-panel="operate">
-          <div class="panel-header">
-            <h3>PROGRAM AUDIO MIXER</h3>
-            <div class="mixer-header-controls">
-              <label class="afv-toggle"><input type="checkbox" id="audio-afv-toggle" checked /> AFV</label>
-              <span class="badge-green font-fira" id="audio-pgm-bus">PGM AUDIO: —</span>
-            </div>
-          </div>
-          <div class="panel-body audio-mixer-body">
-            <div class="audio-mixer-channels" id="audio-mixer-channels"></div>
-            <div class="audio-pgm-strip">
-              <span>PGM AUDIO BUS</span>
-              <div class="audio-pgm-meter">
-                <div id="audio-pgm-meter-l"></div>
-                <div id="audio-pgm-meter-r"></div>
-              </div>
-              <strong id="audio-pgm-status">FOLLOW VIDEO</strong>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-engineering" data-view-panel="engineering">
+        <div class="control-panel panel-engineering" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>CLOUD BROADCAST HEALTH</h3>
             <span class="badge-blue font-fira">HYBRID MCR / PCR / NOC</span>
@@ -752,7 +819,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-cloud-topology" data-view-panel="engineering">
+        <div class="control-panel panel-cloud-topology" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>CLOUD PRODUCTION CHAIN</h3>
             <span class="badge-blue font-fira">BACKEND MODEL</span>
@@ -760,7 +827,7 @@
           <div class="panel-body cloud-topology-body" id="cloud-topology-body"></div>
         </div>
 
-        <div class="control-panel panel-telemetry" data-view-panel="engineering">
+        <div class="control-panel panel-telemetry" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>SRT CONTRIBUTOR TELEMETRY</h3>
             <span class="badge-amber font-fira">REAL-TIME MONITOR</span>
@@ -827,7 +894,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-dr-playout" data-view-panel="engineering">
+        <div class="control-panel panel-dr-playout" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
             <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
@@ -852,75 +919,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-event" data-view-panel="event">
-          <div class="panel-header">
-            <h3>EVENT RUNDOWN / AUTOMATION</h3>
-            <span class="badge-pink font-fira">CUE CONTROL</span>
-          </div>
-          <div class="panel-body rundown-list" id="rundown-list">
-            <div class="rundown-cue" data-cue-source="playout"><span>PRE-SHOW</span><strong>Full-frame slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-            <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-            <div class="rundown-cue" data-cue-source="graphics"><span>GRAPHICS</span><strong>Key lower-third over Program</strong><button class="btn-filter" data-cue-action="preview-graphic">PREVIEW CG</button><button class="btn-filter" data-cue-action="graphics">TAKE CG</button></div>
-            <div class="rundown-cue" data-cue-source="ad"><span>BREAK</span><strong>SCTE-35 ad marker</strong><button class="btn-filter" data-cue-action="scte">SCTE</button></div>
-            <div class="rundown-cue" data-cue-source="cam2"><span>BACKUP / FILLER</span><strong>Backup contribution path</strong><button class="btn-filter" data-cue-action="backup">BACKUP</button></div>
-            <div class="rundown-cue" data-cue-source="playout"><span>END SLATE</span><strong>End slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-replay-playout" data-view-panel="event">
-          <div class="panel-header">
-            <h3>REPLAY / PLAYOUT SERVERS</h3>
-            <span class="badge-blue font-fira">FULL-FRAME SOURCES</span>
-          </div>
-          <div class="panel-body replay-playout-grid">
-            <div class="server-module" id="replay-module">
-              <div class="server-module-head">
-                <span>REPLAY SERVER EC2</span>
-                <strong id="replay-server-status">STANDBY</strong>
-              </div>
-              <div class="server-controls">
-                <label>ISO Source
-                  <select id="replay-source-select">
-                    <option value="cam1">MULTIVIEW 1 / LiveU 1</option>
-                    <option value="cam2">MULTIVIEW 2 / Backup</option>
-                    <option value="liveu3">MULTIVIEW 3 / LiveU 3</option>
-                    <option value="liveu4">MULTIVIEW 4 / LiveU 4</option>
-                  </select>
-                </label>
-                <div class="server-button-row">
-                  <button class="btn-filter" id="btn-replay-mark-in">MARK IN</button>
-                  <button class="btn-filter" id="btn-replay-mark-out">MARK OUT</button>
-                  <button class="btn-filter" id="btn-replay-create">CREATE CLIP</button>
-                </div>
-                <select id="replay-clip-select"></select>
-                <div class="server-button-row">
-                  <button class="btn-filter" id="btn-preview-replay">PREVIEW REPLAY</button>
-                  <button class="btn-filter" id="btn-take-replay">TAKE REPLAY</button>
-                  <button class="btn-filter" id="btn-return-live-replay">RETURN LIVE</button>
-                </div>
-              </div>
-            </div>
-            <div class="server-module" id="playout-module">
-              <div class="server-module-head">
-                <span>PLAYOUT SERVER EC2</span>
-                <strong id="playout-server-status">READY</strong>
-              </div>
-              <div class="server-controls">
-                <label>Asset
-                  <select id="playout-asset-select"></select>
-                </label>
-                <div class="server-button-row">
-                  <button class="btn-filter" id="btn-preview-playout">PREVIEW PLAYOUT</button>
-                  <button class="btn-filter" id="btn-take-playout">TAKE PLAYOUT</button>
-                  <button class="btn-filter" id="btn-return-live-playout">RETURN LIVE</button>
-                </div>
-                <div class="server-status-line font-fira" id="playout-asset-status">Asset server ready</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-logs" data-view-panel="event">
+        <div class="control-panel panel-logs" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>INCIDENT TIMELINE</h3>
 
