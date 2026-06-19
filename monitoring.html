@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-2" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-4" />
 </head>
 
 <body class="workspace-monitoring">
@@ -797,6 +797,30 @@
           </div>
         </div>
 
+        <div class="control-panel panel-incident-response" data-workspace-panel="monitoring">
+          <div class="panel-header">
+            <h3>ACTIVE INCIDENT RESPONSE</h3>
+            <span class="badge-amber font-fira" id="incident-status-badge">STANDBY</span>
+          </div>
+          <div class="panel-body incident-response-body">
+            <div class="incident-current">
+              <span>CONDITION</span>
+              <strong id="incident-current-state">No active incident</strong>
+              <small id="incident-current-detail">Signal path and cloud distribution are nominal.</small>
+            </div>
+            <div class="incident-recommendation">
+              <span>AI RECOMMENDATION</span>
+              <strong id="incident-recommendation">Continue monitoring.</strong>
+            </div>
+            <div class="incident-action-row">
+              <button class="btn-filter" id="btn-incident-preview-backup">PREVIEW BACKUP</button>
+              <button class="btn-filter" id="btn-incident-take-backup">TAKE BACKUP</button>
+              <button class="btn-filter" id="btn-incident-resolve">MARK RESOLVED</button>
+              <button class="btn-filter" id="btn-incident-summary">GENERATE SUMMARY</button>
+            </div>
+          </div>
+        </div>
+
         <div class="control-panel panel-engineering" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>CLOUD BROADCAST HEALTH</h3>
@@ -971,6 +995,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-2"></script>
+  <script src="app.js?v=orchestrator-4"></script>
 </body>
 </html>

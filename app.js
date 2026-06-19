@@ -405,6 +405,14 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceInspectorMeta: document.getElementById('source-inspector-meta'),
     aiOpsSummary: document.getElementById('ai-ops-summary'),
     aiOpsList: document.getElementById('ai-ops-list'),
+    incidentStatusBadge: document.getElementById('incident-status-badge'),
+    incidentCurrentState: document.getElementById('incident-current-state'),
+    incidentCurrentDetail: document.getElementById('incident-current-detail'),
+    incidentRecommendation: document.getElementById('incident-recommendation'),
+    btnIncidentPreviewBackup: document.getElementById('btn-incident-preview-backup'),
+    btnIncidentTakeBackup: document.getElementById('btn-incident-take-backup'),
+    btnIncidentResolve: document.getElementById('btn-incident-resolve'),
+    btnIncidentSummary: document.getElementById('btn-incident-summary'),
     audioMixerChannels: document.getElementById('audio-mixer-channels'),
     audioAfvToggle: document.getElementById('audio-afv-toggle'),
     audioPgmBus: document.getElementById('audio-pgm-bus'),
@@ -1424,6 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDetectionControls();
     updateSourceOverlays();
     updateOrchestratorRouting();
+    renderAIOpsAssistant();
   }
 
   function setSourceDetection(sourceId, detectionName, active) {
@@ -1442,6 +1451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDetectionControls();
     updateSourceOverlays();
     updateOrchestratorRouting();
+    renderAIOpsAssistant();
   }
 
   function updateSourceStateControls() {
@@ -1823,13 +1833,75 @@ document.addEventListener('DOMContentLoaded', () => {
     return alarms;
   }
 
+  function getRecommendedBackupFeed() {
+    const current = state.activeSource;
+    return ['cam2', 'liveu3', 'liveu4', 'cam1'].find(feed => feed !== current && feedHasActiveSignal(feed)) || null;
+  }
+
+  function getIncidentSnapshot() {
+    const alarms = getActiveAlarmSummary();
+    const programUnhealthy = state.activeSource && !feedHasActiveSignal(state.activeSource);
+    const backupFeed = getRecommendedBackupFeed();
+    const primaryCondition = programUnhealthy
+      ? `PROGRAM SOURCE UNAVAILABLE: ${getProgramRouteLabel(state.activeSource)}`
+      : alarms[0] || null;
+
+    return {
+      alarms,
+      hasIncident: !!primaryCondition,
+      primaryCondition,
+      programUnhealthy,
+      backupFeed,
+      backupLabel: backupFeed ? getProgramRouteLabel(backupFeed) : 'No healthy backup source available'
+    };
+  }
+
+  function renderIncidentResponse() {
+    if (!el.incidentStatusBadge || !el.incidentCurrentState || !el.incidentRecommendation) return;
+    const incident = getIncidentSnapshot();
+    const badgeClass = incident.hasIncident ? 'badge-amber font-fira text-amber' : 'badge-green font-fira text-green';
+    el.incidentStatusBadge.className = badgeClass;
+    el.incidentStatusBadge.textContent = incident.hasIncident ? 'ACTIVE INCIDENT' : 'NOMINAL';
+
+    el.incidentCurrentState.textContent = incident.hasIncident ? incident.primaryCondition : 'No active incident';
+    if (el.incidentCurrentDetail) {
+      el.incidentCurrentDetail.textContent = incident.hasIncident
+        ? `${incident.alarms.length} condition${incident.alarms.length === 1 ? '' : 's'} active. Program: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}.`
+        : 'Signal path and cloud distribution are nominal.';
+    }
+    el.incidentRecommendation.textContent = incident.hasIncident
+      ? incident.backupFeed
+        ? `Preview ${incident.backupLabel}, confirm signal lock, then TAKE BACKUP if Program is affected.`
+        : 'No healthy backup detected. Prepare OFF AIR, playout slate, or field recovery workflow.'
+      : 'Continue monitoring contribution, cloud routing, and CDN health.';
+
+    const enableBackup = !!incident.backupFeed;
+    [el.btnIncidentPreviewBackup, el.btnIncidentTakeBackup].forEach(button => {
+      if (!button) return;
+      button.disabled = !enableBackup;
+      button.style.opacity = enableBackup ? '1' : '0.45';
+    });
+    if (el.btnIncidentResolve) {
+      el.btnIncidentResolve.disabled = !incident.hasIncident;
+      el.btnIncidentResolve.style.opacity = incident.hasIncident ? '1' : '0.45';
+    }
+    if (el.btnIncidentSummary) {
+      el.btnIncidentSummary.disabled = !incident.hasIncident;
+      el.btnIncidentSummary.style.opacity = incident.hasIncident ? '1' : '0.45';
+    }
+  }
+
   function renderAIOpsAssistant() {
     if (!el.aiOpsList || !el.aiOpsSummary) return;
     const alarms = getActiveAlarmSummary();
+    const incident = getIncidentSnapshot();
     const recommendations = [];
 
     if (alarms.length) {
       recommendations.push({ level: 'alarm', text: `Incident detected: ${alarms.slice(0, 3).join(', ')}${alarms.length > 3 ? '...' : ''}` });
+    }
+    if (incident.hasIncident && incident.backupFeed) {
+      recommendations.push({ level: 'warning', text: `Recommended action: preview ${incident.backupLabel}, then take backup if Program is impaired.` });
     }
     if (state.activeSource && !feedHasActiveSignal(state.activeSource)) {
       recommendations.push({ level: 'alarm', text: `Program source ${getTileName(state.activeSource)} is unavailable. Route backup or take OFF AIR.` });
@@ -1863,6 +1935,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.aiOpsList.innerHTML = recommendations.slice(0, 5).map(item => (
       `<div class="ai-ops-item ai-${item.level}"><span>${item.level.toUpperCase()}</span><strong>${item.text}</strong></div>`
     )).join('');
+    renderIncidentResponse();
   }
 
   function renderEngineeringDashboard() {
@@ -2715,6 +2788,7 @@ document.addEventListener('DOMContentLoaded', () => {
       el.inspectorText.innerHTML = '<strong class="text-green">ST 2022-7 Switcher</strong>: Waiting for PREVIEW/TAKE route selection.';
     }
     updateHeaderMetrics();
+    renderAIOpsAssistant();
   }
 
   function clearPreviewUI() {
@@ -2765,6 +2839,70 @@ document.addEventListener('DOMContentLoaded', () => {
     addLog('alarm', 'MIX', `Emergency backup routed: ${getProgramRouteLabel(backupFeed)}.`);
   }
 
+  function previewIncidentBackup() {
+    const backupFeed = getRecommendedBackupFeed();
+    if (!backupFeed) {
+      addLog('alarm', 'AI', 'AI Ops found no healthy backup source to preview.');
+      renderIncidentResponse();
+      return;
+    }
+    setPreview(backupFeed);
+    addLog('warning', 'AI', `AI Ops recommended backup preview: ${getProgramRouteLabel(backupFeed)}.`);
+    renderIncidentResponse();
+  }
+
+  function takeIncidentBackup() {
+    const backupFeed = getRecommendedBackupFeed();
+    if (!backupFeed) {
+      addLog('alarm', 'AI', 'AI Ops backup take blocked: no healthy backup source available.');
+      renderIncidentResponse();
+      return;
+    }
+    setPreview(backupFeed);
+    routePreviewToProgram('AI OPS BACKUP TAKE');
+    addLog('alarm', 'AI', `AI Ops backup action executed: ${getProgramRouteLabel(backupFeed)} is now Program.`);
+    renderIncidentResponse();
+  }
+
+  function resolveIncident() {
+    const incident = getIncidentSnapshot();
+    if (!incident.hasIncident) {
+      addLog('info', 'AI', 'Incident resolve requested, but no active incident is present.');
+      return;
+    }
+    state.primaryFailed = false;
+    state.isUnderflow = false;
+    state.unrecoveredLoss = 0;
+    state.lossPercent = Math.min(state.lossPercent, 1.5);
+    if (el.slideLoss) el.slideLoss.value = state.lossPercent;
+    LIVEU_SOURCE_IDS.forEach(sourceId => {
+      if (state.sourceBaseStates[sourceId] === 'OFFLINE' || state.sourceBaseStates[sourceId] === 'ALARM') {
+        state.sourceBaseStates[sourceId] = sourceId === 'liveu2' ? 'STANDBY' : 'ONLINE';
+      }
+      state.sourceDetections[sourceId] = { black: false, silence: false, frozen: false };
+      state.sourceStates[sourceId] = deriveSourceState(sourceId);
+    });
+    syncSourceControlInputs();
+    updateSourceInspector();
+    updatePGMFooter();
+    updateOrchestratorRouting();
+    renderVideo();
+    addLog('info', 'AI', `Incident marked resolved by operator. Cleared: ${incident.alarms.join(', ') || incident.primaryCondition}.`);
+  }
+
+  function generateIncidentSummary() {
+    const incident = getIncidentSnapshot();
+    if (!incident.hasIncident) {
+      addLog('info', 'AI', 'AI Ops summary: no active incident. System nominal.');
+      return;
+    }
+    const program = state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR';
+    const recommendation = incident.backupFeed
+      ? `Recommended backup ${incident.backupLabel}.`
+      : 'No healthy backup available; prepare playout slate or OFF AIR workflow.';
+    addLog('warning', 'AI', `Incident summary: ${incident.alarms.join(', ')}. Program=${program}. ${recommendation}`);
+  }
+
   // TAKE button: route preview to program
   el.btnTake.addEventListener('click', () => routePreviewToProgram('TAKE'));
   el.btnCut?.addEventListener('click', () => routePreviewToProgram('CUT'));
@@ -2772,6 +2910,10 @@ document.addEventListener('DOMContentLoaded', () => {
     clearProgramOut('Program Out faded to black by operator.');
   });
   el.btnEmergencyBackup?.addEventListener('click', routeEmergencyBackup);
+  el.btnIncidentPreviewBackup?.addEventListener('click', previewIncidentBackup);
+  el.btnIncidentTakeBackup?.addEventListener('click', takeIncidentBackup);
+  el.btnIncidentResolve?.addEventListener('click', resolveIncident);
+  el.btnIncidentSummary?.addEventListener('click', generateIncidentSummary);
 
   el.btnClearProgram?.addEventListener('click', () => {
     clearProgramOut('Program Out cleared to black by operator.');
@@ -3352,6 +3494,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function drawStreamLossStatic(ctx, w, h) {
+    if (!ctx || w < 1 || h < 1) return;
     // High-performance television static noise
     const imgData = ctx.createImageData(w, h);
     const data = imgData.data;
