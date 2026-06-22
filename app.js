@@ -1932,7 +1932,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.sourceInspectorSignal, hasSignal ? 'LOCKED' : 'NO SIGNAL', hasSignal ? 'text-green' : 'text-red');
 
     if (el.sourceInspectorMeta) {
-      el.sourceInspectorMeta.textContent = `${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
+      el.sourceInspectorMeta.textContent = `TECHNICAL: ${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();

@@ -1857,10 +1857,11 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
 
 .source-inspector-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
+.source-inspector-summary,
 .source-inspector-grid div {
   min-width: 0;
   background: rgba(15, 23, 42, 0.58);
@@ -1869,6 +1870,18 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   padding: 5px 6px;
 }
 
+.source-inspector-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  border-color: rgba(0, 210, 255, 0.22);
+}
+
+.source-inspector-summary div:last-child {
+  text-align: right;
+}
+
+.source-inspector-summary span,
 .source-inspector-grid span {
   display: block;
   color: var(--text-secondary);
@@ -1878,6 +1891,7 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   letter-spacing: 0.04em;
 }
 
+.source-inspector-summary strong,
 .source-inspector-grid strong {
   display: block;
   margin-top: 2px;
