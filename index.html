@@ -451,13 +451,21 @@
 
             <div class="screen-footer">
               <div class="pgm-footer-top">
-                <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
-                <button class="btn-screen-control" id="btn-cut" title="Cut the current Preview source directly to Program Out.">CUT</button>
-                <button class="btn-screen-control btn-danger-control" id="btn-fade-black" title="Fade Program Out to black.">FADE TO BLACK</button>
-                <button class="btn-screen-control btn-eject" id="btn-clear-program" title="Clear Program Out and return it to black.">OFF AIR</button>
-                <button class="btn-screen-control btn-emergency" id="btn-emergency-backup" title="Route the backup source to Program immediately.">EMERGENCY BACKUP</button>
-                <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
-                <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
+                <div class="pgm-action-group pgm-transition-group">
+                  <span class="pgm-control-label">TRANSITION</span>
+                  <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
+                  <button class="btn-screen-control" id="btn-cut" title="Cut the current Preview source directly to Program Out.">CUT</button>
+                  <button class="btn-screen-control btn-danger-control" id="btn-fade-black" title="Fade Program Out to black.">FADE TO BLACK</button>
+                </div>
+                <div class="pgm-action-group pgm-safety-group">
+                  <span class="pgm-control-label">SAFETY</span>
+                  <button class="btn-screen-control btn-eject" id="btn-clear-program" title="Clear Program Out and return it to black.">OFF AIR</button>
+                  <button class="btn-screen-control btn-emergency" id="btn-emergency-backup" title="Route the backup source to Program immediately.">EMERGENCY BACKUP</button>
+                </div>
+                <div class="pgm-route-meta">
+                  <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
+                  <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
+                </div>
               </div>
               <div class="pgm-footer-status">
                 <div class="pgm-status-line pgm-status-current font-fira" id="pgm-status-current">CURRENT / PROGRAM: —</div>

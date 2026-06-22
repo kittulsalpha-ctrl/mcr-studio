@@ -972,6 +972,36 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   flex-wrap: wrap;
 }
 
+.pgm-action-group,
+.pgm-route-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.pgm-action-group {
+  padding-right: 7px;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.pgm-control-label {
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.pgm-safety-group .pgm-control-label {
+  color: #fca5a5;
+}
+
+.pgm-route-meta {
+  margin-left: auto;
+}
+
 .pgm-footer-status {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
