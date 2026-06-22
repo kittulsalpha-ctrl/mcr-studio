@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
   el.audioAfvToggle?.addEventListener('change', event => {
     state.audioMixer.audioFollowVideo = event.target.checked;
     addLog('info', 'AUDIO', `Audio Follow Video ${state.audioMixer.audioFollowVideo ? 'enabled' : 'disabled'}.`);
-    syncAudioFollowVideo('AFV enabled');
+    syncAudioFollowVideo('Follow Video enabled');
     backendCommand('/api/audio-afv', { enabled: state.audioMixer.audioFollowVideo });
     renderAudioMixer();
     renderEngineeringDashboard();
@@ -2140,17 +2140,17 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="audio-channel-meter"><div class="audio-meter-l"></div><div class="audio-meter-r"></div></div>
           <input type="range" min="0" max="1" step="0.01" value="${channel.fader}" class="audio-fader" data-audio-action="fader" />
           <div class="audio-channel-controls">
-            <button class="btn-filter" data-audio-action="pgm">PGM</button>
+            <button class="btn-filter" data-audio-action="pgm" title="Route this channel to on-air audio.">SEND TO AIR</button>
             <button class="btn-filter" data-audio-action="mute">MUTE</button>
             <button class="btn-filter" data-audio-action="solo">SOLO</button>
-            <button class="btn-filter" data-audio-action="pfl">PFL</button>
+            <button class="btn-filter" data-audio-action="pfl" title="Listen before taking this channel to air.">LISTEN (PFL)</button>
           </div>
         </div>
       `).join('');
     }
     if (el.audioAfvToggle) el.audioAfvToggle.checked = state.audioMixer.audioFollowVideo;
-    if (el.audioPgmBus) el.audioPgmBus.textContent = `PGM AUDIO: ${getAudioLabel(state.audioMixer.programBus)}`;
-    if (el.audioPgmStatus) el.audioPgmStatus.textContent = state.audioMixer.audioFollowVideo ? 'AUDIO FOLLOW VIDEO' : 'MANUAL AUDIO BUS';
+    if (el.audioPgmBus) el.audioPgmBus.textContent = `ON-AIR AUDIO: ${getAudioLabel(state.audioMixer.programBus)}`;
+    if (el.audioPgmStatus) el.audioPgmStatus.textContent = state.audioMixer.audioFollowVideo ? 'FOLLOWING VIDEO' : 'MANUAL AUDIO ROUTE';
     channelEntries.forEach(([feed, channel]) => {
       const row = el.audioMixerChannels.querySelector(`[data-audio-feed="${feed}"]`);
       if (!row) return;
@@ -2159,7 +2159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       row.classList.toggle('audio-channel-muted', channel.mute);
       row.classList.toggle('audio-channel-solo', channel.solo);
       const route = row.querySelector('.audio-route-state');
-      if (route) route.textContent = state.audioMixer.programBus === feed ? 'PGM' : channel.pfl ? 'PFL' : 'ISO';
+      if (route) route.textContent = state.audioMixer.programBus === feed ? 'ON AIR' : channel.pfl ? 'PFL LISTEN' : 'ISO';
       const fader = row.querySelector('.audio-fader');
       if (fader && document.activeElement !== fader) fader.value = channel.fader;
       const meterL = row.querySelector('.audio-meter-l');

@@ -472,23 +472,23 @@
       <section class="controls-container">
         <div class="control-panel panel-audio-mixer" data-workspace-panel="operations">
           <div class="panel-header">
-            <h3>PGM AUDIO</h3>
+            <h3>PROGRAM AUDIO</h3>
             <div class="mixer-header-controls">
-              <label class="afv-toggle"><input type="checkbox" id="audio-afv-toggle" checked /> AFV</label>
-              <span class="badge-green font-fira" id="audio-pgm-bus">PGM AUDIO: —</span>
+              <label class="afv-toggle" title="When enabled, on-air audio follows the current Program video source."><input type="checkbox" id="audio-afv-toggle" checked /> FOLLOW VIDEO</label>
+              <span class="badge-green font-fira" id="audio-pgm-bus">ON-AIR AUDIO: —</span>
             </div>
           </div>
           <div class="panel-body audio-mixer-body">
             <div class="audio-pgm-strip">
-              <span>PGM AUDIO BUS</span>
+              <span>ON-AIR AUDIO</span>
               <div class="audio-pgm-meter">
                 <div id="audio-pgm-meter-l"></div>
                 <div id="audio-pgm-meter-r"></div>
               </div>
-              <strong id="audio-pgm-status">FOLLOW VIDEO</strong>
+              <strong id="audio-pgm-status">FOLLOWING VIDEO</strong>
             </div>
             <details class="operator-advanced">
-              <summary>MANUAL AUDIO CHANNELS</summary>
+              <summary>AUDIO ROUTING &amp; LEVELS</summary>
               <div class="audio-mixer-channels" id="audio-mixer-channels"></div>
             </details>
           </div>
@@ -850,7 +850,7 @@
               <div class="integration-card">
                 <span>Production Core</span>
                 <strong>Switcher / Audio / CG / Replay</strong>
-                <small>Control APIs route Preview, Program, AFV, faders, key/fill, clips, and full-frame playout.</small>
+                <small>Control APIs route Preview, Program, Audio Follow Video (AFV), faders, key/fill, clips, and full-frame playout.</small>
               </div>
               <div class="integration-card">
                 <span>Cloud Delivery</span>
