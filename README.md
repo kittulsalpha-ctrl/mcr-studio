@@ -50,6 +50,18 @@ See `ORCHESTRATOR_API.md` for the API contract.
 
 See `TELEMETRY_COLLECTOR_API.md` for the normalized Direct Connect, MediaConnect, MediaLive, CloudFront, and encoder telemetry contract. A trusted backend collector posts this data; the browser never holds AWS credentials.
 
+## AWS Telemetry Worker
+
+`aws-telemetry-worker.js` is a configuration-driven collector scaffold for AWS Direct Connect, MediaConnect, MediaLive, and CloudFront. Copy `.env.telemetry.example` into the deployment environment, provide resource IDs and an IAM role/profile, then run:
+
+```bash
+npm install
+npm start
+npm run telemetry:aws
+```
+
+The worker posts only normalized telemetry to the local Control Orchestrator. It does not process media, and the encoder section remains intentionally vendor-neutral until a client provides an encoder API, SNMP, NMOS, or QC-probe integration.
+
 ## Client Integration Blueprint
 
 See `CLIENT_INTEGRATION_BLUEPRINT.md` for the client-facing architecture plan. It explains what is real today, what needs backend services, what information a client must provide, and how to phase the product from demo to gateway pilot to production control plane.
