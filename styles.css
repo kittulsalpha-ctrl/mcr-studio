@@ -680,6 +680,11 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
   z-index: 10;
 }
 
+/* Operations tiles show the connected input; detailed transport data belongs in Monitoring. */
+body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) .stream-stats-overlay .stat-row:not(:nth-child(2)) {
+  display: none;
+}
+
 .stat-row {
   display: flex;
   gap: 6px;
