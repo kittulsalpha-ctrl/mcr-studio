@@ -2017,44 +2017,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const alarms = getActiveAlarmSummary();
     const incident = getIncidentSnapshot();
     const recommendations = [];
-
-    if (alarms.length) {
-      recommendations.push({ level: 'alarm', text: `Incident detected: ${alarms.slice(0, 3).join(', ')}${alarms.length > 3 ? '...' : ''}` });
-    }
-    if (incident.hasIncident && incident.backupFeed) {
-      recommendations.push({ level: 'warning', text: `Recommended action: preview ${incident.backupLabel}, then take backup if Program is impaired.` });
-    }
-    if (state.activeSource && !feedHasActiveSignal(state.activeSource)) {
-      recommendations.push({ level: 'alarm', text: `Program source ${getTileName(state.activeSource)} is unavailable. Route backup or take OFF AIR.` });
-    }
-    if (state.primaryFailed || getSourceState('liveu1') === 'OFFLINE' || getSourceState('liveu1') === 'ALARM') {
-      recommendations.push({ level: 'warning', text: 'Recommend Emergency Backup: route LiveU Feed 2 or another healthy contribution source while primary recovers.' });
-    }
-    if (state.rttMs >= 160) {
-      recommendations.push({ level: 'warning', text: `High RTT at ${state.rttMs}ms. Increase SRT latency buffer and avoid route changes during packet recovery.` });
-    }
-    if (state.lossPercent >= 5) {
-      recommendations.push({ level: 'warning', text: `Packet loss ${state.lossPercent.toFixed(1)}%. Check contribution uplink and prepare backup source.` });
-    }
     const activeProgramHasSignal = state.activeSource && feedHasActiveSignal(state.activeSource);
-    if (state.previewFeed && activeProgramHasSignal) {
-      recommendations.push({ level: 'info', text: `Ready: ${getTileName(state.previewFeed)} is next, ${getTileName(state.activeSource)} is currently on air.` });
-    } else if (activeProgramHasSignal) {
-      recommendations.push({ level: 'info', text: `Program stable on ${getProgramRouteLabel(state.activeSource)}. No preview source armed.` });
-    } else if (state.activeSource) {
-      recommendations.push({ level: 'warning', text: `Program route is active but ${getTileName(state.activeSource)} is not healthy. Prepare backup or go OFF AIR.` });
+    const programLabel = state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR';
+    const previewLabel = state.previewFeed ? getProgramRouteLabel(state.previewFeed) : 'NONE';
+
+    if (incident.hasIncident) {
+      recommendations.push({
+        label: 'INCIDENT',
+        level: 'alarm',
+        text: alarms.slice(0, 3).join(' · ') || incident.primaryCondition
+      });
+      recommendations.push({
+        label: 'IMPACT',
+        level: activeProgramHasSignal ? 'warning' : 'alarm',
+        text: activeProgramHasSignal
+          ? `Program remains on ${programLabel}; confirm source health before the next transition.`
+          : `Program route ${programLabel} is at risk or unavailable.`
+      });
+      recommendations.push({
+        label: 'NEXT ACTION',
+        level: 'warning',
+        text: incident.backupFeed
+          ? `Preview ${incident.backupLabel}, verify signal lock, then TAKE BACKUP if Program is affected.`
+          : 'No healthy backup is available. Prepare a playout slate or OFF AIR workflow.'
+      });
     } else {
-      recommendations.push({ level: 'info', text: 'Program is off air. Select a source, PREVIEW it, then TAKE TO AIR.' });
-    }
-    if (!alarms.length && !state.primaryFailed && !state.isUnderflow) {
-      recommendations.push({ level: 'info', text: 'No active incident. Signal path and cloud distribution are nominal.' });
+      recommendations.push({
+        label: 'SHOW STATE',
+        level: 'info',
+        text: `Program: ${programLabel}. Preview: ${previewLabel}.`
+      });
+      recommendations.push({
+        label: 'WATCH',
+        level: 'info',
+        text: activeProgramHasSignal
+          ? 'Program path is healthy. Continue watching contribution and delivery health.'
+          : 'Program is off air. Cue a source to Preview before taking it to air.'
+      });
     }
 
-    el.aiOpsSummary.textContent = alarms.length
-      ? `${alarms.length} active condition${alarms.length === 1 ? '' : 's'} require operator attention.`
-      : 'No active incident. Monitoring contribution, switching, and cloud delivery.';
-    el.aiOpsList.innerHTML = recommendations.slice(0, 5).map(item => (
-      `<div class="ai-ops-item ai-${item.level}"><span>${item.level.toUpperCase()}</span><strong>${item.text}</strong></div>`
+    if (state.rttMs >= 160 || state.lossPercent >= 5) {
+      recommendations.push({
+        label: 'NETWORK',
+        level: 'warning',
+        text: `RTT ${state.rttMs}ms · loss ${state.lossPercent.toFixed(1)}%. Increase latency buffer and avoid nonessential route changes.`
+      });
+    }
+
+    el.aiOpsSummary.textContent = incident.hasIncident
+      ? `${alarms.length} active condition${alarms.length === 1 ? '' : 's'}. Program: ${programLabel}.`
+      : `Program: ${programLabel}. Preview: ${previewLabel}. No active incident.`;
+    el.aiOpsList.innerHTML = recommendations.slice(0, 3).map(item => (
+      `<div class="ai-ops-item ai-${item.level}"><span>${item.label}</span><strong>${item.text}</strong></div>`
     )).join('');
     renderIncidentResponse();
   }
