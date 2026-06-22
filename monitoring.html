@@ -90,26 +90,29 @@
           <button class="btn btn-secondary" id="btn-eject-video">CLEAR LOCAL FILE</button>
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
         </div>
-        <div class="multiviewer-action-bar preset-controls">
-          <label class="action-select-label">Demo Preset:
-            <select id="select-demo-preset">
-              <option value="clean">Clean Startup</option>
-              <option value="football">Football MCR Demo</option>
-              <option value="youtube">YouTube Live Demo</option>
-              <option value="failover">Failover Drill</option>
-              <option value="adcue">Ad Cue Drill</option>
-            </select>
-          </label>
-          <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD PRESET</button>
-          <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this preset.">COPY LINK</button>
-          <details class="operator-inline-advanced">
-            <summary>SCENARIO FILES</summary>
-            <button class="btn btn-secondary" id="btn-export-scenario" title="Download the current scenario as a JSON file.">EXPORT</button>
-            <button class="btn btn-secondary" id="btn-import-scenario" title="Import a saved scenario JSON file.">IMPORT</button>
-          </details>
-          <input type="file" id="scenario-import-input" accept="application/json,.json" hidden />
-          <span class="preset-link-status font-fira" id="preset-link-status">Preset links use ?preset=name</span>
-        </div>
+        <details class="operator-advanced demo-setup">
+          <summary>DEMO &amp; SETUP</summary>
+          <div class="multiviewer-action-bar preset-controls">
+            <label class="action-select-label">Demo scenario:
+              <select id="select-demo-preset">
+                <option value="clean">Clean Startup</option>
+                <option value="football">Football MCR Demo</option>
+                <option value="youtube">YouTube Live Demo</option>
+                <option value="failover">Failover Drill</option>
+                <option value="adcue">Ad Cue Drill</option>
+              </select>
+            </label>
+            <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD SCENARIO</button>
+            <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this scenario.">COPY LINK</button>
+            <details class="operator-inline-advanced">
+              <summary>SCENARIO FILES</summary>
+              <button class="btn btn-secondary" id="btn-export-scenario" title="Download the current scenario as a JSON file.">EXPORT</button>
+              <button class="btn btn-secondary" id="btn-import-scenario" title="Import a saved scenario JSON file.">IMPORT</button>
+            </details>
+            <input type="file" id="scenario-import-input" accept="application/json,.json" hidden />
+            <span class="preset-link-status font-fira" id="preset-link-status">Preset links use ?preset=name</span>
+          </div>
+        </details>
         <div class="multiviewer-action-bar assign-controls">
           <label class="action-select-label">Camera target:
             <select id="select-webcam-target">
