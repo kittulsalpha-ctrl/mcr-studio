@@ -171,7 +171,7 @@ body {
 
 .header-badges {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -198,6 +198,22 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
+}
+
+.badge-on-air {
+  background: rgba(127, 29, 29, 0.54);
+  border-color: rgba(248, 113, 113, 0.56);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.16);
+}
+
+.badge-on-air .badge-label,
+.badge-on-air .badge-value {
+  color: #fecaca;
+}
+
+body.workspace-operations #badge-throughput,
+body.workspace-operations #badge-control-api {
+  display: none;
 }
 
 .header-clocks {
