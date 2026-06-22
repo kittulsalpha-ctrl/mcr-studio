@@ -930,11 +930,14 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   color: #a7f3d0;
   border-color: rgba(16, 185, 129, 0.32);
   background: rgba(16, 185, 129, 0.08);
+  font-weight: 700;
 }
 
 .btn-screen-control.btn-edit {
-  color: #bae6fd;
-  border-color: rgba(0, 210, 255, 0.24);
+  color: var(--text-muted);
+  border-color: rgba(148, 163, 184, 0.16);
+  background: transparent;
+  opacity: 0.72;
 }
 
 .btn-screen-control.btn-active-graphics {
