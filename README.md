@@ -42,11 +42,13 @@ Open backend-connected mode:
 http://127.0.0.1:8080/?backend=1&preset=football
 ```
 
-The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, and `/api/events` for live Server-Sent Events. It is still simulated, but it creates the real product boundary between the browser control surface and future media engines.
+The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, `/api/telemetry`, and `/api/events` for live Server-Sent Events. It is still simulated by default, but it now has a collector-ready telemetry ingest boundary for AWS and encoder monitoring.
 
 When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Control Orchestrator. This is the intended dual-screen MCR demo mode.
 
 See `ORCHESTRATOR_API.md` for the API contract.
+
+See `TELEMETRY_COLLECTOR_API.md` for the normalized Direct Connect, MediaConnect, MediaLive, CloudFront, and encoder telemetry contract. A trusted backend collector posts this data; the browser never holds AWS credentials.
 
 ## Client Integration Blueprint
 

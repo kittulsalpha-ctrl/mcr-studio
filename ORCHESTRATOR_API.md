@@ -23,9 +23,20 @@ GET /api/health
 GET /api/state
 GET /api/logs
 GET /api/events
+GET /api/telemetry
 ```
 
 `/api/events` is a Server-Sent Events stream. It emits `state` events whenever a command changes orchestrator state.
+
+## Telemetry Ingest
+
+```text
+POST /api/telemetry
+```
+
+This endpoint accepts normalized on-prem and cloud telemetry from a trusted collector. The browser does not call AWS APIs directly.
+
+Set `TELEMETRY_INGEST_TOKEN` on the server to require `Authorization: Bearer <token>` for ingest requests. See `TELEMETRY_COLLECTOR_API.md` for the schema, AWS metric mapping, and example payload.
 
 ## Commands
 

@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       eventSource: null,
       applyingRemoteState: false
     },
+    cloudTelemetry: null,
 
     // Preview / Program state
     previewFeed: null,
@@ -437,14 +438,20 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTakePlayout: document.getElementById('btn-take-playout'),
     btnReturnLivePlayout: document.getElementById('btn-return-live-playout'),
     engInputStatus: document.getElementById('eng-input-status'),
+    engTelemetrySource: document.getElementById('eng-telemetry-source'),
     engGatewayStatus: document.getElementById('eng-gateway-status'),
     engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
+    engMediaConnectDetail: document.getElementById('eng-mediaconnect-detail'),
     engMediaLiveStatus: document.getElementById('eng-medialive-status'),
+    engMediaLiveDetail: document.getElementById('eng-medialive-detail'),
     engCdnStatus: document.getElementById('eng-cdn-status'),
+    engCdnDetail: document.getElementById('eng-cdn-detail'),
     engPathStatus: document.getElementById('eng-path-status'),
+    engPathDetail: document.getElementById('eng-path-detail'),
     engNetworkStatus: document.getElementById('eng-network-status'),
     engNetworkDetail: document.getElementById('eng-network-detail'),
     engRegionStatus: document.getElementById('eng-region-status'),
+    engRegionDetail: document.getElementById('eng-region-detail'),
     signalFlowSource: document.getElementById('signal-flow-source'),
     signalFlowGateway: document.getElementById('signal-flow-gateway'),
     signalFlowSwitcher: document.getElementById('signal-flow-switcher'),
@@ -629,6 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.activeSource = remoteState.routing?.program || null;
     state.programSourceOverride = null;
     state.replayPlayout.returnLiveSource = remoteState.routing?.returnLive || state.replayPlayout.returnLiveSource;
+    state.cloudTelemetry = remoteState.telemetry || state.cloudTelemetry;
 
     if (remoteState.audio) {
       state.audioMixer.audioFollowVideo = !!remoteState.audio.followVideo;
@@ -2077,15 +2085,42 @@ document.addEventListener('DOMContentLoaded', () => {
     syncBackendModel();
     const onlineInputs = TILE_FEEDS.filter(feed => feedHasActiveSignal(feed)).length;
     const alarms = getActiveAlarmSummary();
+    const telemetry = state.cloudTelemetry;
+    const hasLiveTelemetry = state.backend.enabled && telemetry?.mode === 'LIVE';
+    const telemetryService = serviceId => hasLiveTelemetry ? telemetry.services?.[serviceId] : null;
+    const applyTelemetryService = (serviceId, statusElement, detailElement, fallbackStatus, fallbackClass, fallbackDetail) => {
+      const service = telemetryService(serviceId);
+      if (!service) {
+        setMetricText(statusElement, fallbackStatus, fallbackClass);
+        if (detailElement) detailElement.textContent = fallbackDetail;
+        return;
+      }
+      setMetricText(statusElement, service.status || 'UNKNOWN', serviceStatusClass(service.status));
+      if (detailElement) detailElement.textContent = service.detail || `${service.region || 'unknown region'} collector telemetry`;
+    };
+
+    if (el.engTelemetrySource) {
+      el.engTelemetrySource.textContent = hasLiveTelemetry ? 'LIVE COLLECTOR' : 'SIMULATION';
+      el.engTelemetrySource.className = hasLiveTelemetry ? 'badge-green font-fira' : 'badge-blue font-fira';
+    }
     setMetricText(el.engInputStatus, `${onlineInputs}/4 ONLINE`, onlineInputs >= 3 ? 'text-green' : onlineInputs >= 2 ? 'text-amber' : 'text-red');
     setMetricText(el.engGatewayStatus, state.ndiBridge.backendConnected ? 'CONNECTED' : state.ndiBridge.discovered ? 'SIMULATED' : 'STANDBY', state.ndiBridge.backendConnected ? 'text-green' : 'text-amber');
-    setMetricText(el.engMediaConnectStatus, state.primaryFailed ? 'BACKUP PATH' : 'PRIMARY', state.primaryFailed ? 'text-amber' : 'text-green');
-    setMetricText(el.engMediaLiveStatus, state.activeSource ? 'RUNNING' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
-    setMetricText(el.engCdnStatus, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'HEALTHY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
-    setMetricText(el.engPathStatus, state.primaryFailed ? 'A FAIL / B ACTIVE' : 'A/B READY', state.primaryFailed ? 'text-red' : 'text-green');
-    setMetricText(el.engNetworkStatus, `RTT ${state.rttMs}ms`, state.rttMs >= 160 ? 'text-red' : state.rttMs >= 90 ? 'text-amber' : 'text-green');
-    if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${state.lossPercent.toFixed(1)}% loss · ${state.jitterMs}ms jitter · ${alarms.length} alarms`;
-    setMetricText(el.engRegionStatus, state.primaryFailed ? 'us-east-2' : 'us-east-1', state.primaryFailed ? 'text-amber' : 'text-green');
+    applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'BACKUP PATH' : 'PRIMARY', state.primaryFailed ? 'text-amber' : 'text-green', 'Simulated primary / backup flow');
+    applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'RUNNING' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber', 'Simulated channel output');
+    applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'HEALTHY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', 'Simulated HLS/DASH delivery');
+    applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, state.primaryFailed ? 'A FAIL / B ACTIVE' : 'A/B READY', state.primaryFailed ? 'text-red' : 'text-green', 'Simulated protected transport path');
+
+    const telemetryNetwork = hasLiveTelemetry ? telemetry.network || {} : null;
+    const rttMs = typeof telemetryNetwork?.rttMs === 'number' ? telemetryNetwork.rttMs : state.rttMs;
+    const lossPercent = typeof telemetryNetwork?.lossPercent === 'number' ? telemetryNetwork.lossPercent : state.lossPercent;
+    const jitterMs = typeof telemetryNetwork?.jitterMs === 'number' ? telemetryNetwork.jitterMs : state.jitterMs;
+    setMetricText(el.engNetworkStatus, `RTT ${rttMs}ms`, rttMs >= 160 ? 'text-red' : rttMs >= 90 ? 'text-amber' : 'text-green');
+    if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${lossPercent.toFixed(1)}% loss · ${jitterMs}ms jitter · ${alarms.length} alarms`;
+
+    const encoderTelemetry = telemetryService('encoder');
+    const encoderRegion = encoderTelemetry?.region || (state.primaryFailed ? 'us-east-2' : 'us-east-1');
+    setMetricText(el.engRegionStatus, encoderRegion, encoderTelemetry ? serviceStatusClass(encoderTelemetry.status) : state.primaryFailed ? 'text-amber' : 'text-green');
+    if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || 'Simulated primary contribution encoder';
     setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
     setMetricText(el.signalFlowGateway, state.ndiBridge.backendConnected ? 'NDI BRIDGE LIVE' : 'NDI/SRT/WebRTC', state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
     setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');

@@ -10,6 +10,9 @@ const { URL } = require('url');
 
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
+const TELEMETRY_INGEST_TOKEN = process.env.TELEMETRY_INGEST_TOKEN || '';
+const TELEMETRY_SERVICE_IDS = ['directConnect', 'mediaConnect', 'mediaLive', 'cloudFront', 'encoder'];
+const TELEMETRY_STATUSES = ['HEALTHY', 'ONLINE', 'RUNNING', 'READY', 'STANDBY', 'DEGRADED', 'ALARM', 'FAILED', 'UNKNOWN'];
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -91,6 +94,19 @@ const state = {
     encoder: { label: 'Program Encoder', status: 'ENCODING', instance: 'ec2-encoder-a' },
     distribution: { label: 'MediaLive / CDN', status: 'ONLINE', instance: 'aws-us-east-1' }
   },
+  telemetry: {
+    mode: 'SIMULATION',
+    collector: 'mcr-studio-simulator',
+    observedAt: new Date().toISOString(),
+    services: {
+      directConnect: { status: 'HEALTHY', region: 'us-east-1', detail: 'Primary VIF and BGP healthy', metrics: {} },
+      mediaConnect: { status: 'HEALTHY', region: 'us-east-1', detail: 'Primary flow active', metrics: {} },
+      mediaLive: { status: 'RUNNING', region: 'us-east-1', detail: 'Channel output active', metrics: {} },
+      cloudFront: { status: 'HEALTHY', region: 'global', detail: 'Edge delivery healthy', metrics: {} },
+      encoder: { status: 'HEALTHY', region: 'on-prem', detail: 'Contribution encoder locked', metrics: {} }
+    },
+    network: { rttMs: 25, lossPercent: 0, jitterMs: 5 }
+  },
   logs: []
 };
 
@@ -160,6 +176,48 @@ function normalizeContributionSource(source) {
 function detectionSourceId(source) {
   const aliases = { cam1: 'liveu1', cam2: 'liveu2', liveu1: 'liveu1', liveu2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' };
   return aliases[source] || null;
+}
+
+function sanitizeTelemetryMetrics(metrics) {
+  if (!metrics || typeof metrics !== 'object' || Array.isArray(metrics)) return {};
+  return Object.entries(metrics).reduce((clean, [key, value]) => {
+    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)) return clean;
+    if (typeof value === 'number' && Number.isFinite(value)) clean[key] = value;
+    if (typeof value === 'string' && value.length <= 120) clean[key] = value;
+    return clean;
+  }, {});
+}
+
+function normalizeTelemetryPayload(body) {
+  const telemetry = body && typeof body === 'object' ? body : {};
+  const services = telemetry.services && typeof telemetry.services === 'object' ? telemetry.services : {};
+  const normalizedServices = {};
+
+  TELEMETRY_SERVICE_IDS.forEach(serviceId => {
+    const service = services[serviceId];
+    if (!service || typeof service !== 'object') return;
+    const status = String(service.status || 'UNKNOWN').toUpperCase();
+    normalizedServices[serviceId] = {
+      status: TELEMETRY_STATUSES.includes(status) ? status : 'UNKNOWN',
+      region: typeof service.region === 'string' ? service.region.slice(0, 64) : '',
+      detail: typeof service.detail === 'string' ? service.detail.slice(0, 180) : '',
+      metrics: sanitizeTelemetryMetrics(service.metrics)
+    };
+  });
+
+  const network = telemetry.network && typeof telemetry.network === 'object' ? telemetry.network : {};
+  const normalizedNetwork = {};
+  ['rttMs', 'lossPercent', 'jitterMs'].forEach(key => {
+    if (typeof network[key] === 'number' && Number.isFinite(network[key])) normalizedNetwork[key] = network[key];
+  });
+
+  return {
+    mode: telemetry.mode === 'LIVE' ? 'LIVE' : 'SIMULATION',
+    collector: typeof telemetry.collector === 'string' ? telemetry.collector.slice(0, 96) : 'external-collector',
+    observedAt: typeof telemetry.observedAt === 'string' ? telemetry.observedAt.slice(0, 48) : nowStamp(),
+    services: normalizedServices,
+    network: normalizedNetwork
+  };
 }
 
 const commandHandlers = {
@@ -309,6 +367,24 @@ const commandHandlers = {
   playoutTake(body) {
     if (body.assetId) state.playout.selectedAsset = body.assetId;
     return commandHandlers.take({ source: 'playout' });
+  },
+
+  telemetryIngest(body) {
+    const telemetry = normalizeTelemetryPayload(body);
+    if (!Object.keys(telemetry.services).length) {
+      return { status: 400, body: { error: 'Telemetry payload must include at least one recognized service.' } };
+    }
+    return mutate('telemetry-ingest', () => {
+      state.telemetry = {
+        ...state.telemetry,
+        ...telemetry,
+        services: { ...state.telemetry.services, ...telemetry.services },
+        network: { ...state.telemetry.network, ...telemetry.network }
+      };
+      const affected = Object.keys(telemetry.services).join(', ');
+      const log = addLog('info', 'CLOUD', `Telemetry received from ${state.telemetry.collector}: ${affected}.`, 'telemetry-ingest');
+      return { body: { ok: true, telemetry: state.telemetry, state: publicState(), log } };
+    });
   }
 };
 
@@ -321,7 +397,7 @@ function writeJson(res, status, payload) {
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   });
   res.end(JSON.stringify(payload, null, 2));
 }
@@ -385,6 +461,10 @@ async function handleApi(req, res, url) {
     return writeJson(res, 200, { logs: state.logs });
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/telemetry') {
+    return writeJson(res, 200, state.telemetry);
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/events') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -397,6 +477,20 @@ async function handleApi(req, res, url) {
     sendEvent(res, 'state', publicState());
     req.on('close', () => clients.delete(res));
     return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/telemetry') {
+    const authorization = req.headers.authorization || '';
+    if (TELEMETRY_INGEST_TOKEN && authorization !== `Bearer ${TELEMETRY_INGEST_TOKEN}`) {
+      return writeJson(res, 401, { error: 'Telemetry ingest is unauthorized.' });
+    }
+    try {
+      const body = await readJson(req);
+      const result = commandHandlers.telemetryIngest(body);
+      return writeJson(res, result.status || 200, result.body || result);
+    } catch (error) {
+      return writeJson(res, 400, { error: error.message });
+    }
   }
 
   if (req.method === 'POST' && url.pathname.startsWith('/api/')) {
