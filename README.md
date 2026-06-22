@@ -12,9 +12,11 @@ This project is a working front-end demo for a modern hybrid broadcast operation
 
 ## Graphics vs Playout
 
-The `CG / GRAPHICS ENGINE` tile represents a key/fill graphics system similar to a Vizrt-style CG engine. It does not replace the Program video route. Instead, operators can preview and take graphics layers such as lower-thirds, ticker, and bug overlays, which are keyed over the active Program source.
+The `GRAPHICS OVERLAY` tile represents a key/fill graphics system similar to a Vizrt-style CG engine. It does not replace the Program video route. Instead, operators can preview and take graphics layers such as lower-thirds, ticker, and bug overlays, which are keyed over the active Program source.
 
 Full-frame playout is separate from CG. The current demo includes a simulated Playout Server for slates, filler, end slate, and emergency loop assets. These replace the Program video route like normal full-frame sources.
+
+Replay is separate from playout: it creates and cues clips from an ISO contribution source, then returns the operator to the prior live route.
 
 ## Backend-Ready Model
 
