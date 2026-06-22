@@ -2669,8 +2669,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updatePGMFooter() {
-    const previewLine = document.getElementById('pgm-status-preview');
-    const programLine = document.getElementById('pgm-status-program');
     const currentLine = document.getElementById('pgm-status-current');
     const nextLine = document.getElementById('pgm-status-next');
     
@@ -2679,12 +2677,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (nextLine) {
       nextLine.textContent = state.previewFeed ? `NEXT / PREVIEW: ${getProgramRouteLabel(state.previewFeed)}` : 'NEXT / PREVIEW: —';
-    }
-    if (previewLine) {
-      previewLine.textContent = state.previewFeed ? `PREVIEW READY: ${getTileName(state.previewFeed)}` : 'PREVIEW READY: —';
-    }
-    if (programLine) {
-      programLine.textContent = state.activeSource ? `PROGRAM ON AIR: ${getTileName(state.activeSource)}` : 'PROGRAM ON AIR: —';
     }
     const graphicsLine = document.getElementById('pgm-status-graphics');
     if (graphicsLine) {

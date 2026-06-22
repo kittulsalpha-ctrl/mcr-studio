@@ -949,11 +949,11 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
 }
 
 .pgm-footer-status {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
   width: 100%;
-  padding-top: 3px;
+  padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -961,12 +961,46 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
   font-size: 8px;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
+  min-width: 0;
 }
 
 .pgm-status-current,
 .pgm-status-next {
   font-size: 10px;
   color: var(--text-primary);
+  padding: 4px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 4px;
+  background: rgba(2, 6, 23, 0.62);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pgm-status-current {
+  border-color: rgba(239, 68, 68, 0.38);
+}
+
+.pgm-status-next {
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+#pgm-status-graphics {
+  grid-column: 1 / -1;
+}
+
+.pgm-footer-top #btn-take {
+  min-width: 128px;
+  background: rgba(239, 68, 68, 0.82);
+  border-color: #f87171;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.24);
+}
+
+.pgm-footer-top #btn-take:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.44);
 }
 
 .btn-screen-control.btn-danger-control {
