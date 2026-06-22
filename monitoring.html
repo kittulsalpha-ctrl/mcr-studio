@@ -584,21 +584,21 @@
         <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>SIGNAL PATH</h3>
-            <span class="badge-blue font-fira">SOURCE → SWITCH → DELIVERY</span>
+            <span class="badge-blue font-fira">PROGRAM ROUTE</span>
           </div>
 
           <div class="panel-body">
             <div class="signal-flow-strip">
-              <div><span>SOURCE</span><strong id="signal-flow-source">—</strong></div>
-              <div><span>GATEWAY</span><strong id="signal-flow-gateway">NDI/SRT/WebRTC</strong></div>
+              <div><span>PROGRAM INPUT</span><strong id="signal-flow-source">—</strong></div>
+              <div><span>INGEST</span><strong id="signal-flow-gateway">NDI/SRT/WebRTC</strong></div>
               <div><span>CLOUD SWITCHER</span><strong id="signal-flow-switcher">IDLE</strong></div>
-              <div><span>MEDIALIVE</span><strong id="signal-flow-medialive">READY</strong></div>
-              <div><span>CDN EDGE</span><strong id="signal-flow-cdn">READY</strong></div>
+              <div><span>ENCODER</span><strong id="signal-flow-medialive">READY</strong></div>
+              <div><span>DELIVERY</span><strong id="signal-flow-cdn">READY</strong></div>
             </div>
             <div class="route-summary-strip font-fira">
-              <span id="route-summary-program">PROGRAM: —</span>
-              <span id="route-summary-preview">PREVIEW: —</span>
-              <span id="route-summary-path">PATH: PRIMARY/BACKUP READY</span>
+              <span class="route-summary-program" id="route-summary-program">ON AIR: —</span>
+              <span class="route-summary-preview" id="route-summary-preview">PREVIEW: —</span>
+              <span class="route-summary-resilience" id="route-summary-path">RESILIENCE: PRIMARY/BACKUP READY</span>
             </div>
             <div class="node-editor-wrapper">
               <svg id="node-svg" viewBox="0 0 540 280" preserveAspectRatio="xMidYMid meet">
@@ -701,10 +701,9 @@
             </div>
 
             <div class="node-inspector" id="node-inspector">
-              <span class="inspector-title">Active Node Config:</span>
+              <span class="inspector-title">SELECTED NODE:</span>
               <span class="inspector-body" id="inspector-text">
-                Click on any node to view configuration details. Currently displaying:
-                <strong class="text-green">ST 2022-7 Switcher (Seamless Path switching enabled, switching window: 50ms)</strong>
+                <strong class="text-green">Cloud Switcher</strong> routes the active Program source through the protected delivery path.
               </span>
             </div>
 

@@ -1305,6 +1305,32 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   font-size: 8px;
 }
 
+.route-summary-strip span {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 4px;
+  background: rgba(2, 6, 23, 0.42);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-summary-program {
+  border-color: rgba(239, 68, 68, 0.36) !important;
+  color: #fecaca;
+}
+
+.route-summary-preview {
+  border-color: rgba(245, 158, 11, 0.36) !important;
+  color: #fde68a;
+}
+
+.route-summary-resilience {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #a7f3d0;
+}
+
 .engineering-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

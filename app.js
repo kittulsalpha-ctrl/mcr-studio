@@ -2077,9 +2077,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
     setMetricText(el.signalFlowMediaLive, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-blue');
     setMetricText(el.signalFlowCdn, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
-    if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `PROGRAM: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : '—'}`;
+    if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
-    if (el.routeSummaryPath) el.routeSummaryPath.textContent = `PATH: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
+    if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
     renderCloudTopology();
     renderAudioMixer();
     renderReplayPlayoutServers();
