@@ -496,19 +496,19 @@
 
         <div class="control-panel panel-event" data-workspace-panel="operations">
           <div class="panel-header">
-            <h3>EVENT RUNDOWN / AUTOMATION</h3>
-            <span class="badge-pink font-fira">CUE CONTROL</span>
+            <h3>SHOW CUES</h3>
+            <span class="badge-pink font-fira">CUE / TAKE</span>
           </div>
           <div class="panel-body">
             <details class="operator-advanced">
-              <summary>SHOW RUNDOWN CUES</summary>
+              <summary>OPEN SHOW CUES</summary>
               <div class="rundown-list" id="rundown-list">
-                <div class="rundown-cue" data-cue-source="playout"><span>PRE-SHOW</span><strong>Full-frame slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-                <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
-                <div class="rundown-cue" data-cue-source="graphics"><span>GRAPHICS</span><strong>Key lower-third over Program</strong><button class="btn-filter" data-cue-action="preview-graphic">PREVIEW CG</button><button class="btn-filter" data-cue-action="graphics">TAKE CG</button></div>
-                <div class="rundown-cue" data-cue-source="ad"><span>BREAK</span><strong>SCTE-35 ad marker</strong><button class="btn-filter" data-cue-action="scte">SCTE</button></div>
-                <div class="rundown-cue" data-cue-source="cam2"><span>BACKUP / FILLER</span><strong>Backup contribution path</strong><button class="btn-filter" data-cue-action="backup">BACKUP</button></div>
-                <div class="rundown-cue" data-cue-source="playout"><span>END SLATE</span><strong>End slate from Playout Server</strong><button class="btn-filter" data-cue-action="preview">PREVIEW</button><button class="btn-filter" data-cue-action="take">TAKE</button></div>
+                <div class="rundown-cue" data-cue-source="playout"><span>PRE-SHOW</span><strong>Full-frame slate from Playout</strong><button class="btn-filter" data-cue-action="preview" title="Cue the pre-show slate in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the pre-show slate to Program.">TAKE TO AIR</button></div>
+                <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution source</strong><button class="btn-filter" data-cue-action="preview" title="Cue the live source in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the live source to Program.">TAKE TO AIR</button></div>
+                <div class="rundown-cue" data-cue-source="graphics"><span>LOWER THIRD</span><strong>Overlay graphic over Program</strong><button class="btn-filter" data-cue-action="preview-graphic" title="Load the lower-third into graphics preview.">CUE OVERLAY</button><button class="btn-filter" data-cue-action="graphics" title="Key the overlay over Program.">TAKE OVERLAY</button></div>
+                <div class="rundown-cue" data-cue-source="ad"><span>AD BREAK</span><strong>Insert an SCTE-35 break marker</strong><button class="btn-filter" data-cue-action="scte" title="Insert an SCTE-35 marker. This does not replace Program video.">INSERT AD MARKER</button></div>
+                <div class="rundown-cue" data-cue-source="cam2"><span>EMERGENCY BACKUP</span><strong>Route the configured backup source</strong><button class="btn-filter" data-cue-action="backup" title="Route the emergency backup source to Program.">TAKE BACKUP</button></div>
+                <div class="rundown-cue" data-cue-source="playout"><span>END SLATE</span><strong>Full-frame end slate from Playout</strong><button class="btn-filter" data-cue-action="preview" title="Cue the end slate in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the end slate to Program.">TAKE TO AIR</button></div>
               </div>
             </details>
           </div>

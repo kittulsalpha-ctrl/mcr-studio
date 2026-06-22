@@ -1464,9 +1464,15 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
 
 .rundown-cue {
   display: grid;
-  grid-template-columns: minmax(80px, 0.8fr) minmax(120px, 1.4fr) auto auto;
+  grid-template-columns: minmax(74px, 0.72fr) minmax(0, 1.35fr) minmax(0, 0.9fr) minmax(0, 0.95fr);
   align-items: center;
   gap: 8px;
+}
+
+.rundown-cue .btn-filter {
+  width: 100%;
+  min-height: 24px;
+  white-space: normal;
 }
 
 .replay-playout-grid {
