@@ -544,6 +544,36 @@ body.workspace-operations .panel-audio-mixer {
   font: 9px var(--font-mono);
 }
 
+.obs-routing-bridge {
+  display: grid;
+  grid-template-columns: auto minmax(130px, 0.8fr) minmax(130px, 0.8fr) auto;
+  gap: 7px;
+  align-items: center;
+  padding: 0 12px 11px;
+}
+
+.obs-routing-bridge select {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 5px;
+  background: rgba(2, 6, 23, 0.72);
+  color: var(--text-primary);
+  padding: 6px 8px;
+  font: 9px var(--font-mono);
+}
+
+.obs-follow-toggle {
+  color: var(--text-secondary);
+  font: 8px var(--font-mono);
+  white-space: nowrap;
+}
+
+.obs-routing-bridge > span {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-size: 8px;
+}
+
 .screen-header {
   display: flex;
   justify-content: space-between;
@@ -2860,6 +2890,15 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   .btn-screen-control {
     font-size: 7px;
     padding: 2px 6px;
+  }
+
+  .obs-control-body,
+  .obs-routing-bridge {
+    grid-template-columns: 1fr;
+  }
+
+  .obs-routing-bridge > span {
+    grid-column: auto;
   }
 }
 /* Hide multiviewer header + control panels */

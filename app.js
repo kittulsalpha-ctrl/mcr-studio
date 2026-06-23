@@ -276,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
     obsProgramScene: document.getElementById('obs-program-scene'),
     obsSceneSelect: document.getElementById('obs-scene-select'),
     btnObsTakeScene: document.getElementById('btn-obs-take-scene'),
+    obsFollowMcrTake: document.getElementById('obs-follow-mcr-take'),
+    obsMapSource: document.getElementById('obs-map-source'),
+    obsMapScene: document.getElementById('obs-map-scene'),
+    btnSaveObsMap: document.getElementById('btn-save-obs-map'),
+    obsRoutingSummary: document.getElementById('obs-routing-summary'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -606,12 +611,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.obsProgramScene) el.obsProgramScene.textContent = `PROGRAM: ${obs?.programScene || 'NOT CONNECTED'}`;
     if (el.obsSceneSelect) {
       const current = el.obsSceneSelect.value;
-      el.obsSceneSelect.innerHTML = (obs?.scenes || []).map(scene => `<option value="${scene.replace(/"/g, '&quot;')}">${scene}</option>`).join('') || '<option value="">No OBS scenes available</option>';
+      el.obsSceneSelect.replaceChildren(...(obs?.scenes || []).map(scene => new Option(scene, scene)));
+      if (!el.obsSceneSelect.options.length) el.obsSceneSelect.add(new Option('No OBS scenes available', ''));
       if ((obs?.scenes || []).includes(current)) el.obsSceneSelect.value = current;
       else if (obs?.programScene) el.obsSceneSelect.value = obs.programScene;
       el.obsSceneSelect.disabled = !connected;
     }
     if (el.btnObsTakeScene) el.btnObsTakeScene.disabled = !connected;
+    if (el.obsFollowMcrTake) {
+      el.obsFollowMcrTake.checked = !!obs?.followMcrTake;
+      el.obsFollowMcrTake.disabled = !connected;
+    }
+    if (el.obsMapScene) {
+      const source = el.obsMapSource?.value || 'cam1';
+      const mappedScene = obs?.mappings?.[source] || '';
+      el.obsMapScene.replaceChildren(new Option('No OBS scene mapped', ''), ...(obs?.scenes || []).map(scene => new Option(scene, scene)));
+      el.obsMapScene.value = mappedScene;
+      el.obsMapScene.disabled = !connected;
+    }
+    if (el.btnSaveObsMap) el.btnSaveObsMap.disabled = !connected;
+    if (el.obsRoutingSummary) {
+      const mapped = Object.entries(obs?.mappings || {}).filter(([, scene]) => scene).length;
+      el.obsRoutingSummary.textContent = `MCR to OBS follow: ${obs?.followMcrTake ? 'ARMED' : 'DISARMED'} · ${mapped} MAP${mapped === 1 ? '' : 'S'}`;
+      el.obsRoutingSummary.className = obs?.followMcrTake ? 'font-fira text-amber' : 'font-fira';
+    }
   }
 
   function hydratePageSwitcherLinks() {
@@ -3184,6 +3207,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!window.confirm(`Take OBS scene "${sceneName}" to the OBS Program output?`)) return;
     const result = await backendCommand('/api/obs-take', { sceneName });
     if (result?.ok) addLog('info', 'OBS', `Operator took OBS scene: ${sceneName}.`);
+  });
+
+  el.obsMapSource?.addEventListener('change', renderObsControl);
+  el.btnSaveObsMap?.addEventListener('click', async () => {
+    const source = el.obsMapSource?.value;
+    const sceneName = el.obsMapScene?.value || '';
+    if (!source) return;
+    const result = await backendCommand('/api/obs-routing-config', {
+      followMcrTake: !!el.obsFollowMcrTake?.checked,
+      mappings: { [source]: sceneName }
+    });
+    if (result?.ok) addLog('info', 'OBS', `${getTileName(source)} mapped to ${sceneName || 'no OBS scene'}.`);
+  });
+
+  el.obsFollowMcrTake?.addEventListener('change', async event => {
+    if (event.target.checked && !window.confirm('Arm OBS follow mode? Normal MCR TAKE actions will also take their configured OBS Program scene.')) {
+      event.target.checked = false;
+      return;
+    }
+    const result = await backendCommand('/api/obs-routing-config', {
+      followMcrTake: event.target.checked,
+      mappings: {}
+    });
+    if (result?.ok) addLog('info', 'OBS', `OBS follow-MCR routing ${event.target.checked ? 'armed' : 'disarmed'}.`);
   });
 
   // Per-tile attach/eject/solo wiring

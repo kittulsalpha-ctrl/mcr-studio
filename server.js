@@ -23,8 +23,19 @@ const TELEMETRY_INGEST_TOKEN = process.env.TELEMETRY_INGEST_TOKEN || '';
 const OBS_WEBSOCKET_ENABLED = process.env.OBS_WEBSOCKET_ENABLED === '1';
 const OBS_WEBSOCKET_URL = process.env.OBS_WEBSOCKET_URL || 'ws://127.0.0.1:4455';
 const OBS_WEBSOCKET_PASSWORD = process.env.OBS_WEBSOCKET_PASSWORD || '';
+const LOCAL_RUNTIME_CONFIG_PATH = path.join(__dirname, '.mcr-studio-local.json');
 const TELEMETRY_SERVICE_IDS = ['directConnect', 'mediaConnect', 'mediaLive', 'cloudFront', 'encoder'];
 const TELEMETRY_STATUSES = ['HEALTHY', 'ONLINE', 'RUNNING', 'READY', 'STANDBY', 'DEGRADED', 'ALARM', 'FAILED', 'UNKNOWN'];
+
+function loadLocalRuntimeConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(LOCAL_RUNTIME_CONFIG_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+const localRuntimeConfig = loadLocalRuntimeConfig();
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -119,7 +130,15 @@ const state = {
     },
     network: { rttMs: 25, lossPercent: 0, jitterMs: 5 }
   },
-  obs: { enabled: OBS_WEBSOCKET_ENABLED, status: OBS_WEBSOCKET_ENABLED ? 'CONNECTING' : 'NOT CONFIGURED', programScene: '', scenes: [], detail: OBS_WEBSOCKET_ENABLED ? 'Connecting to local OBS.' : 'Local OBS connector is not configured.' },
+  obs: {
+    enabled: OBS_WEBSOCKET_ENABLED,
+    status: OBS_WEBSOCKET_ENABLED ? 'CONNECTING' : 'NOT CONFIGURED',
+    programScene: '',
+    scenes: [],
+    detail: OBS_WEBSOCKET_ENABLED ? 'Connecting to local OBS.' : 'Local OBS connector is not configured.',
+    followMcrTake: !!localRuntimeConfig.obs?.followMcrTake,
+    mappings: { cam1: '', cam2: '', liveu3: '', liveu4: '', replay: '', playout: '', ...(localRuntimeConfig.obs?.mappings || {}) }
+  },
   logs: []
 };
 
@@ -142,6 +161,20 @@ function addLog(severity, area, message, operatorAction = null) {
   state.logs.push(entry);
   if (state.logs.length > 250) state.logs.shift();
   return entry;
+}
+
+function persistLocalRuntimeConfig() {
+  const config = {
+    obs: {
+      followMcrTake: state.obs.followMcrTake,
+      mappings: state.obs.mappings
+    }
+  };
+  try {
+    fs.writeFileSync(LOCAL_RUNTIME_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    addLog('warning', 'SYSTEM', `Could not persist local routing configuration: ${error.message}`, 'config-save');
+  }
 }
 
 function syncDerivedState() {
@@ -207,6 +240,20 @@ function normalizeContributionSource(source) {
   return aliases[source] || null;
 }
 
+async function takeObsProgramScene(sceneName, reason) {
+  if (!obsClient || state.obs.status !== 'CONNECTED') {
+    throw new Error('OBS is not connected.');
+  }
+  if (!state.obs.scenes.includes(sceneName)) {
+    throw new Error(`OBS scene "${sceneName}" is unavailable.`);
+  }
+  await obsClient.call('SetCurrentProgramScene', { sceneName });
+  publishObs({ status: 'CONNECTED', programScene: sceneName, detail: `Program scene: ${sceneName}.` });
+  const log = addLog('info', 'OBS', `OBS Program scene taken: ${sceneName}.`, reason);
+  broadcast('state', publicState());
+  return log;
+}
+
 function detectionSourceId(source) {
   const aliases = { cam1: 'liveu1', cam2: 'liveu2', liveu1: 'liveu1', liveu2: 'liveu2', liveu3: 'liveu3', liveu4: 'liveu4' };
   return aliases[source] || null;
@@ -265,10 +312,10 @@ const commandHandlers = {
     });
   },
 
-  take(body) {
+  async take(body) {
     const source = body.source || state.routing.preview;
     if (!isKnownProgramSource(source)) return { status: 400, body: { error: 'Unknown take source' } };
-    return mutate('take', () => {
+    const result = mutate('take', () => {
       if (['cam1', 'cam2', 'liveu3', 'liveu4'].includes(state.routing.program)) {
         state.routing.returnLive = state.routing.program;
       }
@@ -278,6 +325,16 @@ const commandHandlers = {
       const log = addLog('info', 'MIX', `Program switched to ${source}.`, 'take');
       return { body: { ok: true, state: publicState(), log } };
     });
+    const mappedScene = state.obs.followMcrTake ? state.obs.mappings[source] : '';
+    if (mappedScene) {
+      try {
+        await takeObsProgramScene(mappedScene, `mcr-take:${source}`);
+      } catch (error) {
+        addLog('warning', 'OBS', `MCR Program changed, but OBS did not follow: ${error.message}`, 'obs-follow-take');
+        broadcast('state', publicState());
+      }
+    }
+    return { body: { ...result.body, state: publicState() } };
   },
 
   offAir() {
@@ -290,7 +347,7 @@ const commandHandlers = {
     });
   },
 
-  returnLive() {
+  async returnLive() {
     return commandHandlers.take({ source: state.routing.returnLive || 'cam1' });
   },
 
@@ -394,23 +451,41 @@ const commandHandlers = {
     });
   },
 
-  replayTake() {
+  async replayTake() {
     return commandHandlers.take({ source: 'replay' });
   },
 
-  playoutTake(body) {
+  async playoutTake(body) {
     if (body.assetId) state.playout.selectedAsset = body.assetId;
     return commandHandlers.take({ source: 'playout' });
   },
 
   async obsTake(body) {
     const sceneName = String(body.sceneName || '');
-    if (!obsClient || state.obs.status !== 'CONNECTED') return { status: 409, body: { error: 'OBS is not connected.' } };
-    if (!state.obs.scenes.includes(sceneName)) return { status: 400, body: { error: 'Unknown OBS scene.' } };
-    await obsClient.call('SetCurrentProgramScene', { sceneName });
-    publishObs({ status: 'CONNECTED', programScene: sceneName, detail: `Program scene: ${sceneName}.` });
-    const log = addLog('info', 'OBS', `OBS Program scene taken: ${sceneName}.`, 'obs-take');
+    let log;
+    try {
+      log = await takeObsProgramScene(sceneName, 'obs-take');
+    } catch (error) {
+      return { status: 409, body: { error: error.message } };
+    }
     return { body: { ok: true, state: publicState(), log } };
+  },
+
+  obsRoutingConfig(body) {
+    const followMcrTake = !!body.followMcrTake;
+    const mappings = body.mappings || {};
+    const knownSources = ['cam1', 'cam2', 'liveu3', 'liveu4', 'replay', 'playout'];
+    for (const [source, sceneName] of Object.entries(mappings)) {
+      if (!knownSources.includes(source)) return { status: 400, body: { error: 'Unknown MCR source mapping.' } };
+      if (sceneName && !state.obs.scenes.includes(sceneName)) return { status: 400, body: { error: `Unknown OBS scene: ${sceneName}` } };
+    }
+    return mutate('obs-routing-config', () => {
+      state.obs.followMcrTake = followMcrTake;
+      state.obs.mappings = { ...state.obs.mappings, ...mappings };
+      persistLocalRuntimeConfig();
+      const log = addLog('info', 'OBS', `OBS follow-MCR routing ${followMcrTake ? 'armed' : 'disarmed'}.`, 'obs-routing-config');
+      return { body: { ok: true, state: publicState(), log } };
+    });
   },
 
   telemetryIngest(body) {
@@ -559,7 +634,8 @@ async function handleApi(req, res, url) {
       replaycreate: 'replayCreate',
       replaytake: 'replayTake',
       playouttake: 'playoutTake',
-      obstake: 'obsTake'
+      obstake: 'obsTake',
+      obsroutingconfig: 'obsRoutingConfig'
     };
     const handler = commandHandlers[aliases[commandName]];
     if (!handler) return writeJson(res, 404, { error: 'Unknown API command' });

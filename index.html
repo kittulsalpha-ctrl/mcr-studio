@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-12" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-13" />
 </head>
 
 <body class="workspace-operations">
@@ -490,6 +490,20 @@
             <span class="font-fira" id="obs-program-scene">PROGRAM: NOT CONNECTED</span>
             <select id="obs-scene-select" aria-label="OBS scene"></select>
             <button class="btn-filter" id="btn-obs-take-scene">TAKE OBS SCENE</button>
+          </div>
+          <div class="obs-routing-bridge">
+            <label class="obs-follow-toggle" title="When armed, each MCR TAKE also takes the mapped OBS scene."><input type="checkbox" id="obs-follow-mcr-take" /> OBS FOLLOWS MCR TAKE</label>
+            <select id="obs-map-source" aria-label="MCR source to map">
+              <option value="cam1">MULTIVIEW 1</option>
+              <option value="cam2">MULTIVIEW 2</option>
+              <option value="liveu3">MULTIVIEW 3</option>
+              <option value="liveu4">MULTIVIEW 4</option>
+              <option value="replay">REPLAY SERVER</option>
+              <option value="playout">PLAYOUT SERVER</option>
+            </select>
+            <select id="obs-map-scene" aria-label="OBS scene mapping"></select>
+            <button class="btn-filter" id="btn-save-obs-map">SAVE MAP</button>
+            <span class="font-fira" id="obs-routing-summary">MCR to OBS follow: DISARMED</span>
           </div>
         </div>
         <div class="control-panel panel-audio-mixer" data-workspace-panel="operations">
@@ -1067,6 +1081,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-12"></script>
+  <script src="app.js?v=orchestrator-13"></script>
 </body>
 </html>
