@@ -209,10 +209,24 @@ function publishObs(next) {
   broadcast('state', publicState());
 }
 
+async function refreshObsScenes() {
+  if (!obsClient || state.obs.status !== 'CONNECTED') return;
+  const sceneList = await obsClient.call('GetSceneList');
+  const scenes = (sceneList.scenes || []).map(scene => scene.sceneName);
+  publishObs({
+    status: 'CONNECTED',
+    scenes,
+    detail: `OBS ${state.obs.version || 'connected'} · ${scenes.length} scene(s) available.`
+  });
+}
+
 async function connectObs() {
   if (!OBS_WEBSOCKET_ENABLED) return;
   obsClient = new OBSWebSocket();
   obsClient.on('CurrentProgramSceneChanged', event => publishObs({ status: 'CONNECTED', programScene: event.sceneName || '', detail: `Program scene: ${event.sceneName || 'unnamed'}.` }));
+  ['SceneCreated', 'SceneRemoved', 'SceneNameChanged'].forEach(eventName => {
+    obsClient.on(eventName, () => refreshObsScenes().catch(error => addLog('warning', 'OBS', `Could not refresh OBS scenes: ${error.message}`, 'obs-scene-refresh')));
+  });
   obsClient.on('ConnectionClosed', () => publishObs({ status: 'OFFLINE', detail: 'OBS WebSocket disconnected.' }));
   try {
     const version = await obsClient.connect(OBS_WEBSOCKET_URL, OBS_WEBSOCKET_PASSWORD || undefined);
