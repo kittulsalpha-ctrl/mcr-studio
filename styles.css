@@ -198,6 +198,17 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
+  display: inline-block;
+  min-width: 13ch;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Live metrics reserve a number lane so telemetry refreshes never move the UI. */
+#total-bw-value {
+  min-width: 10ch;
+  text-align: right;
 }
 
 .badge-on-air {
@@ -248,6 +259,10 @@ body.workspace-operations #badge-control-api {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.05em;
+  min-width: 8ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Workspace */
@@ -506,6 +521,11 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
   letter-spacing: 0.05em;
   font-weight: 500;
   flex-shrink: 0;
+  display: inline-block;
+  min-width: 11ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .canvas-wrapper {
@@ -701,6 +721,11 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
 
 .stat-row span:last-child {
   font-weight: 500;
+  display: inline-block;
+  min-width: 10ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .screen-alarm-overlay {
@@ -2170,6 +2195,19 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
 .val-display {
   font-size: 11px;
   font-weight: 700;
+  display: inline-block;
+  min-width: 7ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.engineering-card strong,
+.engineering-card small,
+.source-inspector-summary strong,
+.source-inspector-grid strong,
+.source-inspector-meta {
+  font-variant-numeric: tabular-nums;
 }
 
 .slider {
