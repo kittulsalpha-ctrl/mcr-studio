@@ -166,6 +166,7 @@ const state = {
 
 const clients = new Set();
 let obsClient;
+let obsReconnectTimer;
 
 function nowStamp() {
   return new Date().toISOString();
@@ -237,6 +238,14 @@ function publishObs(next) {
   broadcast('state', publicState());
 }
 
+function scheduleObsReconnect() {
+  if (!OBS_WEBSOCKET_ENABLED || obsReconnectTimer) return;
+  obsReconnectTimer = setTimeout(() => {
+    obsReconnectTimer = null;
+    connectObs().catch(() => {});
+  }, 5000);
+}
+
 async function refreshObsScenes() {
   if (!obsClient || state.obs.status !== 'CONNECTED') return;
   const sceneList = await obsClient.call('GetSceneList');
@@ -249,13 +258,16 @@ async function refreshObsScenes() {
 }
 
 async function connectObs() {
-  if (!OBS_WEBSOCKET_ENABLED) return;
+  if (!OBS_WEBSOCKET_ENABLED || state.obs.status === 'CONNECTED') return;
   obsClient = new OBSWebSocket();
   obsClient.on('CurrentProgramSceneChanged', event => publishObs({ status: 'CONNECTED', programScene: event.sceneName || '', detail: `Program scene: ${event.sceneName || 'unnamed'}.` }));
   ['SceneCreated', 'SceneRemoved', 'SceneNameChanged'].forEach(eventName => {
     obsClient.on(eventName, () => refreshObsScenes().catch(error => addLog('warning', 'OBS', `Could not refresh OBS scenes: ${error.message}`, 'obs-scene-refresh')));
   });
-  obsClient.on('ConnectionClosed', () => publishObs({ status: 'OFFLINE', detail: 'OBS WebSocket disconnected.' }));
+  obsClient.on('ConnectionClosed', () => {
+    publishObs({ status: 'OFFLINE', detail: 'OBS WebSocket disconnected. Retrying in 5 seconds.' });
+    scheduleObsReconnect();
+  });
   try {
     const version = await obsClient.connect(OBS_WEBSOCKET_URL, OBS_WEBSOCKET_PASSWORD || undefined);
     const [sceneList, program] = await Promise.all([obsClient.call('GetSceneList'), obsClient.call('GetCurrentProgramScene')]);
@@ -263,6 +275,7 @@ async function connectObs() {
     addLog('info', 'OBS', 'OBS production engine connected.', 'obs-connect');
   } catch (error) {
     publishObs({ status: 'OFFLINE', detail: `OBS connection failed: ${error.message}` });
+    scheduleObsReconnect();
   }
 }
 
