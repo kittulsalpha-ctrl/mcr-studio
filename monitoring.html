@@ -844,14 +844,14 @@
             <span class="badge-blue font-fira" id="eng-telemetry-source">SIMULATION</span>
           </div>
           <div class="panel-body engineering-grid">
-            <div class="engineering-card"><span>Contribution Inputs</span><strong id="eng-input-status">4 ONLINE</strong><small>LiveU / file / webcam / URL sources</small></div>
-            <div class="engineering-card"><span>NDI/SRT/WebRTC Gateway</span><strong id="eng-gateway-status">STANDBY</strong><small>Bridge endpoint /api/ndi/sources</small></div>
-            <div class="engineering-card"><span>AWS MediaConnect Flow</span><strong id="eng-mediaconnect-status">PRIMARY</strong><small id="eng-mediaconnect-detail">Simulated primary / backup flow</small></div>
-            <div class="engineering-card"><span>AWS MediaLive Channel</span><strong id="eng-medialive-status">RUNNING</strong><small id="eng-medialive-detail">Simulated channel output</small></div>
-            <div class="engineering-card"><span>CDN Edge Output</span><strong id="eng-cdn-status">HEALTHY</strong><small id="eng-cdn-detail">Simulated HLS/DASH delivery</small></div>
-            <div class="engineering-card"><span>Direct Connect / Backup Path</span><strong id="eng-path-status">A/B READY</strong><small id="eng-path-detail">Simulated protected transport path</small></div>
-            <div class="engineering-card"><span>Network Health</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter</small></div>
-            <div class="engineering-card"><span>Region / Encoder</span><strong id="eng-region-status">us-east-1</strong><small id="eng-region-detail">Simulated primary contribution encoder</small></div>
+            <div class="engineering-card"><span>Contribution Inputs</span><strong id="eng-input-status">4/4 READY</strong><small id="eng-input-detail">All configured contribution inputs are available.</small></div>
+            <div class="engineering-card"><span>Contribution Gateway</span><strong id="eng-gateway-status">NO TELEMETRY</strong><small id="eng-gateway-detail">NDI/SRT/WebRTC bridge has not been connected.</small></div>
+            <div class="engineering-card"><span>AWS MediaConnect Flow</span><strong id="eng-mediaconnect-status">PROTECTED</strong><small id="eng-mediaconnect-detail">Path A is carrying contribution. Path B is hot standby.</small></div>
+            <div class="engineering-card"><span>AWS MediaLive Channel</span><strong id="eng-medialive-status">READY</strong><small id="eng-medialive-detail">Waiting for a Program route to begin encoding.</small></div>
+            <div class="engineering-card"><span>CDN Edge Output</span><strong id="eng-cdn-status">READY</strong><small id="eng-cdn-detail">Origin and edge delivery are ready for Program.</small></div>
+            <div class="engineering-card"><span>Transport Resilience</span><strong id="eng-path-status">PROTECTED</strong><small id="eng-path-detail">Primary and backup transport paths are armed.</small></div>
+            <div class="engineering-card"><span>Contribution Network</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter · no active alarms</small></div>
+            <div class="engineering-card"><span>Region / Encoder</span><strong id="eng-region-status">us-east-1</strong><small id="eng-region-detail">Primary contribution encoder is ready.</small></div>
           </div>
         </div>
 

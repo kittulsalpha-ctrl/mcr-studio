@@ -438,8 +438,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTakePlayout: document.getElementById('btn-take-playout'),
     btnReturnLivePlayout: document.getElementById('btn-return-live-playout'),
     engInputStatus: document.getElementById('eng-input-status'),
+    engInputDetail: document.getElementById('eng-input-detail'),
     engTelemetrySource: document.getElementById('eng-telemetry-source'),
     engGatewayStatus: document.getElementById('eng-gateway-status'),
+    engGatewayDetail: document.getElementById('eng-gateway-detail'),
     engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
     engMediaConnectDetail: document.getElementById('eng-mediaconnect-detail'),
     engMediaLiveStatus: document.getElementById('eng-medialive-status'),
@@ -2103,24 +2105,33 @@ document.addEventListener('DOMContentLoaded', () => {
       el.engTelemetrySource.textContent = hasLiveTelemetry ? 'LIVE COLLECTOR' : 'SIMULATION';
       el.engTelemetrySource.className = hasLiveTelemetry ? 'badge-green font-fira' : 'badge-blue font-fira';
     }
-    setMetricText(el.engInputStatus, `${onlineInputs}/4 ONLINE`, onlineInputs >= 3 ? 'text-green' : onlineInputs >= 2 ? 'text-amber' : 'text-red');
-    setMetricText(el.engGatewayStatus, state.ndiBridge.backendConnected ? 'CONNECTED' : state.ndiBridge.discovered ? 'SIMULATED' : 'STANDBY', state.ndiBridge.backendConnected ? 'text-green' : 'text-amber');
-    applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'BACKUP PATH' : 'PRIMARY', state.primaryFailed ? 'text-amber' : 'text-green', 'Simulated primary / backup flow');
-    applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'RUNNING' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber', 'Simulated channel output');
-    applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'HEALTHY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', 'Simulated HLS/DASH delivery');
-    applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, state.primaryFailed ? 'A FAIL / B ACTIVE' : 'A/B READY', state.primaryFailed ? 'text-red' : 'text-green', 'Simulated protected transport path');
+    setMetricText(el.engInputStatus, `${onlineInputs}/4 ${onlineInputs >= 3 ? 'READY' : 'AVAILABLE'}`, onlineInputs >= 3 ? 'text-green' : onlineInputs >= 2 ? 'text-amber' : 'text-red');
+    if (el.engInputDetail) el.engInputDetail.textContent = onlineInputs >= 3
+      ? 'Contribution pool is available for Preview and Program routing.'
+      : 'Investigate offline contribution sources before taking them to air.';
+    const gatewayState = state.ndiBridge.backendConnected ? 'BRIDGE CONNECTED' : state.ndiBridge.discovered ? 'SIMULATION' : 'NO TELEMETRY';
+    setMetricText(el.engGatewayStatus, gatewayState, state.ndiBridge.backendConnected ? 'text-green' : state.ndiBridge.discovered ? 'text-amber' : 'text-muted');
+    if (el.engGatewayDetail) el.engGatewayDetail.textContent = state.ndiBridge.backendConnected
+      ? 'Live source discovery is available through the connected gateway.'
+      : state.ndiBridge.discovered
+        ? 'Demo sources are available. Connect a bridge for live discovery.'
+        : 'Connect an NDI/SRT/WebRTC bridge to receive live gateway health.';
+    applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-amber' : 'text-green', state.primaryFailed ? 'Path A failed. Path B is carrying contribution.' : 'Path A is carrying contribution. Path B is hot standby.');
+    applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'Program route is encoding for distribution.' : 'Waiting for a Program route to begin encoding.');
+    applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'DISTRIBUTING' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', state.isUnderflow || state.lossPercent >= 8 ? 'Delivery is affected. Check contribution loss and encoder buffer.' : state.activeSource ? 'Program is available to the configured edge distribution.' : 'Origin and edge delivery are ready for Program.');
+    applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-red' : 'text-green', state.primaryFailed ? 'Primary transport is unavailable. Backup transport is active.' : 'Primary and backup transport paths are armed.');
 
     const telemetryNetwork = hasLiveTelemetry ? telemetry.network || {} : null;
     const rttMs = typeof telemetryNetwork?.rttMs === 'number' ? telemetryNetwork.rttMs : state.rttMs;
     const lossPercent = typeof telemetryNetwork?.lossPercent === 'number' ? telemetryNetwork.lossPercent : state.lossPercent;
     const jitterMs = typeof telemetryNetwork?.jitterMs === 'number' ? telemetryNetwork.jitterMs : state.jitterMs;
     setMetricText(el.engNetworkStatus, `RTT ${rttMs}ms`, rttMs >= 160 ? 'text-red' : rttMs >= 90 ? 'text-amber' : 'text-green');
-    if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${lossPercent.toFixed(1)}% loss · ${jitterMs}ms jitter · ${alarms.length} alarms`;
+    if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${lossPercent.toFixed(1)}% loss · ${jitterMs}ms jitter · ${alarms.length ? `${alarms.length} active alarm${alarms.length === 1 ? '' : 's'}` : 'no active alarms'}`;
 
     const encoderTelemetry = telemetryService('encoder');
     const encoderRegion = encoderTelemetry?.region || (state.primaryFailed ? 'us-east-2' : 'us-east-1');
     setMetricText(el.engRegionStatus, encoderRegion, encoderTelemetry ? serviceStatusClass(encoderTelemetry.status) : state.primaryFailed ? 'text-amber' : 'text-green');
-    if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || 'Simulated primary contribution encoder';
+    if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || (state.activeSource ? 'Primary contribution encoder is processing Program.' : 'Primary contribution encoder is ready.');
     setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
     setMetricText(el.signalFlowGateway, state.ndiBridge.backendConnected ? 'NDI BRIDGE LIVE' : 'NDI/SRT/WebRTC', state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
     setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
