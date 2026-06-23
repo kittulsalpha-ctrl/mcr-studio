@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-13" />
+  <link rel="stylesheet" href="styles.css?v=orchestrator-14" />
 </head>
 
 <body class="workspace-monitoring">
@@ -852,6 +852,7 @@
             <div class="engineering-card"><span>Contribution Inputs</span><strong id="eng-input-status">4/4 READY</strong><small id="eng-input-detail">All configured contribution inputs are available.</small></div>
             <div class="engineering-card"><span>Contribution Gateway</span><strong id="eng-gateway-status">NO TELEMETRY</strong><small id="eng-gateway-detail">NDI/SRT/WebRTC bridge has not been connected.</small></div>
             <div class="engineering-card"><span>OBS Production Engine</span><strong id="eng-obs-status">NOT CONNECTED</strong><small id="eng-obs-detail">Local OBS connector is not configured.</small></div>
+            <div class="engineering-card"><span>MCR Edge Agent</span><strong id="eng-agent-status">LOCAL AGENT</strong><small id="eng-agent-detail">Local control connector has not reported yet.</small></div>
             <div class="engineering-card"><span>AWS MediaConnect Flow</span><strong id="eng-mediaconnect-status">PROTECTED</strong><small id="eng-mediaconnect-detail">Path A is carrying contribution. Path B is hot standby.</small></div>
             <div class="engineering-card"><span>AWS MediaLive Channel</span><strong id="eng-medialive-status">READY</strong><small id="eng-medialive-detail">Waiting for a Program route to begin encoding.</small></div>
             <div class="engineering-card"><span>CDN Edge Output</span><strong id="eng-cdn-status">READY</strong><small id="eng-cdn-detail">Origin and edge delivery are ready for Program.</small></div>
@@ -1023,6 +1024,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=orchestrator-13"></script>
+  <script src="app.js?v=edge-agent-14"></script>
 </body>
 </html>

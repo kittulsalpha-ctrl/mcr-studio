@@ -1,12 +1,13 @@
 /* ==========================================================================
-   MCR Studio Control Orchestrator v1
-   Dependency-free Node.js prototype: static web server + REST API + SSE events.
+   MCR Studio Edge Agent v1
+   Local broadcast connector: static web server + REST API + SSE events.
    ========================================================================== */
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { randomUUID } = require('crypto');
 const { OBSWebSocket } = require('obs-websocket-js');
 
 const localEnvPath = path.join(__dirname, '.env.local');
@@ -36,6 +37,9 @@ function loadLocalRuntimeConfig() {
 }
 
 const localRuntimeConfig = loadLocalRuntimeConfig();
+const AGENT_ID = process.env.MCR_AGENT_ID || localRuntimeConfig.agent?.id || `edge-${randomUUID()}`;
+const AGENT_LABEL = process.env.MCR_AGENT_LABEL || localRuntimeConfig.agent?.label || 'Local MCR Edge Agent';
+const CONTROL_PLANE_URL = process.env.MCR_CONTROL_PLANE_URL || '';
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -51,8 +55,26 @@ const mimeTypes = {
 };
 
 const state = {
-  version: 'orchestrator-v1',
+  version: 'edge-agent-v1',
   updatedAt: new Date().toISOString(),
+  agent: {
+    id: AGENT_ID,
+    label: AGENT_LABEL,
+    mode: 'LOCAL',
+    startedAt: new Date().toISOString(),
+    controlPlane: {
+      configured: Boolean(CONTROL_PLANE_URL),
+      status: CONTROL_PLANE_URL ? 'NOT CONNECTED' : 'NOT CONFIGURED'
+    },
+    capabilities: {
+      obsWebSocket: OBS_WEBSOCKET_ENABLED ? 'CONFIGURED' : 'NOT CONFIGURED',
+      obsSceneControl: OBS_WEBSOCKET_ENABLED ? 'AVAILABLE' : 'NOT AVAILABLE',
+      browserObsVirtualCamera: 'BROWSER PERMISSION REQUIRED',
+      ndiGateway: 'NOT CONFIGURED',
+      srtGateway: 'NOT CONFIGURED',
+      telemetryIngest: 'AVAILABLE'
+    }
+  },
   sources: {
     cam1: { label: 'MULTIVIEW 1 / LiveU 1', state: 'ONLINE', type: 'liveu' },
     cam2: { label: 'MULTIVIEW 2 / Backup', state: 'STANDBY', type: 'liveu' },
@@ -165,6 +187,10 @@ function addLog(severity, area, message, operatorAction = null) {
 
 function persistLocalRuntimeConfig() {
   const config = {
+    agent: {
+      id: state.agent.id,
+      label: state.agent.label
+    },
     obs: {
       followMcrTake: state.obs.followMcrTake,
       mappings: state.obs.mappings
@@ -206,6 +232,8 @@ function broadcast(event = 'state', payload = publicState()) {
 
 function publishObs(next) {
   state.obs = { ...state.obs, ...next, observedAt: nowStamp() };
+  state.agent.capabilities.obsWebSocket = state.obs.status === 'CONNECTED' ? 'CONNECTED' : state.obs.enabled ? state.obs.status : 'NOT CONFIGURED';
+  state.agent.capabilities.obsSceneControl = state.obs.status === 'CONNECTED' ? 'AVAILABLE' : 'NOT AVAILABLE';
   broadcast('state', publicState());
 }
 
@@ -521,7 +549,8 @@ const commandHandlers = {
   }
 };
 
-addLog('info', 'SYSTEM', 'Control Orchestrator v1 initialized.', 'boot');
+persistLocalRuntimeConfig();
+addLog('info', 'SYSTEM', `${state.agent.label} initialized.`, 'boot');
 syncDerivedState();
 
 function writeJson(res, status, payload) {
@@ -583,7 +612,25 @@ async function handleApi(req, res, url) {
   if (req.method === 'OPTIONS') return writeJson(res, 204, {});
 
   if (req.method === 'GET' && url.pathname === '/api/health') {
-    return writeJson(res, 200, { ok: true, version: state.version, updatedAt: state.updatedAt, clients: clients.size });
+    return writeJson(res, 200, {
+      ok: true,
+      agent: state.agent,
+      version: state.version,
+      updatedAt: state.updatedAt,
+      uptimeSeconds: Math.floor(process.uptime()),
+      clients: clients.size
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/agent') {
+    return writeJson(res, 200, {
+      agent: state.agent,
+      obs: {
+        status: state.obs.status,
+        sceneCount: state.obs.scenes.length,
+        programScene: state.obs.programScene || null
+      }
+    });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/state') {
@@ -675,6 +722,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`MCR Studio Control Orchestrator listening on http://127.0.0.1:${PORT}`);
+  console.log(`${state.agent.label} listening on http://127.0.0.1:${PORT}`);
   connectObs().catch(() => {});
 });

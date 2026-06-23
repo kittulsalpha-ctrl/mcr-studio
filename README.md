@@ -28,9 +28,9 @@ The intended future API boundary is:
 - Orchestrator owns source state, Program/Preview routing, audio bus state, service health, alarms, and logs.
 - Media engines perform real ingest, switching, audio mixing, graphics keying, replay, playout, encoding, and distribution.
 
-## Control Orchestrator Backend
+## MCR Edge Agent
 
-The repo includes a dependency-free Node.js Control Orchestrator prototype:
+The repo includes a dependency-free local **MCR Edge Agent**. It is the boundary between the browser control room and on-prem equipment such as OBS, future NDI/SRT gateways, contribution encoders, and QC probes:
 
 ```bash
 npm start
@@ -42,9 +42,9 @@ Open backend-connected mode:
 http://127.0.0.1:8080/?backend=1&preset=football
 ```
 
-The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, `/api/telemetry`, and `/api/events` for live Server-Sent Events. It is still simulated by default, but it now has a collector-ready telemetry ingest boundary for AWS and encoder monitoring.
+The Edge Agent exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, `/api/agent`, `/api/telemetry`, and `/api/events` for live Server-Sent Events. `/api/agent` and `/api/health` expose the safe operational contract: agent identity, local mode, equipment capabilities, OBS connection status, scene count, and pairing readiness. They do not expose OBS credentials.
 
-When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Control Orchestrator. This is the intended dual-screen MCR demo mode.
+When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Edge Agent. This is the intended dual-screen MCR demo mode.
 
 The header always exposes the operating truth: `DEMO` is browser-only simulation, `DEMO API` is the local orchestrator demo, `API OFFLINE` means a requested orchestrator cannot be reached, and `LIVE DATA` means a trusted collector is sending live telemetry. `LIVE DATA` does not imply that media-control connectors are live; each connector must be explicitly integrated and approved.
 
@@ -101,7 +101,9 @@ See `NDI_BRIDGE_API.md` for the placeholder bridge contract.
 
 ## Local OBS Connector
 
-OBS can be connected locally through its WebSocket server. Copy `.env.obs.example` to `.env.local`, set the local OBS WebSocket password, and run `npm start`. The connector is read-only in this first stage and exposes the actual OBS connection, Program scene, and scene list at `/api/obs` and in `/api/state`. The password stays in `.env.local`, which is excluded from Git.
+OBS can be connected locally through its WebSocket server. Copy `.env.obs.example` to `.env.local`, set the local OBS WebSocket password, and run `npm start`. The Edge Agent exposes actual OBS connection status, Program scene, scene list, and deliberate scene takes at `/api/obs` and in `/api/state`. Operators can map MCR routes to OBS scenes and explicitly arm MCR-to-OBS follow mode. The password stays in `.env.local`, which is excluded from Git.
+
+The agent is intentionally local-only today. A future hosted control plane will pair to this agent through authenticated outbound connections; it must never require exposing OBS, NDI, or contribution equipment directly to the public internet.
 
 ## Roadmap
 
