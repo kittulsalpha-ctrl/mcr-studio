@@ -46,6 +46,8 @@ The backend exposes REST commands, `/api/state`, `/api/logs`, `/api/health`, `/a
 
 When both `index.html` and `monitoring.html` are opened with `?backend=1`, they share Preview, Program, audio, source health, QC alarm, and log state through the Control Orchestrator. This is the intended dual-screen MCR demo mode.
 
+The header always exposes the operating truth: `DEMO` is browser-only simulation, `DEMO API` is the local orchestrator demo, `API OFFLINE` means a requested orchestrator cannot be reached, and `LIVE DATA` means a trusted collector is sending live telemetry. `LIVE DATA` does not imply that media-control connectors are live; each connector must be explicitly integrated and approved.
+
 See `ORCHESTRATOR_API.md` for the API contract.
 
 See `TELEMETRY_COLLECTOR_API.md` for the normalized Direct Connect, MediaConnect, MediaLive, CloudFront, and encoder telemetry contract. A trusted backend collector posts this data; the browser never holds AWS credentials.

@@ -267,6 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     systemHealth: document.getElementById('system-health-value'),
     onAirValue: document.getElementById('on-air-value'),
     controlApiValue: document.getElementById('control-api-value'),
+    operatingModeValue: document.getElementById('operating-mode-value'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -569,9 +570,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateBackendStatus(connected, label = null) {
     state.backend.connected = connected;
-    if (!el.controlApiValue) return;
-    el.controlApiValue.textContent = label || (state.backend.enabled ? connected ? 'LIVE' : 'OFFLINE' : 'SIM');
-    el.controlApiValue.className = `badge-value ${connected ? 'text-green' : state.backend.enabled ? 'text-red' : 'text-amber'}`;
+    if (el.controlApiValue) {
+      el.controlApiValue.textContent = label || (state.backend.enabled ? connected ? 'LIVE' : 'OFFLINE' : 'SIM');
+      el.controlApiValue.className = `badge-value ${connected ? 'text-green' : state.backend.enabled ? 'text-red' : 'text-amber'}`;
+    }
+    updateOperatingMode();
+  }
+
+  function updateOperatingMode() {
+    if (!el.operatingModeValue) return;
+    const hasLiveTelemetry = state.backend.connected && state.cloudTelemetry?.mode === 'LIVE';
+    const value = hasLiveTelemetry ? 'LIVE DATA' : state.backend.connected ? 'DEMO API' : state.backend.enabled ? 'API OFFLINE' : 'DEMO';
+    const className = hasLiveTelemetry ? 'text-green' : state.backend.connected ? 'text-blue' : state.backend.enabled ? 'text-red' : 'text-amber';
+    el.operatingModeValue.textContent = value;
+    el.operatingModeValue.className = `badge-value ${className}`;
   }
 
   function hydratePageSwitcherLinks() {
@@ -639,6 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.programSourceOverride = null;
     state.replayPlayout.returnLiveSource = remoteState.routing?.returnLive || state.replayPlayout.returnLiveSource;
     state.cloudTelemetry = remoteState.telemetry || state.cloudTelemetry;
+    updateOperatingMode();
 
     if (remoteState.audio) {
       state.audioMixer.audioFollowVideo = !!remoteState.audio.followVideo;

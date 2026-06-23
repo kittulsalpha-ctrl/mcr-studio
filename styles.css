@@ -2662,6 +2662,17 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   }
 }
 
+@media (max-width: 1500px) {
+  .mcr-header {
+    flex-wrap: wrap;
+  }
+
+  .header-badges {
+    order: 3;
+    width: 100%;
+  }
+}
+
 @media (max-width: 1180px) {
   .mcr-header {
     flex-wrap: wrap;
