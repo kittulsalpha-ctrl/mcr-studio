@@ -284,14 +284,16 @@ body.workspace-monitoring .panel-orchestrator {
   overflow: auto;
 }
 
-body.workspace-monitoring .panel-ai-ops,
 body.workspace-monitoring .panel-incident-response,
-body.workspace-monitoring .panel-client-integration,
 body.workspace-monitoring .panel-engineering,
 body.workspace-monitoring .panel-cloud-topology,
 body.workspace-monitoring .panel-telemetry,
 body.workspace-monitoring .panel-dr-playout,
 body.workspace-monitoring .panel-logs {
+  grid-column: 2;
+}
+
+body.workspace-monitoring .monitoring-detail {
   grid-column: 2;
 }
 
@@ -1833,6 +1835,79 @@ body.workspace-monitoring .panel-orchestrator .node-inspector,
 body.workspace-monitoring .panel-orchestrator .source-inspector,
 body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   font-size: 8px;
+}
+
+.monitoring-detail {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.monitoring-detail summary {
+  min-height: 34px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+
+.monitoring-detail summary::-webkit-details-marker {
+  display: none;
+}
+
+.monitoring-detail summary::before {
+  content: '+';
+  color: var(--neon-blue);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.monitoring-detail[open] summary::before {
+  content: '-';
+}
+
+.monitoring-detail summary span {
+  margin-right: auto;
+}
+
+.monitoring-detail summary small {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+
+.monitoring-detail > .control-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.incident-advisor {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.incident-advisor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .node-inspector {
