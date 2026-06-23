@@ -99,6 +99,10 @@ Real NDI cannot be detected directly by a static browser page. A practical archi
 
 See `NDI_BRIDGE_API.md` for the placeholder bridge contract.
 
+## Local OBS Connector
+
+OBS can be connected locally through its WebSocket server. Copy `.env.obs.example` to `.env.local`, set the local OBS WebSocket password, and run `npm start`. The connector is read-only in this first stage and exposes the actual OBS connection, Program scene, and scene list at `/api/obs` and in `/api/state`. The password stays in `.env.local`, which is excluded from Git.
+
 ## Roadmap
 
 - Real replay and playout media engines with recording, clip storage, asset playback, and return-to-live routing.

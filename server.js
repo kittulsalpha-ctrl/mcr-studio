@@ -7,10 +7,22 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { OBSWebSocket } = require('obs-websocket-js');
+
+const localEnvPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(localEnvPath)) {
+  fs.readFileSync(localEnvPath, 'utf8').split(/\r?\n/).forEach(line => {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
+  });
+}
 
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
 const TELEMETRY_INGEST_TOKEN = process.env.TELEMETRY_INGEST_TOKEN || '';
+const OBS_WEBSOCKET_ENABLED = process.env.OBS_WEBSOCKET_ENABLED === '1';
+const OBS_WEBSOCKET_URL = process.env.OBS_WEBSOCKET_URL || 'ws://127.0.0.1:4455';
+const OBS_WEBSOCKET_PASSWORD = process.env.OBS_WEBSOCKET_PASSWORD || '';
 const TELEMETRY_SERVICE_IDS = ['directConnect', 'mediaConnect', 'mediaLive', 'cloudFront', 'encoder'];
 const TELEMETRY_STATUSES = ['HEALTHY', 'ONLINE', 'RUNNING', 'READY', 'STANDBY', 'DEGRADED', 'ALARM', 'FAILED', 'UNKNOWN'];
 
@@ -107,10 +119,12 @@ const state = {
     },
     network: { rttMs: 25, lossPercent: 0, jitterMs: 5 }
   },
+  obs: { enabled: OBS_WEBSOCKET_ENABLED, status: OBS_WEBSOCKET_ENABLED ? 'CONNECTING' : 'NOT CONFIGURED', programScene: '', scenes: [], detail: OBS_WEBSOCKET_ENABLED ? 'Connecting to local OBS.' : 'Local OBS connector is not configured.' },
   logs: []
 };
 
 const clients = new Set();
+let obsClient;
 
 function nowStamp() {
   return new Date().toISOString();
@@ -155,6 +169,26 @@ function sendEvent(client, event, payload) {
 
 function broadcast(event = 'state', payload = publicState()) {
   for (const client of clients) sendEvent(client, event, payload);
+}
+
+function publishObs(next) {
+  state.obs = { ...state.obs, ...next, observedAt: nowStamp() };
+  broadcast('state', publicState());
+}
+
+async function connectObs() {
+  if (!OBS_WEBSOCKET_ENABLED) return;
+  obsClient = new OBSWebSocket();
+  obsClient.on('CurrentProgramSceneChanged', event => publishObs({ status: 'CONNECTED', programScene: event.sceneName || '', detail: `Program scene: ${event.sceneName || 'unnamed'}.` }));
+  obsClient.on('ConnectionClosed', () => publishObs({ status: 'OFFLINE', detail: 'OBS WebSocket disconnected.' }));
+  try {
+    const version = await obsClient.connect(OBS_WEBSOCKET_URL, OBS_WEBSOCKET_PASSWORD || undefined);
+    const [sceneList, program] = await Promise.all([obsClient.call('GetSceneList'), obsClient.call('GetCurrentProgramScene')]);
+    publishObs({ status: 'CONNECTED', version: version.obsVersion || '', programScene: program.currentProgramSceneName || '', scenes: (sceneList.scenes || []).map(scene => scene.sceneName), detail: `OBS ${version.obsVersion || 'connected'} · ${sceneList.scenes?.length || 0} scene(s) available.` });
+    addLog('info', 'OBS', 'OBS production engine connected.', 'obs-connect');
+  } catch (error) {
+    publishObs({ status: 'OFFLINE', detail: `OBS connection failed: ${error.message}` });
+  }
 }
 
 function mutate(action, fn) {
@@ -465,6 +499,10 @@ async function handleApi(req, res, url) {
     return writeJson(res, 200, state.telemetry);
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/obs') {
+    return writeJson(res, 200, state.obs);
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/events') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -537,4 +575,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`MCR Studio Control Orchestrator listening on http://127.0.0.1:${PORT}`);
+  connectObs().catch(() => {});
 });

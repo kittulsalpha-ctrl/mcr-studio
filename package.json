@@ -12,7 +12,8 @@
     "@aws-sdk/client-cloudwatch": "^3.0.0",
     "@aws-sdk/client-direct-connect": "^3.0.0",
     "@aws-sdk/client-mediaconnect": "^3.0.0",
-    "@aws-sdk/client-medialive": "^3.0.0"
+    "@aws-sdk/client-medialive": "^3.0.0",
+    "obs-websocket-js": "^5.0.8"
   },
   "engines": {
     "node": ">=18"
