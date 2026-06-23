@@ -272,6 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
     onAirValue: document.getElementById('on-air-value'),
     controlApiValue: document.getElementById('control-api-value'),
     operatingModeValue: document.getElementById('operating-mode-value'),
+    obsControlStatus: document.getElementById('obs-control-status'),
+    obsProgramScene: document.getElementById('obs-program-scene'),
+    obsSceneSelect: document.getElementById('obs-scene-select'),
+    btnObsTakeScene: document.getElementById('btn-obs-take-scene'),
     
     // Timecodes
     tcCam1: document.getElementById('tc-cam1'),
@@ -592,6 +596,24 @@ document.addEventListener('DOMContentLoaded', () => {
     el.operatingModeValue.className = `badge-value ${className}`;
   }
 
+  function renderObsControl() {
+    const obs = state.obs;
+    const connected = obs?.status === 'CONNECTED';
+    if (el.obsControlStatus) {
+      el.obsControlStatus.textContent = connected ? 'CONNECTED' : obs?.status || 'NOT CONNECTED';
+      el.obsControlStatus.className = connected ? 'badge-green font-fira' : 'badge-amber font-fira';
+    }
+    if (el.obsProgramScene) el.obsProgramScene.textContent = `PROGRAM: ${obs?.programScene || 'NOT CONNECTED'}`;
+    if (el.obsSceneSelect) {
+      const current = el.obsSceneSelect.value;
+      el.obsSceneSelect.innerHTML = (obs?.scenes || []).map(scene => `<option value="${scene.replace(/"/g, '&quot;')}">${scene}</option>`).join('') || '<option value="">No OBS scenes available</option>';
+      if ((obs?.scenes || []).includes(current)) el.obsSceneSelect.value = current;
+      else if (obs?.programScene) el.obsSceneSelect.value = obs.programScene;
+      el.obsSceneSelect.disabled = !connected;
+    }
+    if (el.btnObsTakeScene) el.btnObsTakeScene.disabled = !connected;
+  }
+
   function hydratePageSwitcherLinks() {
     const suffix = `${window.location.search || ''}${window.location.hash || ''}`;
     document.getElementById('nav-operations')?.setAttribute('href', `index.html${suffix}`);
@@ -658,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.replayPlayout.returnLiveSource = remoteState.routing?.returnLive || state.replayPlayout.returnLiveSource;
     state.cloudTelemetry = remoteState.telemetry || state.cloudTelemetry;
     state.obs = remoteState.obs || state.obs;
+    renderObsControl();
     updateOperatingMode();
 
     if (remoteState.audio) {
@@ -3153,6 +3176,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   el.btnClearProgram?.addEventListener('click', () => {
     clearProgramOut('Program Out cleared to black by operator.');
+  });
+
+  el.btnObsTakeScene?.addEventListener('click', async () => {
+    const sceneName = el.obsSceneSelect?.value;
+    if (!sceneName) return;
+    if (!window.confirm(`Take OBS scene "${sceneName}" to the OBS Program output?`)) return;
+    const result = await backendCommand('/api/obs-take', { sceneName });
+    if (result?.ok) addLog('info', 'OBS', `Operator took OBS scene: ${sceneName}.`);
   });
 
   // Per-tile attach/eject/solo wiring

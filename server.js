@@ -403,6 +403,16 @@ const commandHandlers = {
     return commandHandlers.take({ source: 'playout' });
   },
 
+  async obsTake(body) {
+    const sceneName = String(body.sceneName || '');
+    if (!obsClient || state.obs.status !== 'CONNECTED') return { status: 409, body: { error: 'OBS is not connected.' } };
+    if (!state.obs.scenes.includes(sceneName)) return { status: 400, body: { error: 'Unknown OBS scene.' } };
+    await obsClient.call('SetCurrentProgramScene', { sceneName });
+    publishObs({ status: 'CONNECTED', programScene: sceneName, detail: `Program scene: ${sceneName}.` });
+    const log = addLog('info', 'OBS', `OBS Program scene taken: ${sceneName}.`, 'obs-take');
+    return { body: { ok: true, state: publicState(), log } };
+  },
+
   telemetryIngest(body) {
     const telemetry = normalizeTelemetryPayload(body);
     if (!Object.keys(telemetry.services).length) {
@@ -548,13 +558,14 @@ async function handleApi(req, res, url) {
       cgclear: 'cgClear',
       replaycreate: 'replayCreate',
       replaytake: 'replayTake',
-      playouttake: 'playoutTake'
+      playouttake: 'playoutTake',
+      obstake: 'obsTake'
     };
     const handler = commandHandlers[aliases[commandName]];
     if (!handler) return writeJson(res, 404, { error: 'Unknown API command' });
     try {
       const body = await readJson(req);
-      const result = handler(body) || { body: { ok: true } };
+      const result = await handler(body) || { body: { ok: true } };
       return writeJson(res, result.status || 200, result.body || result);
     } catch (error) {
       return writeJson(res, 400, { error: error.message });
