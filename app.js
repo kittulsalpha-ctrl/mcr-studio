@@ -4,6 +4,10 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const programOut = document.getElementById('screen-pgm');
+  const operationsColumn = document.querySelector('body.workspace-operations .controls-container');
+  if (programOut && operationsColumn) operationsColumn.prepend(programOut);
+
   const TILE_FEEDS = ['cam1', 'cam2', 'liveu3', 'liveu4'];
   const LIVEU_SOURCE_IDS = ['liveu1', 'liveu2', 'liveu3', 'liveu4'];
   const SOURCE_DETAILS = {

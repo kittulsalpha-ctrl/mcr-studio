@@ -125,7 +125,7 @@ body {
 
 .page-switcher {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(104px, 1fr));
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
   gap: 4px;
   padding: 4px;
   background: rgba(2, 6, 23, 0.72);
@@ -136,10 +136,11 @@ body {
 
 .page-switcher-link {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 4px 10px;
+  min-height: 42px;
+  padding: 5px 12px;
   border: 1px solid transparent;
   border-radius: 5px;
   color: var(--text-secondary);
@@ -151,11 +152,24 @@ body {
   white-space: nowrap;
 }
 
+.page-switcher-link small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
 .page-switcher-link:hover,
 .page-switcher-link.page-switcher-active {
   color: var(--text-primary);
   border-color: rgba(0, 210, 255, 0.42);
   background: rgba(0, 210, 255, 0.12);
+}
+
+.page-switcher-link.page-switcher-active small {
+  color: var(--neon-blue);
 }
 
 .version-tag {
@@ -487,6 +501,22 @@ body.workspace-monitoring [data-workspace-panel="operations"] {
 
 .screen-card.pgm-stream .screen-header {
   background: rgba(127, 29, 29, 0.42);
+}
+
+/* Operations desk: Program stays in the operator's right-hand eyeline. */
+body.workspace-operations .controls-container > .screen-card.pgm-stream {
+  order: -1;
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+}
+
+body.workspace-operations .controls-container > .screen-card.pgm-stream .canvas-wrapper {
+  min-height: clamp(260px, 27vw, 430px);
+}
+
+body.workspace-operations .panel-audio-mixer {
+  order: 10;
 }
 
 .screen-header {
