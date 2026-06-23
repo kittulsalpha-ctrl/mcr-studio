@@ -1019,6 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       if (src.videoEl) {
+        src.videoEl.srcObject?.getTracks?.().forEach(track => track.stop());
         src.videoEl.pause();
         src.videoEl.removeAttribute('src');
         src.videoEl.load();
@@ -1499,6 +1500,44 @@ document.addEventListener('DOMContentLoaded', () => {
     return state.localVideos[feed] || null;
   }
 
+  async function attachObsVirtualCamera(feed) {
+    if (!navigator.mediaDevices?.getUserMedia || !navigator.mediaDevices?.enumerateDevices) {
+      addLog('alarm', 'OBS', 'This browser cannot access the OBS Virtual Camera.');
+      return;
+    }
+    try {
+      // Camera permission reveals device labels, including OBS Virtual Camera on macOS.
+      const permissionStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const obsDevice = devices.find(device => device.kind === 'videoinput' && /obs.*virtual|virtual.*obs/i.test(device.label));
+      permissionStream.getTracks().forEach(track => track.stop());
+      if (!obsDevice) {
+        addLog('alarm', 'OBS', 'OBS Virtual Camera was not found. Start it in OBS, then retry.');
+        return;
+      }
+      teardownCustomSource(feed);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: obsDevice.deviceId } }, audio: false });
+      const videoEl = document.createElement('video');
+      videoEl.autoplay = true;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.srcObject = stream;
+      state.customSources[feed] = { type: 'obs', label: 'OBS Virtual Camera', videoEl, ready: false };
+      setTileSource(feed, 'custom');
+      videoEl.addEventListener('loadeddata', () => {
+        if (!state.customSources[feed]) return;
+        state.customSources[feed].ready = true;
+        updateSourceOverlays();
+        updateOrchestratorRouting();
+      }, { once: true });
+      await videoEl.play().catch(() => {});
+      addLog('info', 'OBS', `OBS Virtual Camera attached to ${getTileName(feed)}.`, 'obs-attach');
+      updateSourceOverlays();
+    } catch (error) {
+      addLog('alarm', 'OBS', `Unable to attach OBS Virtual Camera: ${error.message}`);
+    }
+  }
+
   function setTileSource(feed, sourceId) {
     if (!state.tileSources[feed]) return;
     const nextSourceId = sourceId || 'none';
@@ -1646,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return 'Browser Cam';
     if (assignment === 'localVideo') return getLocalVideo(feed)?.fileName || 'Local File';
-    if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : 'Custom Source';
+    if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : state.customSources[feed]?.type === 'obs' ? 'OBS Virtual Camera' : 'Custom Source';
     if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.label || 'NDI Bridge';
     if (feed === 'vod') return 'CG Key/Fill Engine';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
@@ -3175,8 +3214,13 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        if (val === 'obs') {
+          await attachObsVirtualCamera(feed);
+          return;
+        }
+
         // For simulated/other network sources, assign logically
-        if (val.startsWith('liveu') || val === 'obs' || val === 'rtsp') {
+        if (val.startsWith('liveu') || val === 'rtsp') {
           // Assign the selected source identity to this monitor tile.
           state.mediaAssignments[val] = feed; // best-effort mapping
           setTileSource(feed, val);
