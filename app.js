@@ -3900,7 +3900,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Update Stereo VU meters
     updateVUMeters();
 
-    if (framesCount % 15 === 0) {
+    // Operator telemetry updates once per second; faster canvas rendering stays independent.
+    if (framesCount % 60 === 0) {
       updateSourceOverlays();
     }
 
