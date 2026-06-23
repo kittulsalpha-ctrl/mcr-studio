@@ -447,6 +447,8 @@ document.addEventListener('DOMContentLoaded', () => {
     engTelemetrySource: document.getElementById('eng-telemetry-source'),
     engGatewayStatus: document.getElementById('eng-gateway-status'),
     engGatewayDetail: document.getElementById('eng-gateway-detail'),
+    engObsStatus: document.getElementById('eng-obs-status'),
+    engObsDetail: document.getElementById('eng-obs-detail'),
     engMediaConnectStatus: document.getElementById('eng-mediaconnect-status'),
     engMediaConnectDetail: document.getElementById('eng-mediaconnect-detail'),
     engMediaLiveStatus: document.getElementById('eng-medialive-status'),
@@ -655,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.programSourceOverride = null;
     state.replayPlayout.returnLiveSource = remoteState.routing?.returnLive || state.replayPlayout.returnLiveSource;
     state.cloudTelemetry = remoteState.telemetry || state.cloudTelemetry;
+    state.obs = remoteState.obs || state.obs;
     updateOperatingMode();
 
     if (remoteState.audio) {
@@ -2133,6 +2136,10 @@ document.addEventListener('DOMContentLoaded', () => {
       : state.ndiBridge.discovered
         ? 'Demo sources are available. Connect a bridge for live discovery.'
         : 'Connect an NDI/SRT/WebRTC bridge to receive live gateway health.';
+    const obs = state.obs;
+    const obsConnected = obs?.status === 'CONNECTED';
+    setMetricText(el.engObsStatus, obsConnected ? 'CONNECTED' : obs?.status || 'NOT CONNECTED', obsConnected ? 'text-green' : obs?.enabled ? 'text-red' : 'text-muted');
+    if (el.engObsDetail) el.engObsDetail.textContent = obsConnected ? `Program: ${obs.programScene || 'none'}` : obs?.detail || 'Local OBS connector is not configured.';
     applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-amber' : 'text-green', state.primaryFailed ? 'Path A failed. Path B is carrying contribution.' : 'Path A is carrying contribution. Path B is hot standby.');
     applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'Program route is encoding for distribution.' : 'Waiting for a Program route to begin encoding.');
     applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'DISTRIBUTING' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', state.isUnderflow || state.lossPercent >= 8 ? 'Delivery is affected. Check contribution loss and encoder buffer.' : state.activeSource ? 'Program is available to the configured edge distribution.' : 'Origin and edge delivery are ready for Program.');
