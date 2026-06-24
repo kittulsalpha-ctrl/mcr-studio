@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=orchestrator-14" />
+  <link rel="stylesheet" href="styles.css?v=delivery-chain-15" />
 </head>
 
 <body class="workspace-monitoring">
@@ -595,10 +595,12 @@
           <div class="panel-body">
             <div class="signal-flow-strip">
               <div><span>PROGRAM INPUT</span><strong id="signal-flow-source">—</strong></div>
-              <div><span>INGEST</span><strong id="signal-flow-gateway">NDI/SRT/WebRTC</strong></div>
+              <div><span>TRANSPORT</span><strong id="signal-flow-transport">DIRECT CONNECT / IP</strong></div>
+              <div><span>MEDIACONNECT</span><strong id="signal-flow-mediaconnect">READY</strong></div>
               <div><span>CLOUD SWITCHER</span><strong id="signal-flow-switcher">IDLE</strong></div>
-              <div><span>ENCODER</span><strong id="signal-flow-medialive">READY</strong></div>
-              <div><span>DELIVERY</span><strong id="signal-flow-cdn">READY</strong></div>
+              <div><span>MEDIALIVE</span><strong id="signal-flow-medialive">READY</strong></div>
+              <div><span>MEDIAPACKAGE</span><strong id="signal-flow-mediapackage">READY</strong></div>
+              <div><span>CDN EDGE</span><strong id="signal-flow-cdn">READY</strong></div>
             </div>
             <div class="route-summary-strip font-fira">
               <span class="route-summary-program" id="route-summary-program">ON AIR: —</span>
@@ -855,6 +857,7 @@
             <div class="engineering-card"><span>MCR Edge Agent</span><strong id="eng-agent-status">LOCAL AGENT</strong><small id="eng-agent-detail">Local control connector has not reported yet.</small></div>
             <div class="engineering-card"><span>AWS MediaConnect Flow</span><strong id="eng-mediaconnect-status">PROTECTED</strong><small id="eng-mediaconnect-detail">Path A is carrying contribution. Path B is hot standby.</small></div>
             <div class="engineering-card"><span>AWS MediaLive Channel</span><strong id="eng-medialive-status">READY</strong><small id="eng-medialive-detail">Waiting for a Program route to begin encoding.</small></div>
+            <div class="engineering-card"><span>AWS MediaPackage Origin</span><strong id="eng-mediapackage-status">READY</strong><small id="eng-mediapackage-detail">ABR origin endpoints are ready for Program.</small></div>
             <div class="engineering-card"><span>CDN Edge Output</span><strong id="eng-cdn-status">READY</strong><small id="eng-cdn-detail">Origin and edge delivery are ready for Program.</small></div>
             <div class="engineering-card"><span>Transport Resilience</span><strong id="eng-path-status">PROTECTED</strong><small id="eng-path-detail">Primary and backup transport paths are armed.</small></div>
             <div class="engineering-card"><span>Contribution Network</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter · no active alarms</small></div>
@@ -1024,6 +1027,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=edge-agent-14"></script>
+  <script src="app.js?v=delivery-chain-15"></script>
 </body>
 </html>

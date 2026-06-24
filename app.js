@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tickerOn: false,
     bugOn: false,
     systemModel: {
-      chain: ['sources', 'ingest', 'switcher', 'audio', 'cg', 'replay', 'playout', 'encoder', 'distribution'],
+      chain: ['sources', 'ingest', 'switcher', 'audio', 'cg', 'replay', 'playout', 'encoder', 'packaging', 'distribution'],
       services: {
         sources: { label: 'Contribution Sources', role: 'LiveU / NDI / SRT / WebRTC', instance: 'edge/source-net', status: 'ONLINE', load: 31, latency: 25 },
         ingest: { label: 'Cloud Ingest Gateway', role: 'Receiver / demux / preview proxy', instance: 'ec2-ingest-a', status: 'ONLINE', load: 42, latency: 38 },
@@ -136,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         replay: { label: 'Replay Server', role: 'ISO record / clip playback', instance: 'ec2-replay-a', status: 'STANDBY', load: 22, latency: 30 },
         playout: { label: 'Playout Server', role: 'Slate / filler / ad loop', instance: 'ec2-playout-a', status: 'STANDBY', load: 16, latency: 24 },
         encoder: { label: 'Program Encoder', role: 'PGM A/V encode', instance: 'ec2-encoder-a', status: 'ONLINE', load: 54, latency: 72 },
-        distribution: { label: 'MediaLive / CDN', role: 'Package / origin / edge', instance: 'aws-us-east-1', status: 'ONLINE', load: 37, latency: 110 }
+        packaging: { label: 'MediaPackage Origin', role: 'HLS / DASH ABR packaging', instance: 'aws-mediapackage-a', status: 'READY', load: 24, latency: 98 },
+        distribution: { label: 'CloudFront CDN', role: 'Origin / edge delivery', instance: 'aws-cloudfront-global', status: 'ONLINE', load: 37, latency: 110 }
       }
     },
     audioMixer: {
@@ -465,6 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
     engMediaConnectDetail: document.getElementById('eng-mediaconnect-detail'),
     engMediaLiveStatus: document.getElementById('eng-medialive-status'),
     engMediaLiveDetail: document.getElementById('eng-medialive-detail'),
+    engMediaPackageStatus: document.getElementById('eng-mediapackage-status'),
+    engMediaPackageDetail: document.getElementById('eng-mediapackage-detail'),
     engCdnStatus: document.getElementById('eng-cdn-status'),
     engCdnDetail: document.getElementById('eng-cdn-detail'),
     engPathStatus: document.getElementById('eng-path-status'),
@@ -474,9 +477,11 @@ document.addEventListener('DOMContentLoaded', () => {
     engRegionStatus: document.getElementById('eng-region-status'),
     engRegionDetail: document.getElementById('eng-region-detail'),
     signalFlowSource: document.getElementById('signal-flow-source'),
-    signalFlowGateway: document.getElementById('signal-flow-gateway'),
+    signalFlowTransport: document.getElementById('signal-flow-transport'),
+    signalFlowMediaConnect: document.getElementById('signal-flow-mediaconnect'),
     signalFlowSwitcher: document.getElementById('signal-flow-switcher'),
     signalFlowMediaLive: document.getElementById('signal-flow-medialive'),
+    signalFlowMediaPackage: document.getElementById('signal-flow-mediapackage'),
     signalFlowCdn: document.getElementById('signal-flow-cdn'),
     routeSummaryProgram: document.getElementById('route-summary-program'),
     routeSummaryPreview: document.getElementById('route-summary-preview'),
@@ -1997,6 +2002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (serviceId === 'replay') return state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'STANDBY';
     if (serviceId === 'playout') return state.activeSource === 'playout' || state.activeSource === 'ad' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'STANDBY';
     if (serviceId === 'encoder') return state.activeSource ? 'ENCODING' : 'IDLE';
+    if (serviceId === 'packaging') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'PACKAGING' : 'READY';
     if (serviceId === 'distribution') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'ONLINE' : 'READY';
     return 'ONLINE';
   }
@@ -2007,6 +2013,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const jitter = Math.round(Math.sin((framesCount + serviceId.length * 13) * 0.03) * 4);
       if (serviceId === 'ingest') service.latency = Math.max(10, state.rttMs + state.jitterMs + jitter);
       if (serviceId === 'encoder') service.load = state.activeSource ? 54 + Math.round(state.calculatedBw * 2) : 28;
+      if (serviceId === 'packaging') service.load = state.activeSource ? 24 + Math.round(state.calculatedBw) : 12;
       if (serviceId === 'switcher') service.load = state.activeSource ? 48 : 20;
       if (serviceId === 'audio') service.load = state.audioMixer.programBus ? 28 : 12;
       if (serviceId === 'cg') service.load = state.activeGraphics || state.tickerOn || state.bugOn ? 36 : 18;
@@ -2241,6 +2248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-amber' : 'text-green', state.primaryFailed ? 'Path A failed. Path B is carrying contribution.' : 'Path A is carrying contribution. Path B is hot standby.');
     applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'Program route is encoding for distribution.' : 'Waiting for a Program route to begin encoding.');
+    applyTelemetryService('mediaPackage', el.engMediaPackageStatus, el.engMediaPackageDetail, state.activeSource ? 'PACKAGING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'ABR origin is packaging the active Program output.' : 'ABR origin endpoints are ready for Program.');
     applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'DISTRIBUTING' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', state.isUnderflow || state.lossPercent >= 8 ? 'Delivery is affected. Check contribution loss and encoder buffer.' : state.activeSource ? 'Program is available to the configured edge distribution.' : 'Origin and edge delivery are ready for Program.');
     applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-red' : 'text-green', state.primaryFailed ? 'Primary transport is unavailable. Backup transport is active.' : 'Primary and backup transport paths are armed.');
 
@@ -2256,10 +2264,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.engRegionStatus, encoderRegion, encoderTelemetry ? serviceStatusClass(encoderTelemetry.status) : state.primaryFailed ? 'text-amber' : 'text-green');
     if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || (state.activeSource ? 'Primary contribution encoder is processing Program.' : 'Primary contribution encoder is ready.');
     setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
-    setMetricText(el.signalFlowGateway, state.ndiBridge.backendConnected ? 'NDI BRIDGE LIVE' : 'NDI/SRT/WebRTC', state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
+    const directConnectTelemetry = telemetryService('directConnect');
+    const mediaConnectTelemetry = telemetryService('mediaConnect');
+    const mediaLiveTelemetry = telemetryService('mediaLive');
+    const mediaPackageTelemetry = telemetryService('mediaPackage');
+    const cloudFrontTelemetry = telemetryService('cloudFront');
+    setMetricText(el.signalFlowTransport, directConnectTelemetry?.status || (state.ndiBridge.backendConnected ? 'IP GATEWAY LIVE' : 'DIRECT CONNECT / IP'), directConnectTelemetry ? serviceStatusClass(directConnectTelemetry.status) : state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowMediaConnect, mediaConnectTelemetry?.status || (state.activeSource ? 'ACTIVE FLOW' : 'READY'), mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
     setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
-    setMetricText(el.signalFlowMediaLive, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-blue');
-    setMetricText(el.signalFlowCdn, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
+    setMetricText(el.signalFlowMediaLive, mediaLiveTelemetry?.status || (state.activeSource ? 'ENCODING' : 'READY'), mediaLiveTelemetry ? serviceStatusClass(mediaLiveTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowMediaPackage, mediaPackageTelemetry?.status || (state.activeSource ? 'PACKAGING' : 'READY'), mediaPackageTelemetry ? serviceStatusClass(mediaPackageTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowCdn, cloudFrontTelemetry?.status || (state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'READY'), cloudFrontTelemetry ? serviceStatusClass(cloudFrontTelemetry.status) : state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
@@ -2296,7 +2311,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const service = state.systemModel.services[serviceId];
       const node = el.cloudTopologyBody.querySelector(`[data-service="${serviceId}"]`);
       if (!node) return;
-      node.classList.toggle('topology-active', ['ROUTING', 'PGM', 'KEYING', 'ENCODING', 'ON AIR', 'CUED'].includes(service.status));
+      node.classList.toggle('topology-active', ['ROUTING', 'PGM', 'KEYING', 'ENCODING', 'PACKAGING', 'ON AIR', 'CUED'].includes(service.status));
       node.classList.toggle('topology-alarm', ['ALARM', 'FAILED', 'DEGRADED'].includes(service.status));
       const status = node.querySelector('.topology-status');
       if (status) {

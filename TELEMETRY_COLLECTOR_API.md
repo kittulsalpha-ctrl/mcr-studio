@@ -65,6 +65,17 @@ Leave the token unset only for local prototype development. Production deploymen
         "networkOutMbps": 18.2
       }
     },
+    "mediaPackage": {
+      "status": "HEALTHY",
+      "region": "us-east-1",
+      "detail": "Origin endpoints are packaging HLS and DASH ABR outputs",
+      "metrics": {
+        "endpointCount": 2,
+        "manifestErrors": 0,
+        "segmentErrors": 0,
+        "originLatencyMs": 84
+      }
+    },
     "cloudFront": {
       "status": "HEALTHY",
       "region": "global",
@@ -91,7 +102,7 @@ Leave the token unset only for local prototype development. Production deploymen
 
 ## Allowed Service IDs And States
 
-Service IDs: `directConnect`, `mediaConnect`, `mediaLive`, `cloudFront`, `encoder`.
+Service IDs: `directConnect`, `mediaConnect`, `mediaLive`, `mediaPackage`, `cloudFront`, `encoder`.
 
 States: `HEALTHY`, `ONLINE`, `RUNNING`, `READY`, `STANDBY`, `DEGRADED`, `ALARM`, `FAILED`, `UNKNOWN`.
 
@@ -102,6 +113,7 @@ The endpoint accepts partial updates. Send only the services the collector has a
 - Direct Connect: connection/VIF state, BGP state, bitrate, discards, and errors.
 - MediaConnect: source/flow health, ARQ recovery, transport/QC metrics.
 - MediaLive: channel state/alerts, active outputs, input loss, fill frames, dropped frames, audio, and output errors.
+- MediaPackage: origin/channel and endpoint health, manifest or segment errors, packaging latency, and output availability. Send this service only when the client uses MediaPackage; MediaLive can also deliver directly to another origin in some architectures.
 - CloudFront: 5xx rate, total error rate, cache hit rate, origin latency, and request volume.
 - Encoder: vendor API, SNMP, NMOS, or a local FFmpeg/GStreamer/QC probe.
 

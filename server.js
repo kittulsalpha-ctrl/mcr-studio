@@ -25,7 +25,7 @@ const OBS_WEBSOCKET_ENABLED = process.env.OBS_WEBSOCKET_ENABLED === '1';
 const OBS_WEBSOCKET_URL = process.env.OBS_WEBSOCKET_URL || 'ws://127.0.0.1:4455';
 const OBS_WEBSOCKET_PASSWORD = process.env.OBS_WEBSOCKET_PASSWORD || '';
 const LOCAL_RUNTIME_CONFIG_PATH = path.join(__dirname, '.mcr-studio-local.json');
-const TELEMETRY_SERVICE_IDS = ['directConnect', 'mediaConnect', 'mediaLive', 'cloudFront', 'encoder'];
+const TELEMETRY_SERVICE_IDS = ['directConnect', 'mediaConnect', 'mediaLive', 'mediaPackage', 'cloudFront', 'encoder'];
 const TELEMETRY_STATUSES = ['HEALTHY', 'ONLINE', 'RUNNING', 'READY', 'STANDBY', 'DEGRADED', 'ALARM', 'FAILED', 'UNKNOWN'];
 
 function loadLocalRuntimeConfig() {
@@ -147,6 +147,7 @@ const state = {
       directConnect: { status: 'HEALTHY', region: 'us-east-1', detail: 'Primary VIF and BGP healthy', metrics: {} },
       mediaConnect: { status: 'HEALTHY', region: 'us-east-1', detail: 'Primary flow active', metrics: {} },
       mediaLive: { status: 'RUNNING', region: 'us-east-1', detail: 'Channel output active', metrics: {} },
+      mediaPackage: { status: 'READY', region: 'us-east-1', detail: 'Origin and ABR endpoints ready', metrics: {} },
       cloudFront: { status: 'HEALTHY', region: 'global', detail: 'Edge delivery healthy', metrics: {} },
       encoder: { status: 'HEALTHY', region: 'on-prem', detail: 'Contribution encoder locked', metrics: {} }
     },

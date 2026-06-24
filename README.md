@@ -77,6 +77,7 @@ The browser app currently simulates several broadcast/cloud systems so the workf
 - LiveU contribution feeds are represented as front-end source states.
 - NDI/SRT/WebRTC gateway discovery is represented as a placeholder API contract.
 - AWS MediaConnect, MediaLive, and CDN Edge health are simulated.
+- MediaPackage origin/ABR packaging is represented as a separate stage between MediaLive and CDN Edge. It becomes live only when a trusted collector is configured with the client's actual origin telemetry.
 - QC alarms such as input loss, black, freeze, silence, high RTT, packet loss, and CDN degraded are simulated from source state and operator actions.
 - AI Ops Assistant recommendations are generated locally from current source/program/alarm state.
 

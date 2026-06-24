@@ -1375,7 +1375,7 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
 }
 
 .signal-flow-strip {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(90px, 1fr));
   margin-bottom: 8px;
 }
 

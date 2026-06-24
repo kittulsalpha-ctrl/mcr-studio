@@ -8,7 +8,7 @@ MCR Studio is intended to become a web control surface for hybrid broadcast oper
 
 - Contribution monitoring: LiveU, NDI, SRT, WebRTC, RTSP, local test media, webcam test sources.
 - Production control: preview/program switching, audio follow video, manual audio routing, CG/keyer control, replay, playout, off-air and emergency backup.
-- Cloud distribution: gateway, cloud switcher, MediaConnect, MediaLive, origin/CDN, primary/backup path monitoring.
+- Cloud distribution: transport (Direct Connect or IP), MediaConnect, cloud switcher, MediaLive, MediaPackage/origin, CDN, and primary/backup path monitoring.
 - Broadcast NOC: telemetry, QC alarms, incident timeline, operator actions, AI-assisted recommendations.
 
 The browser should not directly perform every media operation. The browser should control and monitor backend services that own real media I/O.
@@ -34,7 +34,7 @@ Real client integration requires backend workers or cloud services for:
 - CG/key/fill renderer or integration with Vizrt, Singular, HTML graphics, CasparCG, or other graphics systems.
 - Replay recording, clip creation, clip playback, and return-to-live.
 - Playout asset storage, scheduling, slates, filler, and emergency loop playback.
-- AWS MediaConnect/MediaLive/CDN status and control APIs.
+- AWS Direct Connect, MediaConnect, MediaLive, MediaPackage/origin, and CDN status and control APIs.
 - Authentication, roles, audit logs, and tenant/client separation.
 
 ## Integration Architecture
@@ -50,7 +50,7 @@ flowchart LR
   API --> RPY["Replay Engine"]
   API --> PLY["Playout Engine"]
   API --> QC["QC / Probe Workers"]
-  API --> AWS["AWS MediaConnect / MediaLive / CDN"]
+  API --> AWS["AWS Direct Connect / MediaConnect / MediaLive / MediaPackage / CDN"]
   GW --> PREV["WebRTC / HLS Preview Streams"]
   QC --> AI["AI Ops Assistant"]
   AWS --> AI
