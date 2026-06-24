@@ -486,6 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
     routeSummaryProgram: document.getElementById('route-summary-program'),
     routeSummaryPreview: document.getElementById('route-summary-preview'),
     routeSummaryPath: document.getElementById('route-summary-path'),
+    deliveryStatus: document.getElementById('delivery-status'),
+    deliveryDetail: document.getElementById('delivery-detail'),
     
     // VU meters
     vu: {
@@ -2106,6 +2108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderIncidentResponse() {
     if (!el.incidentStatusBadge || !el.incidentCurrentState || !el.incidentRecommendation) return;
     const incident = getIncidentSnapshot();
+    el.incidentStatusBadge.closest('.panel-incident-response')?.classList.toggle('is-nominal', !incident.hasIncident);
     const badgeClass = incident.hasIncident ? 'badge-amber font-fira text-amber' : 'badge-green font-fira text-green';
     el.incidentStatusBadge.className = badgeClass;
     el.incidentStatusBadge.textContent = incident.hasIncident ? 'ACTIVE INCIDENT' : 'NOMINAL';
@@ -2278,6 +2281,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
+    const deliveryStages = [directConnectTelemetry, mediaConnectTelemetry, mediaLiveTelemetry, mediaPackageTelemetry, cloudFrontTelemetry].filter(Boolean);
+    const deliveryFault = state.primaryFailed || state.isUnderflow || state.lossPercent >= 8 || deliveryStages.some(service => ['DEGRADED', 'ALARM', 'FAILED'].includes(service.status));
+    const deliveryState = !state.activeSource ? 'STANDBY' : deliveryFault ? 'ATTENTION REQUIRED' : 'DELIVERING';
+    setMetricText(el.deliveryStatus, deliveryState, deliveryState === 'DELIVERING' ? 'text-green' : deliveryState === 'STANDBY' ? 'text-amber' : 'text-red');
+    if (el.deliveryDetail) {
+      el.deliveryDetail.textContent = !state.activeSource
+        ? 'No Program route is currently on air.'
+        : deliveryFault
+          ? 'A transport, origin, or delivery stage needs operator attention. Review the active incident.'
+          : `${getProgramRouteLabel(state.activeSource)} is flowing through the configured delivery chain.`;
+    }
     renderCloudTopology();
     renderAudioMixer();
     renderReplayPlayoutServers();
