@@ -5,8 +5,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const programOut = document.getElementById('screen-pgm');
+  const programSlot = document.getElementById('program-bus-slot');
   const operationsColumn = document.querySelector('body.workspace-operations .controls-container');
-  if (programOut && operationsColumn) operationsColumn.prepend(programOut);
+  const graphicsEngine = document.querySelector('body.workspace-operations #screen-vod');
+  if (programOut && programSlot) programSlot.append(programOut);
+  else if (programOut && operationsColumn) operationsColumn.prepend(programOut);
+  if (graphicsEngine && operationsColumn) operationsColumn.prepend(graphicsEngine);
 
   const TILE_FEEDS = ['cam1', 'cam2', 'liveu3', 'liveu4'];
   const LIVEU_SOURCE_IDS = ['liveu1', 'liveu2', 'liveu3', 'liveu4'];
@@ -488,6 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
     routeSummaryPath: document.getElementById('route-summary-path'),
     deliveryStatus: document.getElementById('delivery-status'),
     deliveryDetail: document.getElementById('delivery-detail'),
+    tcPreview: document.getElementById('tc-preview'),
+    previewActiveSource: document.getElementById('preview-active-source'),
+    previewStatus: document.getElementById('preview-status'),
+    previewEmptyState: document.getElementById('preview-empty-state'),
     
     // VU meters
     vu: {
@@ -651,6 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const suffix = `${window.location.search || ''}${window.location.hash || ''}`;
     document.getElementById('nav-operations')?.setAttribute('href', `index.html${suffix}`);
     document.getElementById('nav-monitoring')?.setAttribute('href', `monitoring.html${suffix}`);
+    document.getElementById('nav-setup')?.setAttribute('href', `setup.html${suffix}`);
   }
 
   async function backendCommand(endpoint, payload = {}) {
@@ -927,22 +936,27 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function getRequestedWorkspace() {
-    if (window.location.pathname.toLowerCase().endsWith('monitoring.html')) {
+    const path = window.location.pathname.toLowerCase();
+    if (path.endsWith('setup.html')) {
+      return 'setup';
+    }
+    if (path.endsWith('monitoring.html')) {
       return 'monitoring';
     }
     return 'operations';
   }
 
   function setWorkspaceView(view = 'operations') {
-    const activeView = view === 'monitoring' ? 'monitoring' : 'operations';
+    const activeView = ['operations', 'monitoring', 'setup'].includes(view) ? view : 'operations';
     document.querySelectorAll('.operator-view-tab').forEach(button => {
       button.classList.toggle('view-tab-active', button.dataset.workspace === activeView);
     });
     document.querySelectorAll('[data-workspace-panel]').forEach(panel => {
-      panel.classList.toggle('panel-hidden', panel.dataset.workspacePanel !== activeView);
+      panel.classList.toggle('panel-hidden', activeView !== 'setup' && panel.dataset.workspacePanel !== activeView);
     });
     document.body.classList.toggle('workspace-monitoring', activeView === 'monitoring');
     document.body.classList.toggle('workspace-operations', activeView === 'operations');
+    document.body.classList.toggle('workspace-setup', activeView === 'setup');
   }
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
@@ -3514,6 +3528,8 @@ document.addEventListener('DOMContentLoaded', () => {
     vod:  { element: document.getElementById('canvas-vod'),  ctx: document.getElementById('canvas-vod').getContext('2d') },
     pgm:  { element: document.getElementById('canvas-pgm'),  ctx: document.getElementById('canvas-pgm').getContext('2d') }
   };
+  const previewCanvas = document.getElementById('canvas-preview');
+  if (previewCanvas) canvases.preview = { element: previewCanvas, ctx: previewCanvas.getContext('2d') };
 
   // Adjust canvas size to internal dimensions
   function resizeCanvases() {
@@ -4054,6 +4070,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Draw Feed 5 (VOD Playout)
     drawFeedCanvas('vod', canvases.vod.ctx, canvases.vod.element.width, canvases.vod.element.height, framesCount);
+
+    // Preview bus mirrors the cued source before it is taken to Program.
+    if (canvases.preview) {
+      const previewW = canvases.preview.element.width;
+      const previewH = canvases.preview.element.height;
+      const previewCtx = canvases.preview.ctx;
+      const previewFeed = state.previewFeed;
+      if (el.tcPreview) el.tcPreview.textContent = previewFeed ? getSMPTETimecode(framesCount) : '--:--:--:--';
+      if (el.previewActiveSource) el.previewActiveSource.textContent = previewFeed ? getProgramRouteLabel(previewFeed) : 'None selected';
+      if (el.previewStatus) {
+        el.previewStatus.textContent = previewFeed ? (feedHasActiveSignal(previewFeed) ? 'READY' : 'NO SIGNAL') : 'IDLE';
+        el.previewStatus.className = previewFeed ? (feedHasActiveSignal(previewFeed) ? 'text-blue' : 'text-red') : '';
+      }
+      if (el.previewEmptyState) el.previewEmptyState.style.display = previewFeed ? 'none' : 'grid';
+      previewCtx.clearRect(0, 0, previewW, previewH);
+      if (previewFeed === 'replay') {
+        drawStreamReplay(previewCtx, previewW, previewH, framesCount);
+      } else if (previewFeed === 'playout') {
+        drawStreamPlayout(previewCtx, previewW, previewH, framesCount);
+      } else if (previewFeed && canvases[previewFeed]) {
+        try {
+          previewCtx.drawImage(canvases[previewFeed].element, 0, 0, previewW, previewH);
+        } catch (error) {
+          drawStreamLossStatic(previewCtx, previewW, previewH);
+        }
+      } else {
+        previewCtx.fillStyle = '#020408';
+        previewCtx.fillRect(0, 0, previewW, previewH);
+      }
+    }
 
     // 6. Draw Feed 6 (Program Out / PGM)
     const pgmW = canvases.pgm.element.width;

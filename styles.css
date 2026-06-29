@@ -42,7 +42,7 @@ body {
   font-family: var(--font-body);
   overflow-x: hidden;
   min-height: 100vh;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 ::-webkit-scrollbar {
@@ -125,7 +125,7 @@ body {
 
 .page-switcher {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  grid-template-columns: repeat(3, minmax(112px, 1fr));
   gap: 4px;
   padding: 4px;
   background: rgba(2, 6, 23, 0.72);
@@ -3057,5 +3057,259 @@ body.workspace-monitoring .panel-incident-response.is-nominal .incident-action-r
   body.workspace-monitoring .engineering-grid,
   body.workspace-monitoring .panel-orchestrator .signal-flow-strip {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Cloud MCR control-surface refactor
+   Keeps the simulation engine, but separates operator, monitor, and setup use.
+   ========================================================================== */
+
+.mcr-header {
+  position: sticky;
+  top: 12px;
+  z-index: 50;
+  background: rgba(8, 12, 20, 0.9);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.page-switcher {
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.86);
+}
+
+.page-switcher-link {
+  min-height: 48px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+.page-switcher-link.page-switcher-active {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.22), rgba(14, 165, 233, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18), 0 0 18px rgba(14, 165, 233, 0.08);
+}
+
+body.workspace-operations .mcr-workspace {
+  grid-template-columns: minmax(660px, 1.45fr) minmax(320px, 0.55fr);
+  gap: 16px;
+}
+
+.operate-stage {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: stretch;
+}
+
+.program-bus-slot {
+  min-width: 0;
+  display: grid;
+}
+
+.preview-bus-card,
+.program-bus-slot > .pgm-stream {
+  min-height: 360px;
+  border-radius: 12px;
+}
+
+.preview-bus-card {
+  border-color: rgba(0, 210, 255, 0.36);
+  box-shadow: 0 0 28px rgba(0, 210, 255, 0.08);
+}
+
+.preview-bus-card .screen-header {
+  background: rgba(7, 89, 133, 0.38);
+}
+
+.preview-bus-card .canvas-wrapper,
+.program-bus-slot > .pgm-stream .canvas-wrapper {
+  min-height: clamp(260px, 31vh, 440px);
+}
+
+.preview-empty-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(148, 163, 184, 0.72);
+  font: 700 13px var(--font-display);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+body.workspace-operations .multiviewer-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.workspace-operations .multiviewer-grid > .screen-card:not(.pgm-stream) {
+  min-height: 250px;
+}
+
+body.workspace-operations .controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+body.workspace-operations .controls-container > .graphics-engine-card { order: 1; }
+body.workspace-operations .panel-audio-mixer { order: 2; }
+body.workspace-operations .panel-event { order: 3; }
+body.workspace-operations .panel-replay-playout { order: 4; }
+body.workspace-operations .panel-logs { order: 99; }
+
+body.workspace-operations .screen-card.graphics-engine-card .canvas-wrapper {
+  min-height: 150px;
+}
+
+body.workspace-operations .screen-card.graphics-engine-card .screen-footer {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.workspace-operations .tile-source-select,
+body.workspace-operations .btn-attach,
+body.workspace-operations .btn-eject,
+body.workspace-operations .btn-edit,
+body.workspace-operations .assign-controls {
+  display: none;
+}
+
+body.workspace-operations .screen-footer {
+  padding: 8px;
+}
+
+body.workspace-operations .screen-footer-row-2 {
+  display: grid;
+  grid-template-columns: minmax(86px, 1fr) minmax(72px, 0.85fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+body.workspace-operations .screen-footer-row-2 .active-badge {
+  justify-self: end;
+}
+
+body.workspace-operations .source-setup-drawer {
+  margin-bottom: 10px;
+}
+
+body.workspace-operations .demo-setup,
+body.workspace-operations .panel-obs-control {
+  display: none;
+}
+
+body.workspace-operations .panel-logs .panel-body {
+  max-height: 160px;
+}
+
+body.workspace-operations .panel-logs .logs-filter-group select,
+body.workspace-operations .panel-logs .log-search-input {
+  display: none;
+}
+
+body.workspace-operations .panel-logs .console-logs-wrapper {
+  min-height: 104px;
+  max-height: 104px;
+}
+
+.screen-card.program-active {
+  border-color: rgba(239, 68, 68, 0.76);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28), 0 0 24px rgba(239, 68, 68, 0.16);
+}
+
+.screen-card.preview-active {
+  border-color: rgba(0, 210, 255, 0.72);
+  box-shadow: 0 0 0 1px rgba(0, 210, 255, 0.22), 0 0 24px rgba(0, 210, 255, 0.14);
+}
+
+body.workspace-setup .mcr-workspace {
+  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
+  gap: 16px;
+}
+
+body.workspace-setup .multiviewer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body.workspace-setup .multiviewer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.workspace-setup #screen-pgm,
+body.workspace-setup #screen-vod {
+  display: none;
+}
+
+body.workspace-setup .controls-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+body.workspace-setup [data-workspace-panel="operations"],
+body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering) {
+  display: none;
+}
+
+body.workspace-setup .panel-obs-control,
+body.workspace-setup .panel-client-integration,
+body.workspace-setup .panel-engineering {
+  display: flex;
+}
+
+body.workspace-setup .tile-source-select,
+body.workspace-setup .btn-attach,
+body.workspace-setup .btn-eject,
+body.workspace-setup .btn-edit {
+  display: inline-flex;
+}
+
+body.workspace-monitoring .panel-engineering .panel-header h3,
+body.workspace-monitoring .panel-client-integration .panel-header h3 {
+  font-size: 0;
+}
+
+body.workspace-monitoring .panel-engineering .panel-header h3::before {
+  content: "Cloud Chain Health";
+  font-size: 11px;
+}
+
+body.workspace-monitoring .panel-client-integration .panel-header h3::before {
+  content: "Integration Roadmap";
+  font-size: 11px;
+}
+
+@media (max-width: 1080px) {
+  body.workspace-operations .mcr-workspace,
+  body.workspace-setup .mcr-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  body.workspace-operations .multiviewer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .mcr-header {
+    position: static;
+  }
+
+  .operate-stage {
+    grid-template-columns: 1fr;
+  }
+
+  body.workspace-operations .multiviewer-grid,
+  body.workspace-setup .multiviewer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-switcher {
+    grid-template-columns: 1fr;
+    width: 100%;
   }
 }

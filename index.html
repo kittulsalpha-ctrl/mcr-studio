@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=monitoring-overview-16" />
+  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-2" />
 </head>
 
 <body class="workspace-operations">
@@ -25,6 +25,7 @@
       <nav class="page-switcher" aria-label="MCR pages">
         <a class="page-switcher-link page-switcher-active" id="nav-operations" href="index.html" aria-current="page" title="Operate sources, Preview, Program, graphics, and audio."><span>OPERATE</span><small>Switch &amp; route</small></a>
         <a class="page-switcher-link" id="nav-monitoring" href="monitoring.html" title="Monitor signal health, cloud delivery, alarms, and incidents."><span>MONITOR</span><small>Health &amp; alarms</small></a>
+        <a class="page-switcher-link" id="nav-setup" href="setup.html" title="Configure sources, OBS mapping, presets, and integration readiness."><span>SETUP</span><small>Sources &amp; API</small></a>
       </nav>
 
       <div class="header-badges">
@@ -81,20 +82,42 @@
       <!-- Left Column: Multi-Viewer Screen Grid (3x2 responsive) -->
       <section class="multiviewer-container">
         <div class="section-title-bar">
-          <h2>STREAM MULTI-VIEWER</h2>
+          <h2>Live Source Multiview</h2>
           <div class="title-decor">
             <span class="active-dot pulse-pink"></span>
             <span class="title-subtext">6-SOURCE PROCESSOR</span>
           </div>
         </div>
 
-        <div class="multiviewer-action-bar">
+        <div class="operate-stage">
+          <div class="screen-card preview-bus-card" id="screen-preview">
+            <div class="screen-header">
+              <span class="screen-label"><span class="channel-indicator bg-blue"></span>NEXT / PREVIEW</span>
+              <span class="screen-timecode font-fira" id="tc-preview">--:--:--:--</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="canvas-preview"></canvas>
+              <div class="preview-empty-state" id="preview-empty-state">SELECT A SOURCE TO PREVIEW</div>
+              <div class="stream-stats-overlay">
+                <div class="stat-row"><span>bus:</span><span class="text-blue">PREVIEW</span></div>
+                <div class="stat-row"><span>source:</span><span id="preview-active-source">None selected</span></div>
+                <div class="stat-row"><span>status:</span><span id="preview-status">IDLE</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="program-bus-slot" id="program-bus-slot"></div>
+        </div>
+
+        <details class="operator-advanced source-setup-drawer">
+          <summary>SOURCE SETUP</summary>
+          <div class="multiviewer-action-bar">
           <button class="btn btn-secondary" id="btn-start-webcam">START CAMERA</button>
           <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAMERA</button>
           <button class="btn btn-secondary" id="btn-load-local-video">LOAD LOCAL FILE</button>
           <button class="btn btn-secondary" id="btn-eject-video">CLEAR LOCAL FILE</button>
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
-        </div>
+          </div>
+        </details>
         <details class="operator-advanced demo-setup">
           <summary>DEMO &amp; SETUP</summary>
           <div class="multiviewer-action-bar preset-controls">
@@ -484,7 +507,7 @@
       </section>
 
       <section class="controls-container">
-        <div class="control-panel panel-obs-control" data-workspace-panel="operations">
+        <div class="control-panel panel-obs-control" data-workspace-panel="setup">
           <div class="panel-header"><h3>OBS PROGRAM CONTROL</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
           <div class="panel-body obs-control-body">
             <span class="font-fira" id="obs-program-scene">PROGRAM: NOT CONNECTED</span>
@@ -835,7 +858,7 @@
 
         <div class="control-panel panel-ai-ops" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>AI OPS ADVISOR</h3>
+            <h3>Ops Runbook Advisor</h3>
             <span class="badge-blue font-fira">RUNBOOK ADVISOR</span>
           </div>
           <div class="panel-body ai-ops-body">
@@ -870,7 +893,7 @@
 
         <div class="control-panel panel-client-integration" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>CLIENT INTEGRATION READINESS</h3>
+            <h3>Integration Roadmap</h3>
             <span class="badge-blue font-fira">CONNECTOR PLAN</span>
           </div>
           <div class="panel-body client-integration-body">
@@ -909,7 +932,7 @@
 
         <div class="control-panel panel-engineering" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>CLOUD BROADCAST HEALTH</h3>
+            <h3>Cloud Chain Health</h3>
             <span class="badge-blue font-fira" id="eng-telemetry-source">SIMULATION</span>
           </div>
           <div class="panel-body engineering-grid">
@@ -1026,7 +1049,7 @@
 
         <div class="control-panel panel-logs" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>INCIDENT TIMELINE</h3>
+            <h3>Operator &amp; Incident Timeline</h3>
 
             <div class="logs-filter-group">
               <button class="btn-filter filter-active" data-filter="all" id="filter-all">ALL</button>
@@ -1081,6 +1104,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=monitoring-overview-16"></script>
+  <script src="app.js?v=mcr-control-surface-2"></script>
 </body>
 </html>
