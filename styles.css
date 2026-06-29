@@ -1220,7 +1220,9 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
 
 .badge-blue,
 .badge-amber,
-.badge-pink {
+.badge-pink,
+.badge-red,
+.badge-green {
   font-size: 8px;
   font-weight: 600;
   padding: 2px 8px;
@@ -1245,6 +1247,18 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   background: rgba(236, 72, 153, 0.15);
   color: var(--neon-pink);
   border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.34);
+}
+
+.badge-green {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--neon-green);
+  border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
 .panel-body {
@@ -3155,6 +3169,7 @@ body.workspace-operations .controls-container {
 }
 
 body.workspace-operations .controls-container > .graphics-engine-card { order: 1; }
+body.workspace-operations .panel-tx-control { order: 0; }
 body.workspace-operations .panel-audio-mixer { order: 2; }
 body.workspace-operations .panel-event { order: 3; }
 body.workspace-operations .panel-replay-playout { order: 4; }
@@ -3214,6 +3229,105 @@ body.workspace-operations .panel-logs .console-logs-wrapper {
   max-height: 104px;
 }
 
+.tx-control-body {
+  display: grid;
+  gap: 10px;
+}
+
+.tx-control-slot .pgm-footer-top {
+  display: grid;
+  gap: 8px;
+}
+
+.tx-control-slot .pgm-action-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+
+.tx-control-slot .pgm-safety-group {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tx-control-slot .pgm-route-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.tx-control-slot .pgm-control-label {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.tx-safety-grid,
+.tx-status-rack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.safety-toggle,
+.tx-status-rack > div,
+.scte-mini-timeline {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.54);
+  color: var(--text-secondary);
+  font: 8px var(--font-mono);
+}
+
+.safety-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tx-status-rack span,
+.scte-mini-timeline span {
+  display: block;
+  color: var(--text-muted);
+  font: 700 7px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tx-status-rack strong,
+.scte-mini-timeline strong {
+  display: block;
+  margin-top: 4px;
+  font: 700 10px var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scte-mini-timeline {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.scte-timeline-track {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.scte-timeline-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-pink), var(--neon-amber));
+}
+
 .screen-card.program-active {
   border-color: rgba(239, 68, 68, 0.76);
   box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28), 0 0 24px rgba(239, 68, 68, 0.16);
@@ -3251,15 +3365,30 @@ body.workspace-setup .controls-container {
 }
 
 body.workspace-setup [data-workspace-panel="operations"],
-body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering) {
+body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering):not(.panel-orchestrator):not(.panel-dr-playout) {
   display: none;
 }
 
 body.workspace-setup .panel-obs-control,
 body.workspace-setup .panel-client-integration,
-body.workspace-setup .panel-engineering {
+body.workspace-setup .panel-engineering,
+body.workspace-setup .panel-orchestrator,
+body.workspace-setup .panel-dr-playout {
   display: flex;
 }
+
+body.workspace-setup .panel-orchestrator .signal-flow-strip,
+body.workspace-setup .panel-orchestrator .route-summary-strip,
+body.workspace-setup .panel-orchestrator .node-editor-wrapper,
+body.workspace-setup .panel-orchestrator .node-inspector,
+body.workspace-setup .panel-orchestrator .source-inspector {
+  display: none;
+}
+
+body.workspace-setup .panel-orchestrator .advanced-sim-controls {
+  display: block;
+}
+
 
 body.workspace-setup .tile-source-select,
 body.workspace-setup .btn-attach,

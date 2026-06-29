@@ -8,8 +8,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const programSlot = document.getElementById('program-bus-slot');
   const operationsColumn = document.querySelector('body.workspace-operations .controls-container');
   const graphicsEngine = document.querySelector('body.workspace-operations #screen-vod');
+  const txControlSlot = document.getElementById('tx-control-slot');
+  const pgmActionBar = document.querySelector('body.workspace-operations .pgm-footer-top');
   if (programOut && programSlot) programSlot.append(programOut);
   else if (programOut && operationsColumn) operationsColumn.prepend(programOut);
+  if (txControlSlot && pgmActionBar) txControlSlot.append(pgmActionBar);
   if (graphicsEngine && operationsColumn) operationsColumn.prepend(graphicsEngine);
 
   const TILE_FEEDS = ['cam1', 'cam2', 'liveu3', 'liveu4'];
@@ -155,6 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
         replay: { label: 'Replay EC2', fader: 0.7, mute: true, solo: false, pfl: false },
         playout: { label: 'Playout EC2', fader: 0.68, mute: true, solo: false, pfl: false }
       }
+    },
+    txSafety: {
+      sourceLock: false,
+      programProtection: true,
+      cleanFeed: false,
+      failoverMode: 'AUTO',
+      recording: true
     },
     replayPlayout: {
       returnLiveSource: 'cam1',
@@ -496,6 +506,19 @@ document.addEventListener('DOMContentLoaded', () => {
     previewActiveSource: document.getElementById('preview-active-source'),
     previewStatus: document.getElementById('preview-status'),
     previewEmptyState: document.getElementById('preview-empty-state'),
+    txControlState: document.getElementById('tx-control-state'),
+    txPathStatus: document.getElementById('tx-path-status'),
+    txFailoverMode: document.getElementById('tx-failover-mode'),
+    txRecordingStatus: document.getElementById('tx-recording-status'),
+    txEncoderLadder: document.getElementById('tx-encoder-ladder'),
+    toggleSourceLock: document.getElementById('toggle-source-lock'),
+    toggleProgramProtect: document.getElementById('toggle-program-protect'),
+    toggleAfvPanel: document.getElementById('toggle-afv-panel'),
+    btnToggleCleanFeed: document.getElementById('btn-toggle-clean-feed'),
+    btnToggleFailoverMode: document.getElementById('btn-toggle-failover-mode'),
+    btnToggleRecording: document.getElementById('btn-toggle-recording'),
+    scteTimelineProgress: document.getElementById('scte-timeline-progress'),
+    scteTimelineLabel: document.getElementById('scte-timeline-label'),
     
     // VU meters
     vu: {
@@ -895,6 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncAudioFollowVideo('Follow Video enabled');
     backendCommand('/api/audio-afv', { enabled: state.audioMixer.audioFollowVideo });
     renderAudioMixer();
+    renderTxSafety();
     renderEngineeringDashboard();
   });
 
@@ -1648,6 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOrchestratorRouting();
     updateBadges();
     updatePGMFooter();
+    renderTxSafety();
     syncProgramEmbed();
     updateSourceInspector();
     backendCommand('/api/off-air');
@@ -2401,6 +2426,52 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.audioPgmMeterR) el.audioPgmMeterR.style.height = `${vuState.pgm.r * 100}%`;
   }
 
+  function renderTxSafety() {
+    if (el.toggleSourceLock) el.toggleSourceLock.checked = state.txSafety.sourceLock;
+    if (el.toggleProgramProtect) el.toggleProgramProtect.checked = state.txSafety.programProtection;
+    if (el.toggleAfvPanel) el.toggleAfvPanel.checked = state.audioMixer.audioFollowVideo;
+    if (el.btnToggleCleanFeed) {
+      el.btnToggleCleanFeed.textContent = state.txSafety.cleanFeed ? 'CLEAN FEED' : 'DIRTY FEED';
+      el.btnToggleCleanFeed.classList.toggle('filter-active', state.txSafety.cleanFeed);
+    }
+    if (el.btnToggleFailoverMode) {
+      el.btnToggleFailoverMode.textContent = `${state.txSafety.failoverMode} FAILOVER`;
+      el.btnToggleFailoverMode.classList.toggle('filter-active', state.txSafety.failoverMode === 'AUTO');
+    }
+    if (el.btnToggleRecording) {
+      el.btnToggleRecording.textContent = state.txSafety.recording ? 'REC ARMED' : 'REC OFF';
+      el.btnToggleRecording.classList.toggle('filter-active', state.txSafety.recording);
+    }
+    if (el.txControlState) {
+      el.txControlState.textContent = state.txSafety.programProtection ? 'PROTECTED' : 'OPEN';
+      el.txControlState.className = `${state.txSafety.programProtection ? 'badge-red' : 'badge-amber'} font-fira`;
+    }
+    if (el.txPathStatus) {
+      el.txPathStatus.textContent = state.primaryFailed ? 'BACKUP ACTIVE' : 'PRIMARY + BACKUP';
+      el.txPathStatus.className = state.primaryFailed ? 'text-amber' : 'text-green';
+    }
+    if (el.txFailoverMode) {
+      el.txFailoverMode.textContent = state.txSafety.failoverMode;
+      el.txFailoverMode.className = state.txSafety.failoverMode === 'AUTO' ? 'text-green' : 'text-amber';
+    }
+    if (el.txRecordingStatus) {
+      el.txRecordingStatus.textContent = state.txSafety.recording && state.activeSource ? 'REC LIVE' : state.txSafety.recording ? 'REC ARMED' : 'REC OFF';
+      el.txRecordingStatus.className = state.txSafety.recording ? 'text-red' : 'text-muted';
+    }
+    if (el.txEncoderLadder) {
+      el.txEncoderLadder.textContent = state.activeSource ? '1080/720/540/360' : 'IDLE';
+      el.txEncoderLadder.className = state.activeSource ? 'text-green' : 'text-muted';
+    }
+    if (el.scteTimelineProgress) {
+      const pct = state.adActive ? Math.max(0, Math.min(100, ((30 - state.adTimeRemaining) / 30) * 100)) : 0;
+      el.scteTimelineProgress.style.width = `${pct}%`;
+    }
+    if (el.scteTimelineLabel) {
+      el.scteTimelineLabel.textContent = state.adActive ? `SPLICE ACTIVE ${state.adTimeRemaining.toFixed(1)}s` : 'NO ACTIVE MARKER';
+      el.scteTimelineLabel.className = state.adActive ? 'text-pink' : '';
+    }
+  }
+
   function getAlertSummary() {
     const alarms = [];
     const warnings = [];
@@ -2470,6 +2541,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();
+    renderTxSafety();
   }
 
   function feedHasActiveSignal(feed) {
@@ -3141,6 +3213,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function routePreviewToProgram(actionLabel = 'TAKE') {
+    const isEmergencyAction = /EMERGENCY|BACKUP|AI OPS/i.test(actionLabel);
+    if (state.txSafety.sourceLock && state.activeSource && !isEmergencyAction) {
+      addLog('warning', 'MIX', `TAKE blocked by Source Lock. Current Program remains ${getProgramRouteLabel(state.activeSource)}.`);
+      renderTxSafety();
+      return false;
+    }
     if (!state.previewFeed) {
       addLog('warning', 'MIX', 'No preview source selected to take.');
       return false;
@@ -3159,6 +3237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
+    renderTxSafety();
     syncProgramEmbed();
     updateSourceInspector();
     addLog('info', 'MIX', `${actionLabel} executed. Program switched to ${getTileName(state.activeSource)}.`);
@@ -3167,6 +3246,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function routeEmergencyBackup() {
+    if (!window.confirm('Emergency Backup will immediately route the healthiest backup source to Program. Continue?')) {
+      addLog('warning', 'MIX', 'Emergency backup cancelled by operator.');
+      return;
+    }
     const backupFeed = ['cam2', 'liveu3', 'liveu4', 'cam1'].find(feed => feedHasActiveSignal(feed));
     if (!backupFeed) {
       clearProgramOut('Emergency backup failed: no healthy contribution source available.');
@@ -3246,6 +3329,10 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnTake.addEventListener('click', () => routePreviewToProgram('TAKE'));
   el.btnCut?.addEventListener('click', () => routePreviewToProgram('CUT'));
   el.btnFadeBlack?.addEventListener('click', () => {
+    if (state.txSafety.programProtection && !window.confirm('Program Protection is enabled. Fade Program to black?')) {
+      addLog('warning', 'MIX', 'Fade to black cancelled by Program Protection.');
+      return;
+    }
     clearProgramOut('Program Out faded to black by operator.');
   });
   el.btnEmergencyBackup?.addEventListener('click', routeEmergencyBackup);
@@ -3255,7 +3342,51 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnIncidentSummary?.addEventListener('click', generateIncidentSummary);
 
   el.btnClearProgram?.addEventListener('click', () => {
+    if (state.txSafety.programProtection && !window.confirm('Program Protection is enabled. Take Program off air?')) {
+      addLog('warning', 'MIX', 'Off Air cancelled by Program Protection.');
+      return;
+    }
     clearProgramOut('Program Out cleared to black by operator.');
+  });
+
+  el.toggleSourceLock?.addEventListener('change', event => {
+    state.txSafety.sourceLock = event.target.checked;
+    addLog('info', 'MIX', `Source Lock ${state.txSafety.sourceLock ? 'enabled' : 'disabled'}.`);
+    renderTxSafety();
+  });
+
+  el.toggleProgramProtect?.addEventListener('change', event => {
+    state.txSafety.programProtection = event.target.checked;
+    addLog('info', 'MIX', `Program Protection ${state.txSafety.programProtection ? 'enabled' : 'disabled'}.`);
+    renderTxSafety();
+  });
+
+  el.toggleAfvPanel?.addEventListener('change', event => {
+    state.audioMixer.audioFollowVideo = event.target.checked;
+    if (el.audioAfvToggle) el.audioAfvToggle.checked = event.target.checked;
+    addLog('info', 'AUDIO', `Audio Follow Video ${state.audioMixer.audioFollowVideo ? 'enabled' : 'disabled'} from TX Control.`);
+    syncAudioFollowVideo('TX Control AFV toggle');
+    backendCommand('/api/audio-afv', { enabled: state.audioMixer.audioFollowVideo });
+    renderAudioMixer();
+    renderTxSafety();
+  });
+
+  el.btnToggleCleanFeed?.addEventListener('click', () => {
+    state.txSafety.cleanFeed = !state.txSafety.cleanFeed;
+    addLog('info', 'ROUTE', `${state.txSafety.cleanFeed ? 'Clean' : 'Dirty'} Program feed selected for operator output.`);
+    renderTxSafety();
+  });
+
+  el.btnToggleFailoverMode?.addEventListener('click', () => {
+    state.txSafety.failoverMode = state.txSafety.failoverMode === 'AUTO' ? 'MANUAL' : 'AUTO';
+    addLog('info', 'SWT', `${state.txSafety.failoverMode} failover mode selected.`);
+    renderTxSafety();
+  });
+
+  el.btnToggleRecording?.addEventListener('click', () => {
+    state.txSafety.recording = !state.txSafety.recording;
+    addLog('info', 'REC', `Program recording ${state.txSafety.recording ? 'armed' : 'stopped'} in simulation.`);
+    renderTxSafety();
   });
 
   el.btnObsTakeScene?.addEventListener('click', async () => {
@@ -4370,6 +4501,13 @@ document.addEventListener('DOMContentLoaded', () => {
     addLog('alarm', 'SRT', 'Primary contribution encoder connection lost! SRT Socket connection timeout.');
     addLog('warning', 'SWT', 'ST 2022-7 Switcher detected packet flatline on Path A (us-east-1).');
 
+    if (state.txSafety.failoverMode === 'MANUAL') {
+      addLog('warning', 'SWT', 'Manual failover mode is active. Backup is healthy but operator must TAKE BACKUP.');
+      renderTxSafety();
+      updateSRTSimulation();
+      return;
+    }
+
     // Trigger seamless failover switch inside 350ms
     setTimeout(() => {
       if (state.primaryFailed) { // Double check if already restored
@@ -4380,6 +4518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBadges();
         updatePGMFooter();
         updateOrchestratorRouting();
+        renderTxSafety();
         
         // Log switch
         addLog('alarm', 'SWT', 'Switcher input switched automatically: Path A (failed) ➔ Path B (active backup).');
@@ -4388,6 +4527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 350);
 
     updateSRTSimulation();
+    renderTxSafety();
   });
 
   // Restore Primary contribution path
@@ -4401,6 +4541,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.alarmOverlayCam1.classList.remove('alarm-active');
     
     updateOrchestratorRouting();
+    renderTxSafety();
 
     addLog('info', 'SRT', 'SRT Contribution Socket re-established. Port 9001 handshake complete.');
     addLog('info', 'SRT', 'Camera-01 stream restored (Bitrate: 6.2 Mbps, Codec: HEVC).');
@@ -4462,6 +4603,7 @@ document.addEventListener('DOMContentLoaded', () => {
         endAdBreak();
       } else {
         el.adCountdownVal.textContent = `AD BREAK: ${state.adTimeRemaining.toFixed(1)}s`;
+        renderTxSafety();
       }
     }, 100);
   });
@@ -4502,6 +4644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
+    renderTxSafety();
     syncProgramEmbed();
     
     addLog('info', 'SCTE', 'SCTE-35 Splice-Out command injected. Event ID: 4092 (Out-of-Network complete).');

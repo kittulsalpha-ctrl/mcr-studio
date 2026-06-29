@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-2" />
+  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-3" />
 </head>
 
 <body class="workspace-operations">
@@ -507,6 +507,35 @@
       </section>
 
       <section class="controls-container">
+        <div class="control-panel panel-tx-control" data-workspace-panel="operations">
+          <div class="panel-header">
+            <h3>TX CONTROL</h3>
+            <span class="badge-red font-fira" id="tx-control-state">PROTECTED</span>
+          </div>
+          <div class="panel-body tx-control-body">
+            <div class="tx-control-slot" id="tx-control-slot"></div>
+            <div class="tx-safety-grid">
+              <label class="safety-toggle" title="Prevent accidental Program route changes."><input type="checkbox" id="toggle-source-lock" /> SOURCE LOCK</label>
+              <label class="safety-toggle" title="Ask for confirmation before destructive Program actions."><input type="checkbox" id="toggle-program-protect" checked /> PROGRAM PROTECTION</label>
+              <label class="safety-toggle" title="Route on-air audio with Program video."><input type="checkbox" id="toggle-afv-panel" checked /> AUDIO FOLLOW VIDEO</label>
+              <button class="btn-filter" id="btn-toggle-clean-feed" title="Switch between clean Program and dirty Program with graphics.">DIRTY FEED</button>
+              <button class="btn-filter" id="btn-toggle-failover-mode" title="Switch simulated failover policy.">AUTO FAILOVER</button>
+              <button class="btn-filter" id="btn-toggle-recording" title="Arm or stop simulated Program recording.">REC ARMED</button>
+            </div>
+            <div class="tx-status-rack">
+              <div><span>PATH</span><strong id="tx-path-status">PRIMARY + BACKUP</strong></div>
+              <div><span>FAILOVER</span><strong id="tx-failover-mode">AUTO</strong></div>
+              <div><span>RECORD</span><strong id="tx-recording-status">REC ARMED</strong></div>
+              <div><span>ENCODER</span><strong id="tx-encoder-ladder">1080/720/540/360</strong></div>
+            </div>
+            <div class="scte-mini-timeline">
+              <span>SCTE</span>
+              <div class="scte-timeline-track"><i id="scte-timeline-progress"></i></div>
+              <strong id="scte-timeline-label">NO ACTIVE MARKER</strong>
+            </div>
+          </div>
+        </div>
+
         <div class="control-panel panel-obs-control" data-workspace-panel="setup">
           <div class="panel-header"><h3>OBS PROGRAM CONTROL</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
           <div class="panel-body obs-control-body">
@@ -1104,6 +1133,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-control-surface-2"></script>
+  <script src="app.js?v=mcr-control-surface-3"></script>
 </body>
 </html>

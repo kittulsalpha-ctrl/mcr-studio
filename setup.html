@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-2" />
+  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-3" />
 </head>
 
 <body class="workspace-setup">
@@ -611,8 +611,8 @@
 
         <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>SIGNAL PATH</h3>
-            <span class="badge-blue font-fira">PROGRAM ROUTE</span>
+            <h3>Source Configuration &amp; NDI Bridge</h3>
+            <span class="badge-blue font-fira">INPUT SETUP</span>
           </div>
 
           <div class="panel-body">
@@ -753,7 +753,7 @@
               <div class="source-inspector-meta font-fira" id="source-inspector-meta">Select a tile or press PREVIEW to inspect its route.</div>
             </div>
 
-            <details class="advanced-sim-controls">
+            <details class="advanced-sim-controls" open>
               <summary>Advanced source simulation</summary>
               <div class="source-state-grid">
                 <label>LiveU 1
@@ -1002,8 +1002,8 @@
 
         <div class="control-panel panel-dr-playout" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
-            <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
+            <h3>Simulated Failure Tools</h3>
+            <span class="badge-pink font-fira">DR / SCTE TEST</span>
           </div>
 
           <div class="panel-body dr-buttons-row">
@@ -1082,6 +1082,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-control-surface-2"></script>
+  <script src="app.js?v=mcr-control-surface-3"></script>
 </body>
 </html>
