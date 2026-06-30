@@ -3476,15 +3476,14 @@ body.workspace-setup .controls-container {
 }
 
 body.workspace-setup [data-workspace-panel="operations"],
-body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering):not(.panel-orchestrator):not(.panel-dr-playout) {
+body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering):not(.panel-orchestrator) {
   display: none;
 }
 
 body.workspace-setup .panel-obs-control,
 body.workspace-setup .panel-client-integration,
 body.workspace-setup .panel-engineering,
-body.workspace-setup .panel-orchestrator,
-body.workspace-setup .panel-dr-playout {
+body.workspace-setup .panel-orchestrator {
   display: flex;
 }
 

@@ -4770,4 +4770,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function removePageSection(selector) {
+    document.querySelectorAll(selector).forEach(node => node.remove());
+  }
+
+  function pruneWorkspaceDomForPage() {
+    const view = getRequestedWorkspace();
+    if (view === 'operations') {
+      removePageSection('[data-workspace-panel="monitoring"], [data-workspace-panel="setup"]');
+      removePageSection('.source-setup-drawer, .demo-setup, .assign-controls');
+      removePageSection('#source-url-modal');
+      return;
+    }
+
+    if (view === 'monitoring') {
+      removePageSection('.multiviewer-container');
+      removePageSection('[data-workspace-panel="operations"], [data-workspace-panel="setup"]');
+      removePageSection('#source-url-modal');
+      return;
+    }
+
+    if (view === 'setup') {
+      removePageSection('#screen-pgm, #screen-vod');
+      removePageSection('[data-workspace-panel="operations"]');
+      removePageSection('.panel-ai-ops, .panel-incident-response, .panel-cloud-topology, .panel-telemetry, .panel-dr-playout, .panel-logs');
+    }
+  }
+
+  pruneWorkspaceDomForPage();
+
 });
