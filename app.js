@@ -521,6 +521,9 @@ document.addEventListener('DOMContentLoaded', () => {
     opRouteCdn: document.getElementById('op-route-cdn'),
     opRoutePath: document.getElementById('op-route-path'),
     opRouteRegion: document.getElementById('op-route-region'),
+    workflowConfiguredCount: document.getElementById('workflow-configured-count'),
+    workflowPreviewSource: document.getElementById('workflow-preview-source'),
+    workflowProgramSource: document.getElementById('workflow-program-source'),
     regionValue: document.getElementById('region-value'),
     regionPresetSelect: document.getElementById('region-preset-select'),
     setupRegionLabel: document.getElementById('setup-region-label'),
@@ -2237,6 +2240,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function renderOperatorWorkflowStatus() {
+    const configuredCount = TILE_FEEDS.filter(feed => state.tileSourceIds[feed] && state.tileSourceIds[feed] !== 'none').length;
+    const previewLabel = state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—';
+    const programLabel = state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR';
+    setMetricText(el.workflowConfiguredCount, `${configuredCount} SOURCE${configuredCount === 1 ? '' : 'S'}`, configuredCount ? 'text-green' : 'text-muted');
+    setMetricText(el.workflowPreviewSource, previewLabel, state.previewFeed ? 'text-blue' : 'text-muted');
+    setMetricText(el.workflowProgramSource, programLabel, state.activeSource ? 'text-red' : 'text-muted');
+  }
+
   function inspectFeed(feed) {
     if (!feed || !state.tileSources[feed]) return;
     state.inspectedFeed = feed;
@@ -2715,6 +2727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAIOpsAssistant();
     renderEngineeringDashboard();
     renderTxSafety();
+    renderOperatorWorkflowStatus();
   }
 
   function feedHasActiveSignal(feed) {
