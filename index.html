@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-polish-4" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-5" />
 </head>
 
 <body class="workspace-operations">
@@ -68,7 +68,7 @@
         </div>
         <div class="badge" id="badge-region">
           <span class="badge-label">REGION</span>
-          <span class="badge-value text-blue">US-EAST-1</span>
+          <span class="badge-value text-blue" id="region-value">US-EAST-1</span>
         </div>
       </div>
 
@@ -541,6 +541,29 @@
               <div class="scte-timeline-track"><i id="scte-timeline-progress"></i></div>
               <strong id="scte-timeline-label">NO ACTIVE MARKER</strong>
             </div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-operate-route" data-workspace-panel="operations">
+          <div class="panel-header">
+            <h3>PROGRAM PATH</h3>
+            <span class="badge-blue font-fira" id="op-route-region">US-EAST-1</span>
+          </div>
+          <div class="panel-body operate-route-body">
+            <div class="operate-route-row">
+              <span>SOURCE</span>
+              <strong id="op-route-source">OFF AIR</strong>
+            </div>
+            <div class="operate-route-row">
+              <span>PREVIEW</span>
+              <strong id="op-route-preview">—</strong>
+            </div>
+            <div class="operate-route-chain">
+              <div><span>INGEST</span><strong id="op-route-ingest">READY</strong></div>
+              <div><span>ENCODER</span><strong id="op-route-encoder">READY</strong></div>
+              <div><span>CDN</span><strong id="op-route-cdn">READY</strong></div>
+            </div>
+            <div class="operate-route-footer font-fira" id="op-route-path">PRIMARY + BACKUP READY</div>
           </div>
         </div>
 
@@ -1141,6 +1164,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-polish-4"></script>
+  <script src="app.js?v=mcr-flow-5"></script>
 </body>
 </html>

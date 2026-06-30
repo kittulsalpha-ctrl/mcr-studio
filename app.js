@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const NDI_SOURCES = JSON.parse(JSON.stringify(DEFAULT_NDI_SOURCES));
   const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+  const REGION_PRESETS = {
+    'eu-west-1': { code: 'eu-west-1', label: 'Ireland', encoder: 'Dublin contribution encoder', ingest: 'EU ingest gateway' },
+    'eu-west-2': { code: 'eu-west-2', label: 'London', encoder: 'London contribution encoder', ingest: 'UK ingest gateway' },
+    'ap-south-1': { code: 'ap-south-1', label: 'Mumbai', encoder: 'Mumbai contribution encoder', ingest: 'India ingest gateway' },
+    'us-east-1': { code: 'us-east-1', label: 'Virginia', encoder: 'Virginia contribution encoder', ingest: 'US East ingest gateway' }
+  };
   const DEMO_PRESETS = {
     clean: {
       label: 'Clean Startup',
@@ -104,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clock Systems
     localDrift: 0,
     onAirStartedAt: null,
+    regionPreset: localStorage.getItem('mcr-region-preset') || 'us-east-1',
     
     // Telemetry Sliders
     lossPercent: 0.0,
@@ -505,6 +512,16 @@ document.addEventListener('DOMContentLoaded', () => {
     routeSummaryProgram: document.getElementById('route-summary-program'),
     routeSummaryPreview: document.getElementById('route-summary-preview'),
     routeSummaryPath: document.getElementById('route-summary-path'),
+    opRouteSource: document.getElementById('op-route-source'),
+    opRoutePreview: document.getElementById('op-route-preview'),
+    opRouteIngest: document.getElementById('op-route-ingest'),
+    opRouteEncoder: document.getElementById('op-route-encoder'),
+    opRouteCdn: document.getElementById('op-route-cdn'),
+    opRoutePath: document.getElementById('op-route-path'),
+    opRouteRegion: document.getElementById('op-route-region'),
+    regionValue: document.getElementById('region-value'),
+    regionPresetSelect: document.getElementById('region-preset-select'),
+    setupRegionLabel: document.getElementById('setup-region-label'),
     deliveryStatus: document.getElementById('delivery-status'),
     deliveryDetail: document.getElementById('delivery-detail'),
     tcPreview: document.getElementById('tc-preview'),
@@ -2089,6 +2106,33 @@ document.addEventListener('DOMContentLoaded', () => {
     node.className = className;
   }
 
+  function getSelectedRegion() {
+    return REGION_PRESETS[state.regionPreset] || REGION_PRESETS['us-east-1'];
+  }
+
+  function renderRegionPreset() {
+    const region = getSelectedRegion();
+    if (el.regionValue) el.regionValue.textContent = region.code.toUpperCase();
+    if (el.opRouteRegion) el.opRouteRegion.textContent = region.code.toUpperCase();
+    if (el.regionPresetSelect && el.regionPresetSelect.value !== region.code) el.regionPresetSelect.value = region.code;
+    if (el.setupRegionLabel) el.setupRegionLabel.textContent = `${region.code} ${region.label}`;
+  }
+
+  function renderOperateRouteCard() {
+    const region = getSelectedRegion();
+    const hasProgram = !!state.activeSource;
+    const cdnDegraded = state.isUnderflow || state.lossPercent >= 8;
+    setMetricText(el.opRouteSource, hasProgram ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', hasProgram ? 'text-red' : 'text-muted');
+    setMetricText(el.opRoutePreview, state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—', state.previewFeed ? 'text-blue' : 'text-muted');
+    setMetricText(el.opRouteIngest, hasProgram ? 'LIVE' : 'READY', hasProgram ? 'text-green' : 'text-blue');
+    setMetricText(el.opRouteEncoder, hasProgram ? 'ENCODING' : 'READY', hasProgram ? 'text-green' : 'text-blue');
+    setMetricText(el.opRouteCdn, cdnDegraded ? 'DEGRADED' : hasProgram ? 'READY' : 'IDLE', cdnDegraded ? 'text-red' : hasProgram ? 'text-green' : 'text-muted');
+    if (el.opRoutePath) {
+      el.opRoutePath.textContent = `${state.primaryFailed ? 'BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'} · ${region.code.toUpperCase()}`;
+      el.opRoutePath.className = `operate-route-footer font-fira ${state.primaryFailed ? 'text-amber' : 'text-green'}`;
+    }
+  }
+
   function inspectFeed(feed) {
     if (!feed || !state.tileSources[feed]) return;
     state.inspectedFeed = feed;
@@ -2264,6 +2308,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderEngineeringDashboard() {
     syncBackendModel();
+    renderRegionPreset();
+    renderOperateRouteCard();
     const onlineInputs = TILE_FEEDS.filter(feed => feedHasActiveSignal(feed)).length;
     const alarms = getActiveAlarmSummary();
     const telemetry = state.cloudTelemetry;
@@ -2323,9 +2369,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.engNetworkDetail) el.engNetworkDetail.textContent = `${lossPercent.toFixed(1)}% loss · ${jitterMs}ms jitter · ${alarms.length ? `${alarms.length} active alarm${alarms.length === 1 ? '' : 's'}` : 'no active alarms'}`;
 
     const encoderTelemetry = telemetryService('encoder');
-    const encoderRegion = encoderTelemetry?.region || (state.primaryFailed ? 'us-east-2' : 'us-east-1');
+    const selectedRegion = getSelectedRegion();
+    const encoderRegion = encoderTelemetry?.region || selectedRegion.code;
     setMetricText(el.engRegionStatus, encoderRegion, encoderTelemetry ? serviceStatusClass(encoderTelemetry.status) : state.primaryFailed ? 'text-amber' : 'text-green');
-    if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || (state.activeSource ? 'Primary contribution encoder is processing Program.' : 'Primary contribution encoder is ready.');
+    if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || (state.activeSource ? `${selectedRegion.encoder} is processing Program.` : `${selectedRegion.encoder} is ready.`);
     setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
     const directConnectTelemetry = telemetryService('directConnect');
     const mediaConnectTelemetry = telemetryService('mediaConnect');
@@ -3410,6 +3457,15 @@ document.addEventListener('DOMContentLoaded', () => {
     state.txSafety.recording = !state.txSafety.recording;
     addLog('info', 'REC', `Program recording ${state.txSafety.recording ? 'armed' : 'stopped'} in simulation.`);
     renderTxSafety();
+  });
+
+  el.regionPresetSelect?.addEventListener('change', event => {
+    state.regionPreset = REGION_PRESETS[event.target.value] ? event.target.value : 'us-east-1';
+    localStorage.setItem('mcr-region-preset', state.regionPreset);
+    const region = getSelectedRegion();
+    addLog('info', 'API', `Cloud region preset selected: ${region.code} ${region.label}.`);
+    renderRegionPreset();
+    renderEngineeringDashboard();
   });
 
   el.btnObsTakeScene?.addEventListener('click', async () => {
