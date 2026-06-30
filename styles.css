@@ -3207,7 +3207,7 @@ body.workspace-operations .screen-footer-row-2 .active-badge {
 }
 
 body.workspace-operations .source-setup-drawer {
-  margin-bottom: 10px;
+  display: none;
 }
 
 body.workspace-operations .demo-setup,
@@ -3410,6 +3410,291 @@ body.workspace-monitoring .panel-engineering .panel-header h3::before {
 body.workspace-monitoring .panel-client-integration .panel-header h3::before {
   content: "Integration Roadmap";
   font-size: 11px;
+}
+
+/* ==========================================================================
+   Premium operator polish pass
+   Visual hierarchy only: Program > Preview > Sources > Controls > Logs.
+   ========================================================================== */
+
+body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(14, 165, 233, 0.08), transparent 26rem),
+    linear-gradient(180deg, #070a10 0%, #090d14 42%, #05070b 100%);
+}
+
+.app-container {
+  padding: 10px;
+  gap: 10px;
+}
+
+.mcr-header {
+  top: 10px;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) auto minmax(420px, 1.35fr) auto;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(8, 13, 22, 0.94);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+}
+
+.header-logo h1 {
+  font-size: 18px;
+}
+
+.version-tag {
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.header-badges {
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.badge {
+  inline-size: 106px;
+  flex-basis: 106px;
+  min-height: 48px;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.68);
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+.badge-label {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+.badge-value {
+  min-width: 9ch;
+  font-size: 11px;
+}
+
+#badge-on-air,
+#badge-on-air-timer {
+  border-color: rgba(239, 68, 68, 0.34);
+}
+
+.header-clocks {
+  border-radius: 7px;
+}
+
+.clock-box {
+  padding: 6px 12px;
+}
+
+.page-switcher {
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+}
+
+.page-switcher-link {
+  min-height: 42px;
+}
+
+body.workspace-operations .mcr-workspace {
+  grid-template-columns: minmax(720px, 1.62fr) minmax(300px, 0.38fr);
+  gap: 12px;
+}
+
+.operate-stage {
+  grid-template-columns: minmax(260px, 0.72fr) minmax(460px, 1.28fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.preview-bus-card,
+.program-bus-slot > .pgm-stream {
+  min-height: clamp(300px, 47vh, 520px);
+}
+
+.program-bus-slot > .pgm-stream {
+  border-color: rgba(239, 68, 68, 0.42);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.12), 0 18px 44px rgba(0, 0, 0, 0.36);
+}
+
+.preview-bus-card {
+  border-color: rgba(14, 165, 233, 0.28);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.program-bus-slot > .pgm-stream .canvas-wrapper {
+  min-height: clamp(240px, 36vh, 430px);
+}
+
+.preview-bus-card .canvas-wrapper {
+  min-height: clamp(210px, 31vh, 360px);
+}
+
+body.workspace-operations .multiviewer-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.workspace-operations .multiviewer-grid > .screen-card:not(.pgm-stream) {
+  min-height: 210px;
+}
+
+.screen-card,
+.control-panel {
+  border-radius: 8px;
+  background: rgba(12, 18, 30, 0.74);
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+.screen-card:hover {
+  box-shadow: none;
+}
+
+.screen-header,
+.panel-header {
+  padding: 8px 10px;
+}
+
+.screen-label,
+.panel-header h3 {
+  letter-spacing: 0.04em;
+}
+
+.stream-stats-overlay {
+  opacity: 0.88;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+body.workspace-operations .controls-container {
+  gap: 10px;
+}
+
+.panel-tx-control {
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.tx-control-body,
+.panel-audio-mixer .panel-body,
+.panel-event .panel-body,
+.panel-replay-playout .panel-body {
+  padding: 10px;
+}
+
+.tx-control-slot .pgm-footer-top {
+  gap: 7px;
+}
+
+.tx-control-slot .pgm-action-group {
+  gap: 6px;
+}
+
+.tx-control-slot .pgm-transition-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 0.62fr);
+  gap: 6px;
+}
+
+.tx-control-slot .pgm-transition-group .pgm-control-label {
+  grid-column: 1 / -1;
+}
+
+.tx-control-slot .pgm-transition-group #btn-take {
+  grid-row: span 2;
+  min-height: 58px;
+}
+
+.tx-control-slot .pgm-transition-group #btn-cut,
+.tx-control-slot .pgm-transition-group #btn-fade-black {
+  min-height: 26px;
+}
+
+.tx-control-slot #btn-take {
+  min-height: 34px;
+  font-size: 10px;
+}
+
+.tx-safety-grid,
+.tx-status-rack {
+  gap: 6px;
+}
+
+.safety-toggle,
+.tx-status-rack > div,
+.scte-mini-timeline {
+  padding: 7px;
+  background: rgba(2, 6, 23, 0.46);
+}
+
+.control-panel .operator-advanced summary {
+  min-height: 34px;
+}
+
+body.workspace-operations .panel-logs {
+  grid-column: 1 / -1;
+  order: 20;
+  min-height: 120px;
+}
+
+body.workspace-operations .panel-logs .panel-header {
+  padding: 8px 12px;
+}
+
+body.workspace-operations .panel-logs .panel-header h3 {
+  font-size: 10px;
+}
+
+body.workspace-operations .panel-logs .logs-filter-group .btn-filter:not(.filter-active),
+body.workspace-operations .panel-logs #btn-clear-logs {
+  display: none;
+}
+
+body.workspace-operations .panel-logs .panel-body {
+  max-height: 92px;
+  padding: 8px 12px;
+}
+
+body.workspace-operations .panel-logs .console-logs-wrapper {
+  min-height: 76px;
+  max-height: 76px;
+  background: rgba(2, 6, 23, 0.46);
+}
+
+body.workspace-monitoring .controls-container {
+  gap: 12px;
+}
+
+body.workspace-monitoring .panel-orchestrator,
+body.workspace-monitoring .panel-engineering,
+body.workspace-monitoring .panel-incident-response,
+body.workspace-monitoring .panel-logs {
+  border-radius: 8px;
+}
+
+body.workspace-setup .controls-container,
+body.workspace-setup .multiviewer-container {
+  gap: 12px;
+}
+
+@media (max-width: 1500px) {
+  .mcr-header {
+    grid-template-columns: minmax(220px, 1fr) auto auto;
+  }
+
+  .header-badges {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1180px) {
+  body.workspace-operations .mcr-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .operate-stage {
+    grid-template-columns: 1fr;
+  }
+
+  body.workspace-operations .panel-logs {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 1080px) {

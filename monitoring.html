@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-control-surface-3" />
+  <link rel="stylesheet" href="styles.css?v=mcr-polish-4" />
 </head>
 
 <body class="workspace-monitoring">
@@ -32,6 +32,10 @@
         <div class="badge badge-on-air" id="badge-on-air">
           <span class="badge-label">ON AIR</span>
           <span class="badge-value text-red" id="on-air-value">OFF</span>
+        </div>
+        <div class="badge" id="badge-on-air-timer">
+          <span class="badge-label">ON AIR TIME</span>
+          <span class="badge-value" id="on-air-timer-value">00:00:00</span>
         </div>
         <div class="badge" id="badge-status">
           <span class="badge-label">SYSTEM STATUS</span>
@@ -61,6 +65,10 @@
         <div class="badge" id="badge-operating-mode">
           <span class="badge-label">OPERATING MODE</span>
           <span class="badge-value text-amber" id="operating-mode-value">DEMO</span>
+        </div>
+        <div class="badge" id="badge-region">
+          <span class="badge-label">REGION</span>
+          <span class="badge-value text-blue">US-EAST-1</span>
         </div>
       </div>
 
@@ -1037,6 +1045,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-control-surface-3"></script>
+  <script src="app.js?v=mcr-polish-4"></script>
 </body>
 </html>

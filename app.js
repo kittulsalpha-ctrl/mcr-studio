@@ -10,10 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const graphicsEngine = document.querySelector('body.workspace-operations #screen-vod');
   const txControlSlot = document.getElementById('tx-control-slot');
   const pgmActionBar = document.querySelector('body.workspace-operations .pgm-footer-top');
+  const operatorLogPanel = document.querySelector('body.workspace-operations .panel-logs');
+  const workspace = document.querySelector('body.workspace-operations .mcr-workspace');
   if (programOut && programSlot) programSlot.append(programOut);
   else if (programOut && operationsColumn) operationsColumn.prepend(programOut);
   if (txControlSlot && pgmActionBar) txControlSlot.append(pgmActionBar);
   if (graphicsEngine && operationsColumn) operationsColumn.prepend(graphicsEngine);
+  if (operatorLogPanel && workspace) workspace.append(operatorLogPanel);
 
   const TILE_FEEDS = ['cam1', 'cam2', 'liveu3', 'liveu4'];
   const LIVEU_SOURCE_IDS = ['liveu1', 'liveu2', 'liveu3', 'liveu4'];
@@ -100,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const state = {
     // Clock Systems
     localDrift: 0,
+    onAirStartedAt: null,
     
     // Telemetry Sliders
     lossPercent: 0.0,
@@ -286,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
     matrixAlarm: document.getElementById('matrix-alarm-value'),
     systemHealth: document.getElementById('system-health-value'),
     onAirValue: document.getElementById('on-air-value'),
+    onAirTimerValue: document.getElementById('on-air-timer-value'),
     controlApiValue: document.getElementById('control-api-value'),
     operatingModeValue: document.getElementById('operating-mode-value'),
     obsControlStatus: document.getElementById('obs-control-status'),
@@ -581,6 +586,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const localMinutes = String(now.getMinutes()).padStart(2, '0');
     const localSeconds = String(now.getSeconds()).padStart(2, '0');
     el.localClock.textContent = `${localHours}:${localMinutes}:${localSeconds}`;
+
+    if (el.onAirTimerValue) {
+      el.onAirTimerValue.textContent = state.onAirStartedAt
+        ? formatElapsedTime(now.getTime() - state.onAirStartedAt)
+        : '00:00:00';
+      el.onAirTimerValue.className = `badge-value ${state.onAirStartedAt ? 'text-red' : 'text-muted'}`;
+    }
+  }
+
+  function formatElapsedTime(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
   }
   
   setInterval(updateClocks, 1000);
@@ -1659,6 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.adTimeRemaining = 0;
     state.preAdRoute = null;
     state.activeSource = null;
+    state.onAirStartedAt = null;
     state.programSourceOverride = null;
     setProgramAudioFeed(null, 'program off air');
     if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
@@ -2499,6 +2520,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateHeaderMetrics() {
+    if (state.activeSource && !state.onAirStartedAt) state.onAirStartedAt = Date.now();
     const totalBandwidth = TILE_FEEDS.reduce((sum, feed) => sum + getEstimatedFeedBandwidth(feed), 0) + getEstimatedFeedBandwidth('vod');
     el.totalBw.textContent = `${totalBandwidth.toFixed(1)} Mbps`;
 
@@ -3230,6 +3252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return false;
     }
     state.activeSource = state.previewFeed;
+    if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
     state.programSourceOverride = null;
     syncAudioFollowVideo(actionLabel);
     clearPreviewUI();
@@ -4513,6 +4536,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.primaryFailed) { // Double check if already restored
         setSourceState('liveu2', 'ONLINE');
         state.activeSource = 'cam2'; // Route backup Cam
+        if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
         state.programSourceOverride = 'liveu2';
         el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
         updateBadges();
@@ -4551,6 +4575,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.primaryFailed) {
         setSourceState('liveu2', 'STANDBY');
         state.activeSource = 'cam1';
+        if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
         state.programSourceOverride = 'liveu1';
         el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
         updateBadges();
@@ -4580,6 +4605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update active source to ad break loop
     state.activeSource = 'ad';
+    if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
     state.programSourceOverride = 'ad';
     el.pgmActiveSource.textContent = "SOURCE: AD-LOOP (SCTE-35)";
     updateBadges();
@@ -4633,10 +4659,12 @@ document.addEventListener('DOMContentLoaded', () => {
       el.pgmActiveSource.textContent = state.preAdRoute.label || `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
     } else if (state.primaryFailed) {
       state.activeSource = 'cam2';
+      if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
       state.programSourceOverride = 'liveu2';
       el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
     } else {
       state.activeSource = 'cam1';
+      if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
       state.programSourceOverride = 'liveu1';
       el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
     }
