@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const NDI_SOURCES = JSON.parse(JSON.stringify(DEFAULT_NDI_SOURCES));
   const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+  const WORKSPACE_STATE_KEY = 'mcr-studio-workspace-state-v1';
   const REGION_PRESETS = {
     'eu-west-1': { code: 'eu-west-1', label: 'Ireland', encoder: 'Dublin contribution encoder', ingest: 'EU ingest gateway' },
     'eu-west-2': { code: 'eu-west-2', label: 'London', encoder: 'London contribution encoder', ingest: 'UK ingest gateway' },
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Console Logs
     logs: []
   };
+  let isRestoringWorkspaceState = false;
 
   // ==========================================================================
   // 2. DOM ELEMENTS
@@ -1381,6 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReplayPlayoutServers();
     syncProgramEmbed();
     addLog('info', 'DEMO', `${preset.label} preset loaded.`);
+    saveWorkspaceState();
 
     if (updateUrl) {
       const url = new URL(window.location.href);
@@ -1419,6 +1422,102 @@ document.addEventListener('DOMContentLoaded', () => {
       mutedFeeds: { ...state.mutedFeeds },
       primaryFailed: state.primaryFailed
     };
+  }
+
+  function saveWorkspaceState() {
+    if (isRestoringWorkspaceState) return;
+    try {
+      const snapshot = serializeCurrentScenario();
+      snapshot.savedAt = new Date().toISOString();
+      snapshot.regionPreset = state.regionPreset;
+      snapshot.mediaAssignments = { ...state.mediaAssignments };
+      localStorage.setItem(WORKSPACE_STATE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      console.warn('Unable to save MCR workspace state', error);
+    }
+  }
+
+  function loadWorkspaceState() {
+    let saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem(WORKSPACE_STATE_KEY) || 'null');
+    } catch (error) {
+      console.warn('Unable to read saved MCR workspace state', error);
+      return;
+    }
+    if (!saved || typeof saved !== 'object' || !saved.tileSourceIds) return;
+
+    isRestoringWorkspaceState = true;
+    try {
+      if (REGION_PRESETS[saved.regionPreset]) state.regionPreset = saved.regionPreset;
+      state.mediaAssignments = { ...state.mediaAssignments, ...saved.mediaAssignments };
+
+      TILE_FEEDS.forEach(feed => {
+        const sourceId = saved.tileSourceIds?.[feed] || state.tileSourceIds[feed] || 'none';
+        setTileSource(feed, sourceId);
+        setSelectValue(`select-source-${feed}`, getSelectValueForSourceId(sourceId));
+        if (sourceId === 'webcam') state.mediaAssignments.webcam = feed;
+        if (sourceId === 'localVideo') state.mediaAssignments.localVideo = feed;
+      });
+
+      LIVEU_SOURCE_IDS.forEach(sourceId => {
+        state.sourceBaseStates[sourceId] = saved.sourceBaseStates?.[sourceId] || state.sourceBaseStates[sourceId];
+        state.sourceDetections[sourceId] = { ...state.sourceDetections[sourceId], ...saved.sourceDetections?.[sourceId] };
+        state.sourceStates[sourceId] = deriveSourceState(sourceId);
+      });
+
+      state.ndiBridge = {
+        ...state.ndiBridge,
+        ...saved.ndiBridge,
+        sourceStates: { ...state.ndiBridge.sourceStates, ...saved.ndiBridge?.sourceStates },
+        assignments: { ...saved.ndiBridge?.assignments }
+      };
+      renderNdiBridge();
+
+      Object.entries(saved.customSources || {}).forEach(([feed, customSource]) => {
+        if (customSource?.url) attachCustomSourceFromUrl(feed, customSource.url);
+      });
+
+      state.previewFeed = saved.previewFeed || null;
+      state.activeSource = saved.activeSource || null;
+      state.programSourceOverride = saved.programSourceOverride || null;
+      state.primaryFailed = !!saved.primaryFailed;
+      state.mutedFeeds = { ...state.mutedFeeds, ...saved.mutedFeeds };
+      document.querySelectorAll('.btn-solo').forEach(button => button.classList.remove('btn-active-solo'));
+      document.querySelectorAll('.screen-card').forEach(card => card.classList.remove('preview-active'));
+      if (state.previewFeed) {
+        document.getElementById(`btn-solo-${state.previewFeed}`)?.classList.add('btn-active-solo');
+        document.getElementById(`screen-${state.previewFeed}`)?.classList.add('preview-active');
+      }
+      Object.entries(state.mutedFeeds).forEach(([feed, muted]) => {
+        document.getElementById(`btn-mute-${feed}`)?.classList.toggle('btn-active-mute', !!muted);
+      });
+    } finally {
+      isRestoringWorkspaceState = false;
+    }
+  }
+
+  async function resumePersistedWebcamIfNeeded() {
+    const assignedFeed = state.mediaAssignments.webcam;
+    if (!assignedFeed || getFeedAssignment(assignedFeed) !== 'webcam' || state.webcamReady) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      addLog('warning', 'WEB', 'Webcam is assigned, but this browser cannot reopen camera automatically.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      el.cam1Video.srcObject = stream;
+      state.webcamStream = stream;
+      state.webcamReady = true;
+      state.cam1VideoReady = true;
+      await el.cam1Video.play().catch(() => {});
+      addLog('info', 'WEB', `Webcam resumed for ${getTileName(assignedFeed)} from saved Setup state.`);
+      updateSourceOverlays();
+      updateOrchestratorRouting();
+      updateTAKEButton();
+    } catch (error) {
+      addLog('warning', 'WEB', `Webcam is assigned to ${getTileName(assignedFeed)}, but browser permission is needed to reopen it.`);
+    }
   }
 
   function downloadScenarioJson() {
@@ -1675,6 +1774,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextSourceId = sourceId || 'none';
     state.tileSourceIds[feed] = nextSourceId;
     state.tileSources[feed] = LIVEU_SOURCE_IDS.includes(nextSourceId) ? 'simulated' : isNdiSourceId(nextSourceId) ? 'ndi' : nextSourceId;
+    saveWorkspaceState();
   }
 
   function clearTileSource(feed) {
@@ -1686,6 +1786,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.activeSource === feed) {
       clearProgramOut(`${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
     }
+    saveWorkspaceState();
   }
 
   function clearProgramOut(message = 'Program Out cleared to black.') {
@@ -1713,6 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTxSafety();
     syncProgramEmbed();
     updateSourceInspector();
+    saveWorkspaceState();
     backendCommand('/api/off-air');
   }
 
@@ -1755,6 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceOverlays();
     updateOrchestratorRouting();
     renderAIOpsAssistant();
+    saveWorkspaceState();
     backendCommand('/api/source-state', { source: sourceId, state: nextState });
   }
 
@@ -1775,6 +1878,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceOverlays();
     updateOrchestratorRouting();
     renderAIOpsAssistant();
+    saveWorkspaceState();
     backendCommand('/api/source-detection', { source: sourceId, detection: detectionName, active });
   }
 
@@ -2944,6 +3048,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateSourceOverlays();
     clearCanvas(assignedFeed);
+    saveWorkspaceState();
   }
 
   function ejectLocalVideo(feed = el.selectVideoTarget.value || state.mediaAssignments.localVideo) {
@@ -2955,10 +3060,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileName = state.localVideos[feed].fileName;
     teardownLocalVideo(feed);
     clearTileSource(feed);
+    if (state.mediaAssignments.localVideo === feed) state.mediaAssignments.localVideo = null;
     addLog('info', 'VIDEO', `Local video cleared from ${getTileName(feed)}: ${fileName}.`);
 
     updateSourceOverlays();
     clearCanvas(feed);
+    saveWorkspaceState();
   }
 
   el.btnStopWebcam.addEventListener('click', stopWebcam);
@@ -2981,6 +3088,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePGMFooter();
     updateSourceInspector();
     addLog('info', 'MUX', `Preview set to ${getTileName(feed)}.`);
+    saveWorkspaceState();
     backendCommand('/api/preview', { source: feed });
   }
 
@@ -3279,6 +3387,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBadges();
     updatePGMFooter();
     updateSourceInspector();
+    saveWorkspaceState();
   }
 
   function routePreviewToProgram(actionLabel = 'TAKE') {
@@ -3311,6 +3420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncProgramEmbed();
     updateSourceInspector();
     addLog('info', 'MIX', `${actionLabel} executed. Program switched to ${getTileName(state.activeSource)}.`);
+    saveWorkspaceState();
     backendCommand('/api/take', { source: state.activeSource, action: actionLabel });
     return true;
   }
@@ -3604,6 +3714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         clearCanvas(feed);
         updateSourceOverlays();
+        saveWorkspaceState();
       });
     }
 
@@ -3622,6 +3733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyYouTubeMute(feed);
         updateSourceInspector();
         addLog('info', 'AUDIO', `${feed.toUpperCase()} ${!cur ? 'muted' : 'unmuted'}.`);
+        saveWorkspaceState();
       });
     }
     // Edit / custom source attach
@@ -3687,6 +3799,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.scenarioImportInput.value = '';
   });
 
+  loadWorkspaceState();
   updateSourceOverlays();
   hydratePageSwitcherLinks();
   updateTAKEButton();
@@ -3699,6 +3812,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderReplayPlayoutServers();
   connectBackendOrchestrator();
   setWorkspaceView(getRequestedWorkspace());
+  resumePersistedWebcamIfNeeded();
 
   LIVEU_SOURCE_IDS.forEach(sourceId => {
     const select = document.getElementById(`source-state-${sourceId}`);
