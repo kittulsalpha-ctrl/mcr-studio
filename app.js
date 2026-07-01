@@ -286,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logs: []
   };
   let isRestoringWorkspaceState = false;
+  let isApplyingPreset = false;
 
   // ==========================================================================
   // 2. DOM ELEMENTS
@@ -1258,6 +1259,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = rawUrl.trim();
     if (!feed || !url) return false;
 
+    if (state.customSources[feed]) {
+      handleConfiguredSourceChange(feed, state.tileSourceIds[feed], state.tileSourceIds[feed], 'its custom URL changed', { force: true });
+    }
     teardownCustomSource(feed);
 
     const youtubeEmbedUrl = buildYouTubeEmbedUrl(url);
@@ -1371,12 +1375,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     renderNdiBridge();
 
+    isApplyingPreset = true;
     TILE_FEEDS.forEach(feed => {
       const sourceId = preset.tileSourceIds?.[feed] || 'none';
       setTileSource(feed, sourceId);
       setSelectValue(`select-source-${feed}`, getSelectValueForSourceId(sourceId));
       clearCanvas(feed);
     });
+    isApplyingPreset = false;
 
     LIVEU_SOURCE_IDS.forEach(sourceId => {
       const nextState = preset.sourceBaseStates?.[sourceId] || 'ONLINE';
@@ -1521,6 +1527,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       renderNdiBridge();
 
+      Object.keys(state.customSources).forEach(feed => {
+        if (!saved.customSources?.[feed]) teardownCustomSource(feed);
+      });
+
       Object.entries(saved.customSources || {}).forEach(([feed, customSource]) => {
         if (customSource?.url) attachCustomSourceFromUrl(feed, customSource.url);
       });
@@ -1542,6 +1552,25 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       isRestoringWorkspaceState = false;
     }
+  }
+
+  function refreshWorkspaceUiAfterStateLoad(syncMessage = '') {
+    updateSourceStateControls();
+    updateDetectionControls();
+    updateSourceOverlays();
+    updateTAKEButton();
+    updateBadges();
+    updatePGMFooter();
+    updateOrchestratorRouting();
+    renderNdiBridge();
+    renderReplayPlayoutServers();
+    renderAudioMixer();
+    renderCloudTopology();
+    renderTxSafety();
+    syncProgramEmbed();
+    updateSourceInspector();
+    if (el.pgmActiveSource) el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
+    if (syncMessage) addLog('info', 'SYNC', syncMessage);
   }
 
   async function resumePersistedWebcamIfNeeded() {
@@ -1793,6 +1822,9 @@ document.addEventListener('DOMContentLoaded', () => {
         addLog('alarm', 'OBS', 'OBS Virtual Camera was not found. Start it in OBS, then retry.');
         return;
       }
+      if (state.customSources[feed]) {
+        handleConfiguredSourceChange(feed, state.tileSourceIds[feed], state.tileSourceIds[feed], 'its OBS mapping changed', { force: true });
+      }
       teardownCustomSource(feed);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: obsDevice.deviceId } }, audio: false });
       const videoEl = document.createElement('video');
@@ -1819,9 +1851,27 @@ document.addEventListener('DOMContentLoaded', () => {
   function setTileSource(feed, sourceId) {
     if (!state.tileSources[feed]) return;
     const nextSourceId = sourceId || 'none';
+    const previousSourceId = state.tileSourceIds[feed] || 'none';
     state.tileSourceIds[feed] = nextSourceId;
     state.tileSources[feed] = LIVEU_SOURCE_IDS.includes(nextSourceId) ? 'simulated' : isNdiSourceId(nextSourceId) ? 'ndi' : nextSourceId;
+    handleConfiguredSourceChange(feed, previousSourceId, nextSourceId);
     saveWorkspaceState();
+  }
+
+  function handleConfiguredSourceChange(feed, previousSourceId, nextSourceId, reason = 'its source configuration changed', { force = false } = {}) {
+    if (isRestoringWorkspaceState || isApplyingPreset) return;
+    if (!force && previousSourceId === nextSourceId) return;
+    const wasPreview = state.previewFeed === feed;
+    const wasProgram = state.activeSource === feed;
+    if (!wasPreview && !wasProgram) return;
+
+    if (wasPreview) {
+      clearPreviewUI();
+      addLog('warning', 'MUX', `${getTileName(feed)} removed from Preview because ${reason}.`);
+    }
+    if (wasProgram) {
+      clearProgramOut(`${getTileName(feed)} removed from PROGRAM because ${reason}.`);
+    }
   }
 
   function clearTileSource(feed) {
@@ -3047,6 +3097,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = el.localVideoFileInput.files?.[0];
     if (!file) return;
     const target = pendingLocalAssignTarget || el.selectVideoTarget.value || 'cam2';
+    if (getFeedAssignment(target) === 'localVideo') {
+      handleConfiguredSourceChange(target, state.tileSourceIds[target], state.tileSourceIds[target], 'its local file changed', { force: true });
+    }
     teardownLocalVideo(target);
     const url = URL.createObjectURL(file);
     const videoEl = document.createElement('video');
@@ -3894,6 +3947,13 @@ document.addEventListener('DOMContentLoaded', () => {
   el.scenarioImportInput?.addEventListener('change', () => {
     importScenarioFile(el.scenarioImportInput.files?.[0]);
     el.scenarioImportInput.value = '';
+  });
+
+  window.addEventListener('storage', event => {
+    if (event.key !== WORKSPACE_STATE_KEY || !event.newValue || isRestoringWorkspaceState) return;
+    loadWorkspaceState();
+    refreshWorkspaceUiAfterStateLoad('Workspace state synced from another MCR page.');
+    resumePersistedWebcamIfNeeded();
   });
 
   loadWorkspaceState();
