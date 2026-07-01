@@ -2274,16 +2274,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function deriveServiceStatus(serviceId) {
     const alarms = getActiveAlarmSummary();
-    if (serviceId === 'sources') return alarms.some(a => a.includes('INPUT LOSS') || a.includes('QC ALARM')) ? 'ALARM' : 'ONLINE';
-    if (serviceId === 'ingest') return state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : 'ONLINE';
-    if (serviceId === 'switcher') return state.activeSource ? 'ROUTING' : 'IDLE';
+    const delivery = getDeliveryHealthSnapshot();
+    if (serviceId === 'sources') return alarms.some(a => a.includes('INPUT LOSS') || a.includes('QC ALARM')) ? 'ALARM' : delivery.hasProgram ? 'ONLINE' : 'READY';
+    if (serviceId === 'ingest') return state.primaryFailed ? 'BACKUP' : state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : delivery.hasProgram ? 'RECEIVING' : 'READY';
+    if (serviceId === 'switcher') return delivery.hasProgram ? delivery.programHealthy ? 'ROUTING' : 'ALARM' : delivery.hasPreview ? 'PREVIEW' : 'IDLE';
     if (serviceId === 'audio') return state.audioMixer.programBus ? 'PGM' : 'IDLE';
     if (serviceId === 'cg') return state.activeGraphics || state.tickerOn || state.bugOn ? 'KEYING' : 'STANDBY';
     if (serviceId === 'replay') return state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'STANDBY';
     if (serviceId === 'playout') return state.activeSource === 'playout' || state.activeSource === 'ad' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'STANDBY';
-    if (serviceId === 'encoder') return state.activeSource ? 'ENCODING' : 'IDLE';
-    if (serviceId === 'packaging') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'PACKAGING' : 'READY';
-    if (serviceId === 'distribution') return state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'ONLINE' : 'READY';
+    if (serviceId === 'encoder') return delivery.hasProgram ? delivery.programHealthy ? 'ENCODING' : 'INPUT WAIT' : 'READY';
+    if (serviceId === 'packaging') return delivery.deliveryDegraded ? 'DEGRADED' : delivery.hasProgram && delivery.programHealthy ? 'PACKAGING' : 'READY';
+    if (serviceId === 'distribution') return delivery.deliveryDegraded ? 'DEGRADED' : delivery.hasProgram && delivery.programHealthy ? 'DISTRIBUTING' : 'READY';
     return 'ONLINE';
   }
 
@@ -2393,6 +2394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.lossPercent >= 5) alarms.push('PACKET LOSS');
     if (state.primaryFailed) alarms.push('PRIMARY PATH FAILED');
     if (state.isUnderflow) alarms.push('SRT UNDERFLOW');
+    if (state.isUnderflow || state.lossPercent >= 8) alarms.push('CDN DEGRADED');
     return alarms;
   }
 
@@ -2404,9 +2406,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function getIncidentSnapshot() {
     const alarms = getActiveAlarmSummary();
     const programUnhealthy = state.activeSource && !feedHasActiveSignal(state.activeSource);
+    const deliveryHealth = getDeliveryHealthSnapshot();
     const backupFeed = getRecommendedBackupFeed();
     const primaryCondition = programUnhealthy
       ? `PROGRAM SOURCE UNAVAILABLE: ${getProgramRouteLabel(state.activeSource)}`
+      : deliveryHealth.requiresAttention
+        ? deliveryHealth.condition
       : alarms[0] || null;
 
     return {
@@ -2414,14 +2419,77 @@ document.addEventListener('DOMContentLoaded', () => {
       hasIncident: !!primaryCondition,
       primaryCondition,
       programUnhealthy,
+      deliveryHealth,
       backupFeed,
       backupLabel: backupFeed ? getProgramRouteLabel(backupFeed) : 'No healthy backup source available'
+    };
+  }
+
+  function getDeliveryHealthSnapshot() {
+    const hasProgram = !!state.activeSource;
+    const hasPreview = !!state.previewFeed;
+    const programHealthy = hasProgram ? feedHasActiveSignal(state.activeSource) : false;
+    const networkWarning = state.rttMs >= 160 || state.lossPercent >= 5;
+    const deliveryDegraded = state.isUnderflow || state.lossPercent >= 8;
+    const transportStatus = state.primaryFailed ? 'BACKUP ACTIVE' : 'PRIMARY PROTECTED';
+    const transportClass = state.primaryFailed ? 'text-amber' : 'text-green';
+    const mediaConnectStatus = state.primaryFailed ? 'FAILOVER FLOW' : hasProgram ? 'ACTIVE FLOW' : 'READY';
+    const mediaLiveStatus = hasProgram && programHealthy ? 'ENCODING PGM' : hasProgram ? 'INPUT WAIT' : 'READY';
+    const packageStatus = hasProgram && programHealthy ? 'PACKAGING ABR' : 'READY';
+    const cdnStatus = deliveryDegraded ? 'EDGE DEGRADED' : hasProgram && programHealthy ? 'DISTRIBUTING' : 'READY';
+
+    let status = 'STANDBY';
+    let statusClass = 'text-amber';
+    let condition = 'No Program route is currently on air.';
+    let action = hasPreview
+      ? 'Preview is ready. TAKE only after confirming Program intent.'
+      : 'Cue a healthy source to Preview before taking Program to air.';
+
+    if (hasProgram && programHealthy && !networkWarning && !deliveryDegraded && !state.primaryFailed) {
+      status = 'DELIVERING';
+      statusClass = 'text-green';
+      condition = `${getProgramRouteLabel(state.activeSource)} is flowing through the protected cloud chain.`;
+      action = 'Continue monitoring source confidence, encoder ladder, and CDN edge health.';
+    } else if (hasProgram && programHealthy) {
+      status = 'DEGRADED';
+      statusClass = deliveryDegraded ? 'text-red' : 'text-amber';
+      condition = deliveryDegraded
+        ? 'Program is on air, but delivery/QoS is degraded.'
+        : 'Program is on air with transport or network warnings.';
+      action = state.primaryFailed
+        ? 'Confirm backup path stability and restore primary contribution when safe.'
+        : 'Check packet loss, RTT, encoder buffer, and CDN edge metrics.';
+    } else if (hasProgram) {
+      status = 'PROGRAM RISK';
+      statusClass = 'text-red';
+      condition = `${getProgramRouteLabel(state.activeSource)} is routed to Program without a usable signal.`;
+      action = 'Preview a healthy backup source, then TAKE BACKUP or go OFF AIR.';
+    }
+
+    return {
+      hasProgram,
+      hasPreview,
+      programHealthy,
+      networkWarning,
+      deliveryDegraded,
+      requiresAttention: hasProgram && (!programHealthy || networkWarning || deliveryDegraded || state.primaryFailed),
+      status,
+      statusClass,
+      condition,
+      action,
+      transportStatus,
+      transportClass,
+      mediaConnectStatus,
+      mediaLiveStatus,
+      packageStatus,
+      cdnStatus
     };
   }
 
   function renderIncidentResponse() {
     if (!el.incidentStatusBadge || !el.incidentCurrentState || !el.incidentRecommendation) return;
     const incident = getIncidentSnapshot();
+    const delivery = incident.deliveryHealth;
     el.incidentStatusBadge.closest('.panel-incident-response')?.classList.toggle('is-nominal', !incident.hasIncident);
     const badgeClass = incident.hasIncident ? 'badge-amber font-fira text-amber' : 'badge-green font-fira text-green';
     el.incidentStatusBadge.className = badgeClass;
@@ -2430,13 +2498,15 @@ document.addEventListener('DOMContentLoaded', () => {
     el.incidentCurrentState.textContent = incident.hasIncident ? incident.primaryCondition : 'No active incident';
     if (el.incidentCurrentDetail) {
       el.incidentCurrentDetail.textContent = incident.hasIncident
-        ? `${incident.alarms.length} condition${incident.alarms.length === 1 ? '' : 's'} active. Program: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}.`
-        : 'Signal path and cloud distribution are nominal.';
+        ? `${incident.alarms.length} condition${incident.alarms.length === 1 ? '' : 's'} active. Delivery: ${delivery.status}. Program: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}.`
+        : delivery.hasProgram
+          ? 'Program path, cloud encode, origin, and CDN delivery are nominal.'
+          : 'No active incident. Program is OFF AIR and cloud chain is ready.';
     }
     el.incidentRecommendation.textContent = incident.hasIncident
-      ? incident.backupFeed
+      ? incident.programUnhealthy && incident.backupFeed
         ? `Preview ${incident.backupLabel}, confirm signal lock, then TAKE BACKUP if Program is affected.`
-        : 'No healthy backup detected. Prepare OFF AIR, playout slate, or field recovery workflow.'
+        : delivery.action
       : 'Continue monitoring contribution, cloud routing, and CDN health.';
 
     const enableBackup = !!incident.backupFeed;
@@ -2463,39 +2533,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeProgramHasSignal = state.activeSource && feedHasActiveSignal(state.activeSource);
     const programLabel = state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR';
     const previewLabel = state.previewFeed ? getProgramRouteLabel(state.previewFeed) : 'NONE';
+    const delivery = incident.deliveryHealth;
 
     if (incident.hasIncident) {
       recommendations.push({
         label: 'INCIDENT',
         level: 'alarm',
-        text: alarms.slice(0, 3).join(' · ') || incident.primaryCondition
+        text: incident.primaryCondition
       });
       recommendations.push({
         label: 'IMPACT',
         level: activeProgramHasSignal ? 'warning' : 'alarm',
-        text: activeProgramHasSignal
-          ? `Program remains on ${programLabel}; confirm source health before the next transition.`
-          : `Program route ${programLabel} is at risk or unavailable.`
+        text: delivery.condition
       });
       recommendations.push({
         label: 'NEXT ACTION',
         level: 'warning',
-        text: incident.backupFeed
+        text: incident.programUnhealthy && incident.backupFeed
           ? `Preview ${incident.backupLabel}, verify signal lock, then TAKE BACKUP if Program is affected.`
-          : 'No healthy backup is available. Prepare a playout slate or OFF AIR workflow.'
+          : delivery.action
       });
     } else {
       recommendations.push({
         label: 'SHOW STATE',
-        level: 'info',
-        text: `Program: ${programLabel}. Preview: ${previewLabel}.`
+        level: delivery.hasProgram ? 'info' : 'warning',
+        text: `Program: ${programLabel}. Preview: ${previewLabel}. Delivery: ${delivery.status}.`
       });
       recommendations.push({
         label: 'WATCH',
         level: 'info',
-        text: activeProgramHasSignal
-          ? 'Program path is healthy. Continue watching contribution and delivery health.'
-          : 'Program is off air. Cue a source to Preview before taking it to air.'
+        text: delivery.action
       });
     }
 
@@ -2508,8 +2575,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     el.aiOpsSummary.textContent = incident.hasIncident
-      ? `${alarms.length} active condition${alarms.length === 1 ? '' : 's'}. Program: ${programLabel}.`
-      : `Program: ${programLabel}. Preview: ${previewLabel}. No active incident.`;
+      ? `${alarms.length} active condition${alarms.length === 1 ? '' : 's'}. ${delivery.status}: ${programLabel}.`
+      : `Program: ${programLabel}. Preview: ${previewLabel}. Delivery: ${delivery.status}.`;
     el.aiOpsList.innerHTML = recommendations.slice(0, 3).map(item => (
       `<div class="ai-ops-item ai-${item.level}"><span>${item.label}</span><strong>${item.text}</strong></div>`
     )).join('');
@@ -2520,6 +2587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncBackendModel();
     renderRegionPreset();
     renderOperateRouteCard();
+    const delivery = getDeliveryHealthSnapshot();
     const onlineInputs = TILE_FEEDS.filter(feed => feedHasActiveSignal(feed)).length;
     const alarms = getActiveAlarmSummary();
     const telemetry = state.cloudTelemetry;
@@ -2565,11 +2633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `${agent.label || 'MCR Edge Agent'} · OBS ${obsCapability} · ${sceneCount} scenes.`
         : 'Run the local Edge Agent to connect on-prem broadcast equipment.';
     }
-    applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-amber' : 'text-green', state.primaryFailed ? 'Path A failed. Path B is carrying contribution.' : 'Path A is carrying contribution. Path B is hot standby.');
-    applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, state.activeSource ? 'ENCODING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'Program route is encoding for distribution.' : 'Waiting for a Program route to begin encoding.');
-    applyTelemetryService('mediaPackage', el.engMediaPackageStatus, el.engMediaPackageDetail, state.activeSource ? 'PACKAGING' : 'READY', state.activeSource ? 'text-green' : 'text-amber', state.activeSource ? 'ABR origin is packaging the active Program output.' : 'ABR origin endpoints are ready for Program.');
-    applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : state.activeSource ? 'DISTRIBUTING' : 'READY', state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green', state.isUnderflow || state.lossPercent >= 8 ? 'Delivery is affected. Check contribution loss and encoder buffer.' : state.activeSource ? 'Program is available to the configured edge distribution.' : 'Origin and edge delivery are ready for Program.');
-    applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, state.primaryFailed ? 'FAILOVER ACTIVE' : 'PROTECTED', state.primaryFailed ? 'text-red' : 'text-green', state.primaryFailed ? 'Primary transport is unavailable. Backup transport is active.' : 'Primary and backup transport paths are armed.');
+    applyTelemetryService('mediaConnect', el.engMediaConnectStatus, el.engMediaConnectDetail, delivery.mediaConnectStatus, state.primaryFailed ? 'text-amber' : delivery.hasProgram ? 'text-green' : 'text-blue', state.primaryFailed ? 'Path A failed. Path B is carrying contribution.' : delivery.hasProgram ? 'Contribution flow is carrying the active Program route.' : 'MediaConnect flow is armed and waiting for Program.');
+    applyTelemetryService('mediaLive', el.engMediaLiveStatus, el.engMediaLiveDetail, delivery.mediaLiveStatus, delivery.hasProgram && delivery.programHealthy ? 'text-green' : delivery.hasProgram ? 'text-red' : 'text-blue', delivery.hasProgram && delivery.programHealthy ? 'Program route is encoding for distribution.' : delivery.hasProgram ? 'MediaLive is waiting for a healthy Program input.' : 'Waiting for a Program route to begin encoding.');
+    applyTelemetryService('mediaPackage', el.engMediaPackageStatus, el.engMediaPackageDetail, delivery.packageStatus, delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue', delivery.hasProgram && delivery.programHealthy ? 'ABR origin is packaging the active Program output.' : 'ABR origin endpoints are ready for Program.');
+    applyTelemetryService('cloudFront', el.engCdnStatus, el.engCdnDetail, delivery.cdnStatus, delivery.deliveryDegraded ? 'text-red' : delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue', delivery.deliveryDegraded ? 'Delivery is affected. Check contribution loss, encoder buffer, and CDN edge metrics.' : delivery.hasProgram && delivery.programHealthy ? 'Program is available to the configured edge distribution.' : 'Origin and edge delivery are ready for Program.');
+    applyTelemetryService('directConnect', el.engPathStatus, el.engPathDetail, delivery.transportStatus, delivery.transportClass, state.primaryFailed ? 'Primary transport is unavailable. Backup transport is active.' : 'Primary and backup transport paths are armed.');
 
     const telemetryNetwork = hasLiveTelemetry ? telemetry.network || {} : null;
     const rttMs = typeof telemetryNetwork?.rttMs === 'number' ? telemetryNetwork.rttMs : state.rttMs;
@@ -2583,31 +2651,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const encoderRegion = encoderTelemetry?.region || selectedRegion.code;
     setMetricText(el.engRegionStatus, encoderRegion, encoderTelemetry ? serviceStatusClass(encoderTelemetry.status) : state.primaryFailed ? 'text-amber' : 'text-green');
     if (el.engRegionDetail) el.engRegionDetail.textContent = encoderTelemetry?.detail || (state.activeSource ? `${selectedRegion.encoder} is processing Program.` : `${selectedRegion.encoder} is ready.`);
-    setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? 'text-green' : 'text-amber');
+    setMetricText(el.signalFlowSource, state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR', state.activeSource ? delivery.programHealthy ? 'text-green' : 'text-red' : 'text-amber');
     const directConnectTelemetry = telemetryService('directConnect');
     const mediaConnectTelemetry = telemetryService('mediaConnect');
     const mediaLiveTelemetry = telemetryService('mediaLive');
     const mediaPackageTelemetry = telemetryService('mediaPackage');
     const cloudFrontTelemetry = telemetryService('cloudFront');
-    setMetricText(el.signalFlowTransport, directConnectTelemetry?.status || (state.ndiBridge.backendConnected ? 'IP GATEWAY LIVE' : 'DIRECT CONNECT / IP'), directConnectTelemetry ? serviceStatusClass(directConnectTelemetry.status) : state.ndiBridge.backendConnected ? 'text-green' : 'text-blue');
-    setMetricText(el.signalFlowMediaConnect, mediaConnectTelemetry?.status || (state.activeSource ? 'ACTIVE FLOW' : 'READY'), mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
-    setMetricText(el.signalFlowSwitcher, state.activeSource ? 'ACTIVE ROUTE' : 'IDLE', state.activeSource ? 'text-green' : 'text-amber');
-    setMetricText(el.signalFlowMediaLive, mediaLiveTelemetry?.status || (state.activeSource ? 'ENCODING' : 'READY'), mediaLiveTelemetry ? serviceStatusClass(mediaLiveTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
-    setMetricText(el.signalFlowMediaPackage, mediaPackageTelemetry?.status || (state.activeSource ? 'PACKAGING' : 'READY'), mediaPackageTelemetry ? serviceStatusClass(mediaPackageTelemetry.status) : state.activeSource ? 'text-green' : 'text-blue');
-    setMetricText(el.signalFlowCdn, cloudFrontTelemetry?.status || (state.isUnderflow || state.lossPercent >= 8 ? 'DEGRADED' : 'READY'), cloudFrontTelemetry ? serviceStatusClass(cloudFrontTelemetry.status) : state.isUnderflow || state.lossPercent >= 8 ? 'text-red' : 'text-green');
+    setMetricText(el.signalFlowTransport, directConnectTelemetry?.status || delivery.transportStatus, directConnectTelemetry ? serviceStatusClass(directConnectTelemetry.status) : delivery.transportClass);
+    setMetricText(el.signalFlowMediaConnect, mediaConnectTelemetry?.status || delivery.mediaConnectStatus, mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.primaryFailed ? 'text-amber' : delivery.hasProgram ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowSwitcher, delivery.hasProgram ? delivery.programHealthy ? 'ACTIVE ROUTE' : 'ROUTE AT RISK' : 'IDLE', delivery.hasProgram ? delivery.programHealthy ? 'text-green' : 'text-red' : 'text-amber');
+    setMetricText(el.signalFlowMediaLive, mediaLiveTelemetry?.status || delivery.mediaLiveStatus, mediaLiveTelemetry ? serviceStatusClass(mediaLiveTelemetry.status) : delivery.hasProgram && delivery.programHealthy ? 'text-green' : delivery.hasProgram ? 'text-red' : 'text-blue');
+    setMetricText(el.signalFlowMediaPackage, mediaPackageTelemetry?.status || delivery.packageStatus, mediaPackageTelemetry ? serviceStatusClass(mediaPackageTelemetry.status) : delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue');
+    setMetricText(el.signalFlowCdn, cloudFrontTelemetry?.status || delivery.cdnStatus, cloudFrontTelemetry ? serviceStatusClass(cloudFrontTelemetry.status) : delivery.deliveryDegraded ? 'text-red' : delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue');
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
     const deliveryStages = [directConnectTelemetry, mediaConnectTelemetry, mediaLiveTelemetry, mediaPackageTelemetry, cloudFrontTelemetry].filter(Boolean);
-    const deliveryFault = state.primaryFailed || state.isUnderflow || state.lossPercent >= 8 || deliveryStages.some(service => ['DEGRADED', 'ALARM', 'FAILED'].includes(service.status));
-    const deliveryState = !state.activeSource ? 'STANDBY' : deliveryFault ? 'ATTENTION REQUIRED' : 'DELIVERING';
-    setMetricText(el.deliveryStatus, deliveryState, deliveryState === 'DELIVERING' ? 'text-green' : deliveryState === 'STANDBY' ? 'text-amber' : 'text-red');
+    const telemetryFault = deliveryStages.some(service => ['DEGRADED', 'ALARM', 'FAILED'].includes(service.status));
+    const deliveryState = telemetryFault ? 'ATTENTION REQUIRED' : delivery.status;
+    setMetricText(el.deliveryStatus, deliveryState, telemetryFault ? 'text-red' : delivery.statusClass);
     if (el.deliveryDetail) {
-      el.deliveryDetail.textContent = !state.activeSource
-        ? 'No Program route is currently on air.'
-        : deliveryFault
-          ? 'A transport, origin, or delivery stage needs operator attention. Review the active incident.'
-          : `${getProgramRouteLabel(state.activeSource)} is flowing through the configured delivery chain.`;
+      el.deliveryDetail.textContent = telemetryFault
+        ? 'A transport, origin, or delivery telemetry stage is reporting degraded state.'
+        : delivery.condition;
     }
     renderCloudTopology();
     renderAudioMixer();
@@ -2616,7 +2682,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function serviceStatusClass(status) {
     if (['ALARM', 'FAILED', 'DEGRADED'].includes(status)) return 'text-red';
-    if (['STANDBY', 'READY', 'IDLE'].includes(status)) return 'text-amber';
+    if (['STANDBY', 'READY', 'IDLE', 'PREVIEW', 'INPUT WAIT', 'BACKUP'].includes(status)) return 'text-amber';
     return 'text-green';
   }
 
