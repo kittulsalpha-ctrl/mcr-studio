@@ -1954,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (feed === 'replay') return state.activeSource === 'replay' ? 'ON AIR' : state.previewFeed === 'replay' ? 'CUED' : 'READY';
     if (feed === 'playout') return state.activeSource === 'playout' ? 'ON AIR' : state.previewFeed === 'playout' ? 'CUED' : 'READY';
     const assignment = getFeedAssignment(feed);
-    if (assignment === 'none') return 'OFFLINE';
+    if (assignment === 'none') return 'NO SOURCE';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return getSourceState(state.tileSourceIds[feed]);
     if (assignment === 'webcam') return state.webcamReady ? 'ONLINE' : 'OFFLINE';
     if (assignment === 'localVideo') return getLocalVideo(feed)?.ready ? 'PLAYING' : 'OFFLINE';
@@ -2900,6 +2900,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function reconcileRouteAvailability() {
+    if (state.previewFeed && !feedHasActiveSignal(state.previewFeed)) {
+      const previousPreview = state.previewFeed;
+      clearPreviewUI();
+      addLog('warning', 'MUX', `${getProgramRouteLabel(previousPreview)} removed from Preview because the signal is unavailable.`);
+    }
+    if (state.activeSource && state.activeSource !== 'ad' && !feedHasActiveSignal(state.activeSource)) {
+      const previousProgram = state.activeSource;
+      clearProgramOut(`${getProgramRouteLabel(previousProgram)} removed from Program because the signal is unavailable.`);
+    }
+  }
+
   function updateSourceOverlays() {
     const overlayFields = {
       cam1: {
@@ -2941,12 +2953,27 @@ document.addEventListener('DOMContentLoaded', () => {
       fields.resolution.textContent = metadata.resolution;
       fields.bitrate.textContent = metadata.bitrate;
       fields.rtt.textContent = metadata.rtt;
+
+      const previewButton = document.getElementById(`btn-solo-${feed}`);
+      const hasSignal = feedHasActiveSignal(feed);
+      const assignment = getFeedAssignment(feed);
+      if (previewButton) {
+        previewButton.disabled = !hasSignal;
+        previewButton.classList.toggle('btn-disabled', !hasSignal);
+        previewButton.title = assignment === 'none'
+          ? 'Configure this source in Setup before sending it to Preview.'
+          : hasSignal
+            ? 'Send this source to the Preview bus.'
+            : 'This source has no usable signal.';
+      }
     });
 
     el.badgeStateCam1.textContent = getFeedStatus('cam1');
     el.badgeStateCam2.textContent = getFeedStatus('cam2');
     el.badgeStateLiveu3.textContent = getFeedStatus('liveu3');
     el.badgeStateLiveu4.textContent = getFeedStatus('liveu4');
+
+    reconcileRouteAvailability();
 
     const statusParts = [];
     statusParts.push(`Webcam ➜ ${String(state.mediaAssignments.webcam ?? 'NONE').toUpperCase()}`);
@@ -3132,6 +3159,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let pendingLocalAssignTarget = null;
 
   function setPreview(feed) {
+    if (!feedHasActiveSignal(feed)) {
+      const assignment = getFeedAssignment(feed);
+      const sourceId = state.tileSourceIds[feed];
+      const label = assignment === 'none' ? getTileName(feed) : SOURCE_DETAILS[sourceId]?.label || getAssignmentLabel(feed);
+      addLog('warning', 'MUX', `${label} cannot be sent to Preview because it has no usable signal.`);
+      updateSourceOverlays();
+      return false;
+    }
     state.inspectedFeed = feed;
     state.previewFeed = feed;
     document.querySelectorAll('.btn-solo').forEach(b => b.classList.remove('btn-active-solo'));
@@ -3147,6 +3182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addLog('info', 'MUX', `Preview set to ${getTileName(feed)}.`);
     saveWorkspaceState();
     backendCommand('/api/preview', { source: feed });
+    return true;
   }
 
   function getTileName(feed) {

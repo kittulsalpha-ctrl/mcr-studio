@@ -980,6 +980,20 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   color: #ffffff;
 }
 
+.btn-screen-control.btn-disabled,
+.btn-screen-control:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: rgba(148, 163, 184, 0.68);
+}
+
+.btn-screen-control.btn-disabled:hover,
+.btn-screen-control:disabled:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.68);
+}
+
 .btn-screen-control.btn-active-solo {
   background: var(--neon-amber);
   border-color: var(--neon-amber);
