@@ -394,107 +394,12 @@
             <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
-          <!-- Screen 5: Graphics overlay preview and keyer controls -->
-          <div class="screen-card active-stream graphics-engine-card" id="screen-vod">
-            <div class="screen-header">
-              <span class="screen-label">
-                <span class="channel-indicator bg-pink"></span>GRAPHICS OVERLAY
-              </span>
-              <span class="screen-timecode font-fira" id="tc-vod">KEY / FILL</span>
-            </div>
-
-            <div class="canvas-wrapper">
-              <canvas id="canvas-vod"></canvas>
-
-              <div class="stream-stats-overlay">
-                <div class="stat-row"><span>mode:</span><span class="text-blue">PROGRAM OVERLAY</span></div>
-                <div class="stat-row"><span>format:</span><span>1080p60 KEY/FILL</span></div>
-                <div class="stat-row"><span>status:</span><span class="text-pink" id="cg-engine-layer">STANDBY</span></div>
-              </div>
-            </div>
-
-            <div class="screen-footer">
-              <button class="btn-screen-control btn-solo" id="btn-preview-lower-third" title="Load a lower-third into the graphics preview.">PREVIEW LOWER THIRD</button>
-              <button class="btn-screen-control" id="btn-take-graphics" title="Key the previewed graphic over Program Out.">TAKE OVERLAY</button>
-              <button class="btn-screen-control" id="btn-toggle-ticker" title="Toggle the ticker graphic over Program Out.">TICKER</button>
-              <button class="btn-screen-control" id="btn-toggle-bug" title="Toggle the live/score bug over Program Out.">BUG</button>
-              <button class="btn-screen-control btn-eject" id="btn-clear-graphics" title="Clear all graphics from Program Out.">CLEAR ALL</button>
-              <div class="active-badge text-pink font-fira" id="badge-state-vod">OVERLAY STBY</div>
-            </div>
-            <div class="screen-preview-badge" id="preview-badge-vod" style="display:none;">OVERLAY PREVIEW</div>
-            <div class="screen-program-badge" id="program-badge-vod" style="display:none;">OVERLAY ON AIR</div>
-          </div>
-
-          <!-- Screen 6: Program Out -->
-          <div class="screen-card pgm-stream" id="screen-pgm">
-            <div class="screen-header">
-              <span class="screen-label">
-                <span class="channel-indicator bg-red pulse-red"></span>PROGRAM OUT / ON AIR
-              </span>
-              <span class="screen-timecode font-fira" id="tc-pgm">00:00:00:00</span>
-            </div>
-
-            <div class="canvas-wrapper">
-              <canvas id="canvas-pgm"></canvas>
-
-              <div class="on-air-badge">ON AIR</div>
-
-              <div class="ad-break-overlay" id="ad-break-banner">
-                <div class="ad-break-title">SCTE-35 AD SPLICE ACTIVE</div>
-                <div class="ad-countdown font-fira" id="ad-countdown-val">AD BREAK: 30.0s</div>
-                <div class="ad-details font-fira">ID: SCTE35_DPI_EVENT_4092</div>
-              </div>
-
-              <div class="vu-meter-overlay">
-                <div class="vu-channel">
-                  <div class="vu-bar" id="vu-pgm-l"></div>
-                  <div class="vu-peak" id="vu-pgm-l-peak"></div>
-                </div>
-                <div class="vu-channel">
-                  <div class="vu-bar" id="vu-pgm-r"></div>
-                  <div class="vu-peak" id="vu-pgm-r-peak"></div>
-                </div>
-              </div>
-
-              <div class="stream-stats-overlay">
-                <div class="stat-row"><span>codec:</span><span class="text-green">H.264 (AVC)</span></div>
-                <div class="stat-row"><span>profile:</span><span>Main@L4.1</span></div>
-                <div class="stat-row"><span>latency:</span><span class="text-green" id="pgm-latency-val">0.6s (Glass-to-Glass)</span></div>
-              </div>
-            </div>
-
-            <div class="screen-footer">
-              <div class="pgm-footer-top">
-                <div class="pgm-action-group pgm-transition-group">
-                  <span class="pgm-control-label">TRANSITION</span>
-                  <button class="btn-screen-control" id="btn-take" title="Send the current Preview source to Program Out.">TAKE TO AIR</button>
-                  <button class="btn-screen-control" id="btn-cut" title="Cut the current Preview source directly to Program Out.">CUT</button>
-                  <button class="btn-screen-control btn-danger-control" id="btn-fade-black" title="Fade Program Out to black.">FADE TO BLACK</button>
-                </div>
-                <div class="pgm-action-group pgm-safety-group">
-                  <span class="pgm-control-label">SAFETY</span>
-                  <button class="btn-screen-control btn-eject" id="btn-clear-program" title="Clear Program Out and return it to black.">OFF AIR</button>
-                  <button class="btn-screen-control btn-emergency" id="btn-emergency-backup" title="Route the backup source to Program immediately.">EMERGENCY BACKUP</button>
-                </div>
-                <div class="pgm-route-meta">
-                  <span class="active-source-badge font-fira" id="pgm-active-source">SOURCE: NONE</span>
-                  <div class="active-badge text-red font-fira" id="badge-state-pgm">MASTER OUT</div>
-                </div>
-              </div>
-              <div class="pgm-footer-status">
-                <div class="pgm-status-line pgm-status-current font-fira" id="pgm-status-current">CURRENT / PROGRAM: —</div>
-                <div class="pgm-status-line pgm-status-next font-fira" id="pgm-status-next">NEXT / PREVIEW: —</div>
-                <div class="pgm-status-line font-fira" id="pgm-status-graphics">GRAPHICS: CLEAR</div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
-      <section class="controls-container">
-        <div class="control-panel panel-obs-control" data-workspace-panel="operations">
-          <div class="panel-header"><h3>OBS PROGRAM CONTROL</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
+      <section class="controls-container setup-only-container">
+        <div class="control-panel panel-obs-control" data-workspace-panel="setup">
+          <div class="panel-header"><h3>OBS Program Control</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
           <div class="panel-body obs-control-body">
             <span class="font-fira" id="obs-program-scene">PROGRAM: NOT CONNECTED</span>
             <select id="obs-scene-select" aria-label="OBS scene"></select>
@@ -515,109 +420,8 @@
             <span class="font-fira" id="obs-routing-summary">MCR to OBS follow: DISARMED</span>
           </div>
         </div>
-        <div class="control-panel panel-audio-mixer" data-workspace-panel="operations">
-          <div class="panel-header">
-            <h3>PROGRAM AUDIO</h3>
-            <div class="mixer-header-controls">
-              <label class="afv-toggle" title="When enabled, on-air audio follows the current Program video source."><input type="checkbox" id="audio-afv-toggle" checked /> FOLLOW VIDEO</label>
-              <span class="badge-green font-fira" id="audio-pgm-bus">ON-AIR AUDIO: —</span>
-            </div>
-          </div>
-          <div class="panel-body audio-mixer-body">
-            <div class="audio-pgm-strip">
-              <span>ON-AIR AUDIO</span>
-              <div class="audio-pgm-meter">
-                <div id="audio-pgm-meter-l"></div>
-                <div id="audio-pgm-meter-r"></div>
-              </div>
-              <strong id="audio-pgm-status">FOLLOWING VIDEO</strong>
-            </div>
-            <details class="operator-advanced">
-              <summary>AUDIO ROUTING &amp; LEVELS</summary>
-              <div class="audio-mixer-channels" id="audio-mixer-channels"></div>
-            </details>
-          </div>
-        </div>
 
-        <div class="control-panel panel-event" data-workspace-panel="operations">
-          <div class="panel-header">
-            <h3>SHOW CUES</h3>
-            <span class="badge-pink font-fira">CUE / TAKE</span>
-          </div>
-          <div class="panel-body">
-            <details class="operator-advanced">
-              <summary>OPEN SHOW CUES</summary>
-              <div class="rundown-list" id="rundown-list">
-                <div class="rundown-cue" data-cue-source="playout"><span>PRE-SHOW</span><strong>Full-frame slate from Playout</strong><button class="btn-filter" data-cue-action="preview" title="Cue the pre-show slate in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the pre-show slate to Program.">TAKE TO AIR</button></div>
-                <div class="rundown-cue" data-cue-source="cam1"><span>MAIN LIVE FEED</span><strong>Primary contribution source</strong><button class="btn-filter" data-cue-action="preview" title="Cue the live source in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the live source to Program.">TAKE TO AIR</button></div>
-                <div class="rundown-cue" data-cue-source="graphics"><span>LOWER THIRD</span><strong>Overlay graphic over Program</strong><button class="btn-filter" data-cue-action="preview-graphic" title="Load the lower-third into graphics preview.">CUE OVERLAY</button><button class="btn-filter" data-cue-action="graphics" title="Key the overlay over Program.">TAKE OVERLAY</button></div>
-                <div class="rundown-cue" data-cue-source="ad"><span>AD BREAK</span><strong>Insert an SCTE-35 break marker</strong><button class="btn-filter" data-cue-action="scte" title="Insert an SCTE-35 marker. This does not replace Program video.">INSERT AD MARKER</button></div>
-                <div class="rundown-cue" data-cue-source="cam2"><span>EMERGENCY BACKUP</span><strong>Route the configured backup source</strong><button class="btn-filter" data-cue-action="backup" title="Route the emergency backup source to Program.">TAKE BACKUP</button></div>
-                <div class="rundown-cue" data-cue-source="playout"><span>END SLATE</span><strong>Full-frame end slate from Playout</strong><button class="btn-filter" data-cue-action="preview" title="Cue the end slate in Preview.">CUE</button><button class="btn-filter" data-cue-action="take" title="Route the end slate to Program.">TAKE TO AIR</button></div>
-              </div>
-            </details>
-          </div>
-        </div>
-
-        <div class="control-panel panel-replay-playout" data-workspace-panel="operations">
-          <div class="panel-header">
-            <h3>REPLAY &amp; PLAYOUT</h3>
-            <span class="badge-blue font-fira">CLIPS / FULL FRAME</span>
-          </div>
-          <div class="panel-body">
-            <details class="operator-advanced">
-              <summary>OPEN REPLAY &amp; PLAYOUT</summary>
-              <div class="replay-playout-grid">
-                <div class="server-module" id="replay-module">
-                  <div class="server-module-head">
-                    <span>REPLAY CLIP SERVER</span>
-                    <strong id="replay-server-status">STANDBY</strong>
-                  </div>
-                  <div class="server-controls">
-                    <label>REPLAY FROM
-                      <select id="replay-source-select">
-                        <option value="cam1">MULTIVIEW 1 / LiveU 1</option>
-                        <option value="cam2">MULTIVIEW 2 / Backup</option>
-                        <option value="liveu3">MULTIVIEW 3 / LiveU 3</option>
-                        <option value="liveu4">MULTIVIEW 4 / LiveU 4</option>
-                      </select>
-                    </label>
-                    <div class="server-button-row">
-                      <button class="btn-filter" id="btn-replay-mark-in" title="Set the clip start point.">SET IN</button>
-                      <button class="btn-filter" id="btn-replay-mark-out" title="Set the clip end point.">SET OUT</button>
-                      <button class="btn-filter" id="btn-replay-create" title="Create a replay clip from the selected in and out points.">SAVE CLIP</button>
-                    </div>
-                    <select id="replay-clip-select"></select>
-                    <div class="server-button-row">
-                      <button class="btn-filter" id="btn-preview-replay" title="Cue the selected clip in Preview.">CUE CLIP</button>
-                      <button class="btn-filter" id="btn-take-replay" title="Route the selected replay clip to Program.">TAKE TO AIR</button>
-                      <button class="btn-filter" id="btn-return-live-replay">RETURN LIVE</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="server-module" id="playout-module">
-                  <div class="server-module-head">
-                    <span>FULL-FRAME PLAYOUT</span>
-                    <strong id="playout-server-status">READY</strong>
-                  </div>
-                  <div class="server-controls">
-                    <label>ON-AIR ASSET
-                      <select id="playout-asset-select"></select>
-                    </label>
-                    <div class="server-button-row">
-                      <button class="btn-filter" id="btn-preview-playout" title="Cue the selected full-frame asset in Preview.">CUE ASSET</button>
-                      <button class="btn-filter" id="btn-take-playout" title="Route the selected full-frame asset to Program.">TAKE TO AIR</button>
-                      <button class="btn-filter" id="btn-return-live-playout">RETURN LIVE</button>
-                    </div>
-                    <div class="server-status-line font-fira" id="playout-asset-status">Asset server ready</div>
-                  </div>
-                </div>
-              </div>
-            </details>
-          </div>
-        </div>
-
-        <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
+        <div class="control-panel panel-orchestrator" data-workspace-panel="setup">
           <div class="panel-header">
             <h3>Source Configuration &amp; NDI Bridge</h3>
             <span class="badge-blue font-fira">INPUT SETUP</span>
@@ -854,42 +658,7 @@
           </div>
         </div>
 
-        <div class="control-panel panel-ai-ops" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>Ops Runbook Advisor</h3>
-            <span class="badge-blue font-fira">RUNBOOK ADVISOR</span>
-          </div>
-          <div class="panel-body ai-ops-body">
-            <div class="ai-ops-summary font-fira" id="ai-ops-summary">Assessing Program, Preview, and delivery-path risk.</div>
-            <div class="ai-ops-list" id="ai-ops-list"></div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-incident-response" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>ACTIVE INCIDENT RESPONSE</h3>
-            <span class="badge-amber font-fira" id="incident-status-badge">STANDBY</span>
-          </div>
-          <div class="panel-body incident-response-body">
-            <div class="incident-current">
-              <span>CONDITION</span>
-              <strong id="incident-current-state">No active incident</strong>
-              <small id="incident-current-detail">Signal path and cloud distribution are nominal.</small>
-            </div>
-            <div class="incident-recommendation">
-              <span>AI RECOMMENDATION</span>
-              <strong id="incident-recommendation">Continue monitoring.</strong>
-            </div>
-            <div class="incident-action-row">
-              <button class="btn-filter" id="btn-incident-preview-backup">PREVIEW BACKUP</button>
-              <button class="btn-filter" id="btn-incident-take-backup">TAKE BACKUP</button>
-              <button class="btn-filter" id="btn-incident-resolve">MARK RESOLVED</button>
-              <button class="btn-filter" id="btn-incident-summary">GENERATE SUMMARY</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-client-integration" data-workspace-panel="monitoring">
+        <div class="control-panel panel-client-integration" data-workspace-panel="setup">
           <div class="panel-header">
             <h3>Integration Roadmap</h3>
             <span class="badge-blue font-fira">CONNECTOR PLAN</span>
@@ -928,9 +697,9 @@
           </div>
         </div>
 
-        <div class="control-panel panel-engineering" data-workspace-panel="monitoring">
+        <div class="control-panel panel-engineering" data-workspace-panel="setup">
           <div class="panel-header">
-            <h3>Cloud Chain Health</h3>
+            <h3>API & Backend Readiness</h3>
             <span class="badge-blue font-fira" id="eng-telemetry-source">SIMULATION</span>
           </div>
           <div class="panel-body engineering-grid">
@@ -942,142 +711,6 @@
             <div class="engineering-card"><span>Direct Connect / Backup Path</span><strong id="eng-path-status">A/B READY</strong><small id="eng-path-detail">Simulated protected transport path</small></div>
             <div class="engineering-card"><span>Network Health</span><strong id="eng-network-status">RTT 25ms</strong><small id="eng-network-detail">0.0% loss · 5ms jitter</small></div>
             <div class="engineering-card"><span>Region / Encoder</span><strong id="eng-region-status">us-east-1</strong><small id="eng-region-detail">Simulated primary contribution encoder</small></div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-cloud-topology" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>CLOUD PRODUCTION CHAIN</h3>
-            <span class="badge-blue font-fira">BACKEND MODEL</span>
-          </div>
-          <div class="panel-body cloud-topology-body" id="cloud-topology-body"></div>
-        </div>
-
-        <div class="control-panel panel-telemetry" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>SRT CONTRIBUTOR TELEMETRY</h3>
-            <span class="badge-amber font-fira">REAL-TIME MONITOR</span>
-          </div>
-
-          <div class="panel-body grid-2-col">
-            <div class="telemetry-controls">
-
-              <div class="control-group">
-                <div class="control-label-row">
-                  <label for="slide-loss">Network Packet Loss</label>
-                  <span class="val-display font-fira text-red" id="val-loss">0.0%</span>
-                </div>
-                <input type="range" id="slide-loss" class="slider slider-loss" min="0" max="20" step="0.5" value="0" />
-              </div>
-
-              <div class="control-group">
-                <div class="control-label-row">
-                  <label for="slide-jitter">Jitter (Standard Dev)</label>
-                  <span class="val-display font-fira text-amber" id="val-jitter">5ms</span>
-                </div>
-                <input type="range" id="slide-jitter" class="slider slider-jitter" min="2" max="100" step="1" value="5" />
-              </div>
-
-              <div class="control-group">
-                <div class="control-label-row">
-                  <label for="slide-rtt">Network RTT (Ping)</label>
-                  <span class="val-display font-fira text-blue" id="val-rtt">25ms</span>
-                </div>
-                <input type="range" id="slide-rtt" class="slider slider-rtt" min="10" max="300" step="5" value="25" />
-              </div>
-
-              <div class="control-group">
-                <div class="control-label-row">
-                  <label for="slide-buffer">SRT Latency Buffer</label>
-                  <span class="val-display font-fira text-green" id="val-buffer">120ms</span>
-                </div>
-                <input type="range" id="slide-buffer" class="slider slider-buffer" min="20" max="1000" step="10" value="120" />
-              </div>
-
-              <div class="recommendation-box" id="reco-box">
-                <div class="reco-icon text-green" id="reco-icon">✓</div>
-                <div class="reco-text" id="reco-text">
-                  SRT Config: Optimal. Latency buffer (120ms) is well above the minimum recommendation of 4x RTT (100ms) for high stability.
-                </div>
-              </div>
-            </div>
-
-            <div class="telemetry-charts-container">
-              <div class="chart-header">
-                <span class="chart-legend"><span class="legend-dot bg-green"></span>BW (Mbps)</span>
-                <span class="chart-legend"><span class="legend-dot bg-red"></span>Loss (%)</span>
-                <span class="chart-legend"><span class="legend-dot bg-amber"></span>Jitter (ms)</span>
-              </div>
-
-              <div class="chart-wrapper">
-                <canvas id="telemetry-chart"></canvas>
-              </div>
-
-              <div class="telemetry-underflow-alarm" id="chart-alarm-overlay">
-                BUFFER UNDERFLOW IN PROGRESS
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-dr-playout" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>Simulated Failure Tools</h3>
-            <span class="badge-pink font-fira">DR / SCTE TEST</span>
-          </div>
-
-          <div class="panel-body dr-buttons-row">
-            <div class="dr-group">
-              <span class="dr-title">SIMULATED FAILURES</span>
-              <div class="btn-grid">
-                <button class="btn btn-danger" id="btn-fail-primary">FAIL PRIMARY ENCODER</button>
-                <button class="btn btn-success" id="btn-restore-primary" disabled>RESTORE PRIMARY ENCODER</button>
-              </div>
-            </div>
-
-            <div class="dr-group">
-              <span class="dr-title">ADVERTISEMENT SPLICE INJECTOR</span>
-              <div class="btn-grid">
-                <button class="btn btn-pink" id="btn-inject-scte">INJECT SCTE-35 AD CUE (30S)</button>
-                <button class="btn btn-secondary" id="btn-cancel-scte" disabled>CANCEL AD SPLICE</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="control-panel panel-logs" data-workspace-panel="monitoring">
-          <div class="panel-header">
-            <h3>Operator &amp; Incident Timeline</h3>
-
-            <div class="logs-filter-group">
-              <button class="btn-filter filter-active" data-filter="all" id="filter-all">ALL</button>
-              <button class="btn-filter" data-filter="operator" id="filter-info">OPERATOR</button>
-              <button class="btn-filter" data-filter="alarm" id="filter-alarm">ALARM</button>
-              <button class="btn-filter" data-filter="cloud" id="filter-warning">CLOUD</button>
-              <button class="btn-filter" data-filter="ai">AI</button>
-              <button class="btn-filter" data-filter="scte">SCTE</button>
-              <select class="log-tag-filter" id="log-tag-filter">
-                <option value="all">ALL TAGS</option>
-                <option value="QC">QC</option>
-                <option value="SRC">SRC</option>
-                <option value="MIX">MIX</option>
-                <option value="ROUTE">ROUTE</option>
-                <option value="SRT">SRT</option>
-                <option value="SWT">SWT</option>
-                <option value="SCTE">SCTE</option>
-                <option value="PLYT">PLYT</option>
-                <option value="TRANS">TRANS</option>
-                <option value="CDN">CDN</option>
-              </select>
-              <input class="log-search-input" id="log-search-input" type="search" placeholder="Search logs" />
-              <button class="btn-filter" id="btn-clear-logs">CLEAR</button>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            <div class="console-logs-wrapper font-fira" id="console-logs">
-              <!-- Logs appended via JavaScript dynamically -->
-            </div>
           </div>
         </div>
 

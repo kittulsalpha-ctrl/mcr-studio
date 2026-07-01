@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  el.btnClearLogs.addEventListener('click', () => {
+  el.btnClearLogs?.addEventListener('click', () => {
     state.logs = [];
     renderLogs();
   });
@@ -1373,7 +1373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (el.selectDemoPreset && id !== 'imported') el.selectDemoPreset.value = id;
-    el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
+    if (el.pgmActiveSource) el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
     updateSourceStateControls();
     updateDetectionControls();
     updateTAKEButton();
@@ -1806,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
     if (el.btnInjectScte) el.btnInjectScte.disabled = false;
     if (el.btnCancelScte) el.btnCancelScte.disabled = true;
-    el.pgmActiveSource.textContent = 'SOURCE: NONE';
+    if (el.pgmActiveSource) el.pgmActiveSource.textContent = 'SOURCE: NONE';
     if (state.activeGraphics || state.tickerOn || state.bugOn) {
       clearGraphics('Graphics cleared with Program Off Air.');
     }
@@ -2909,7 +2909,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusParts.push(`Video ➜ ${String(state.mediaAssignments.localVideo ?? 'NONE').toUpperCase()}`);
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (Object.values(state.localVideos).some(local => local.ready)) statusParts.unshift('Local video PLAYING');
-    el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
+    if (el.actionStatus) el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
     updateSourceInspector();
     updateHeaderMetrics();
   }
@@ -2943,36 +2943,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  el.btnStartWebcam.addEventListener('click', async () => {
+  el.btnStartWebcam?.addEventListener('click', async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       addLog('warning', 'WEB', 'Webcam capture is not supported in this browser.');
-      el.actionStatus.textContent = 'Webcam unsupported';
+      if (el.actionStatus) el.actionStatus.textContent = 'Webcam unsupported';
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      el.cam1Video.srcObject = stream;
+      if (el.cam1Video) el.cam1Video.srcObject = stream;
       state.webcamStream = stream;
       state.webcamReady = true;
       state.cam1VideoReady = true;
-      await el.cam1Video.play().catch(() => {});
-      assignMediaTarget('webcam', el.selectWebcamTarget.value);
+      await el.cam1Video?.play().catch(() => {});
+      assignMediaTarget('webcam', el.selectWebcamTarget?.value || 'cam1');
       updateSourceOverlays();
       addLog('info', 'WEB', 'Browser webcam started and assigned to LiveU source.');
       addLog('info', 'MIX', `Webcam available at ${String(state.mediaAssignments.webcam ?? 'NONE').toUpperCase()}.`);
     } catch (error) {
       addLog('alarm', 'WEB', `Unable to access webcam: ${error.message}`);
-      el.actionStatus.textContent = 'Webcam access denied';
+      if (el.actionStatus) el.actionStatus.textContent = 'Webcam access denied';
     }
   });
 
-  el.btnLoadLocalVideo.addEventListener('click', () => {
-    pendingLocalAssignTarget = el.selectVideoTarget.value;
-    el.localVideoFileInput.click();
+  el.btnLoadLocalVideo?.addEventListener('click', () => {
+    pendingLocalAssignTarget = el.selectVideoTarget?.value || 'cam2';
+    el.localVideoFileInput?.click();
   });
 
-  el.localVideoFileInput.addEventListener('change', () => {
+  el.localVideoFileInput?.addEventListener('change', () => {
     const file = el.localVideoFileInput.files?.[0];
     if (!file) return;
     const target = pendingLocalAssignTarget || el.selectVideoTarget.value || 'cam2';
@@ -3006,12 +3006,12 @@ document.addEventListener('DOMContentLoaded', () => {
     el.localVideoFileInput.value = '';
   });
 
-  el.cam2Video.addEventListener('loadedmetadata', () => {
+  el.cam2Video?.addEventListener('loadedmetadata', () => {
     state.cam2VideoReady = true;
     updateSourceOverlays();
   });
 
-  el.cam1Video.addEventListener('loadedmetadata', () => {
+  el.cam1Video?.addEventListener('loadedmetadata', () => {
     state.webcamReady = true;
     state.cam1VideoReady = true;
     updateSourceOverlays();
@@ -3036,11 +3036,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSourceOverlays();
   }
 
-  el.selectWebcamTarget.addEventListener('change', () => {
+  el.selectWebcamTarget?.addEventListener('change', () => {
     assignMediaTarget('webcam', el.selectWebcamTarget.value);
   });
 
-  el.selectVideoTarget.addEventListener('change', () => {
+  el.selectVideoTarget?.addEventListener('change', () => {
     assignMediaTarget('localVideo', el.selectVideoTarget.value);
   });
 
@@ -3051,7 +3051,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.webcamStream.getTracks().forEach(track => track.stop());
       state.webcamStream = null;
     }
-    el.cam1Video.srcObject = null;
+    if (el.cam1Video) el.cam1Video.srcObject = null;
     state.webcamReady = false;
     state.cam1VideoReady = false;
     addLog('info', 'WEB', 'Webcam stopped and removed from assigned source.');
@@ -3081,8 +3081,8 @@ document.addEventListener('DOMContentLoaded', () => {
     saveWorkspaceState();
   }
 
-  el.btnStopWebcam.addEventListener('click', stopWebcam);
-  el.btnEjectVideo.addEventListener('click', ejectLocalVideo);
+  el.btnStopWebcam?.addEventListener('click', stopWebcam);
+  el.btnEjectVideo?.addEventListener('click', ejectLocalVideo);
 
   // Pending assignment target when user selects "Local Video" for a specific tile
   let pendingLocalAssignTarget = null;
@@ -3123,13 +3123,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateTAKEButton() {
     if (state.previewFeed) {
-      el.btnTake.textContent = 'TAKE TO AIR';
-      el.btnTake.disabled = false;
-      el.btnTake.style.opacity = '1.0';
+      if (el.btnTake) {
+        el.btnTake.textContent = 'TAKE TO AIR';
+        el.btnTake.disabled = false;
+        el.btnTake.style.opacity = '1.0';
+      }
     } else {
-      el.btnTake.textContent = 'TAKE TO AIR';
-      el.btnTake.disabled = true;
-      el.btnTake.style.opacity = '0.5';
+      if (el.btnTake) {
+        el.btnTake.textContent = 'TAKE TO AIR';
+        el.btnTake.disabled = true;
+        el.btnTake.style.opacity = '0.5';
+      }
     }
   }
 
@@ -3425,7 +3429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.programSourceOverride = null;
     syncAudioFollowVideo(actionLabel);
     clearPreviewUI();
-    el.pgmActiveSource.textContent = `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
+    if (el.pgmActiveSource) el.pgmActiveSource.textContent = `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
@@ -3519,7 +3523,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // TAKE button: route preview to program
-  el.btnTake.addEventListener('click', () => routePreviewToProgram('TAKE'));
+  el.btnTake?.addEventListener('click', () => routePreviewToProgram('TAKE'));
   el.btnCut?.addEventListener('click', () => routePreviewToProgram('CUT'));
   el.btnFadeBlack?.addEventListener('click', () => {
     if (state.txSafety.programProtection && !window.confirm('Program Protection is enabled. Fade Program to black?')) {
@@ -3852,19 +3856,16 @@ document.addEventListener('DOMContentLoaded', () => {
   addLog('info', 'CDN', 'Edge CDN cache validation complete. Latency buffer optimal at edge locations.');
 
   // Ensure pgm label reflects initial active source
-  el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
+  if (el.pgmActiveSource) el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
 
   // ==========================================================================
   // 5. CANVAS VIDEO STREAM RENDERING ENGINE
   // ==========================================================================
-  const canvases = {
-    cam1: { element: document.getElementById('canvas-cam1'), ctx: document.getElementById('canvas-cam1').getContext('2d') },
-    cam2: { element: document.getElementById('canvas-cam2'), ctx: document.getElementById('canvas-cam2').getContext('2d') },
-    liveu3: { element: document.getElementById('canvas-liveu3'), ctx: document.getElementById('canvas-liveu3').getContext('2d') },
-    liveu4: { element: document.getElementById('canvas-liveu4'), ctx: document.getElementById('canvas-liveu4').getContext('2d') },
-    vod:  { element: document.getElementById('canvas-vod'),  ctx: document.getElementById('canvas-vod').getContext('2d') },
-    pgm:  { element: document.getElementById('canvas-pgm'),  ctx: document.getElementById('canvas-pgm').getContext('2d') }
-  };
+  const canvases = {};
+  ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod', 'pgm'].forEach(feed => {
+    const canvas = document.getElementById(`canvas-${feed}`);
+    if (canvas) canvases[feed] = { element: canvas, ctx: canvas.getContext('2d') };
+  });
   const previewCanvas = document.getElementById('canvas-preview');
   if (previewCanvas) canvases.preview = { element: previewCanvas, ctx: previewCanvas.getContext('2d') };
 
@@ -4374,39 +4375,31 @@ document.addEventListener('DOMContentLoaded', () => {
     angle += 0.05;
 
     // Timecode Updates
-    el.tcCam1.textContent = state.primaryFailed ? "00:00:00:00" : getSMPTETimecode(framesCount);
+    if (el.tcCam1) el.tcCam1.textContent = state.primaryFailed ? "00:00:00:00" : getSMPTETimecode(framesCount);
     // Standby has a small simulated sync drift (-2 frames)
-    el.tcCam2.textContent = getSMPTETimecode(framesCount - 2);
+    if (el.tcCam2) el.tcCam2.textContent = getSMPTETimecode(framesCount - 2);
     // LiveU 3 & 4 with varied network drift
-    el.tcLiveu3.textContent = getSMPTETimecode(framesCount - 3);
-    el.tcLiveu4.textContent = getSMPTETimecode(framesCount - 4);
+    if (el.tcLiveu3) el.tcLiveu3.textContent = getSMPTETimecode(framesCount - 3);
+    if (el.tcLiveu4) el.tcLiveu4.textContent = getSMPTETimecode(framesCount - 4);
     // Graphics is an overlay keyer, not a timed video source.
-    el.tcVod.textContent = 'KEY / FILL';
+    if (el.tcVod) el.tcVod.textContent = 'KEY / FILL';
     
     // PGM timecode reflects currently routed active source
-    if (state.activeSource === 'cam1') el.tcPgm.textContent = el.tcCam1.textContent;
-    else if (state.activeSource === 'cam2') el.tcPgm.textContent = el.tcCam2.textContent;
-    else if (state.activeSource === 'liveu3') el.tcPgm.textContent = el.tcLiveu3.textContent;
-    else if (state.activeSource === 'liveu4') el.tcPgm.textContent = el.tcLiveu4.textContent;
-    else if (state.activeSource === 'vod') el.tcPgm.textContent = el.tcVod.textContent;
-    else if (state.activeSource === 'ad') el.tcPgm.textContent = getSMPTETimecode(framesCount);
-    else if (state.activeSource === 'replay' || state.activeSource === 'playout') el.tcPgm.textContent = getSMPTETimecode(framesCount);
-    else el.tcPgm.textContent = '--:--:--:--';
+    if (el.tcPgm) {
+      if (state.activeSource === 'cam1') el.tcPgm.textContent = el.tcCam1?.textContent || getSMPTETimecode(framesCount);
+      else if (state.activeSource === 'cam2') el.tcPgm.textContent = el.tcCam2?.textContent || getSMPTETimecode(framesCount - 2);
+      else if (state.activeSource === 'liveu3') el.tcPgm.textContent = el.tcLiveu3?.textContent || getSMPTETimecode(framesCount - 3);
+      else if (state.activeSource === 'liveu4') el.tcPgm.textContent = el.tcLiveu4?.textContent || getSMPTETimecode(framesCount - 4);
+      else if (state.activeSource === 'vod') el.tcPgm.textContent = el.tcVod?.textContent || 'KEY / FILL';
+      else if (state.activeSource === 'ad') el.tcPgm.textContent = getSMPTETimecode(framesCount);
+      else if (state.activeSource === 'replay' || state.activeSource === 'playout') el.tcPgm.textContent = getSMPTETimecode(framesCount);
+      else el.tcPgm.textContent = '--:--:--:--';
+    }
 
-    // 1. Draw Feed 1 (Cam 1 / Primary)
-    drawFeedCanvas('cam1', canvases.cam1.ctx, canvases.cam1.element.width, canvases.cam1.element.height, framesCount);
-
-    // 2. Draw Feed 2 (Cam 2 / Backup)
-    drawFeedCanvas('cam2', canvases.cam2.ctx, canvases.cam2.element.width, canvases.cam2.element.height, framesCount);
-
-    // 3. Draw Feed 3 (LiveU 3)
-    drawFeedCanvas('liveu3', canvases.liveu3.ctx, canvases.liveu3.element.width, canvases.liveu3.element.height, framesCount);
-
-    // 4. Draw Feed 4 (LiveU 4)
-    drawFeedCanvas('liveu4', canvases.liveu4.ctx, canvases.liveu4.element.width, canvases.liveu4.element.height, framesCount);
-
-    // 5. Draw Feed 5 (VOD Playout)
-    drawFeedCanvas('vod', canvases.vod.ctx, canvases.vod.element.width, canvases.vod.element.height, framesCount);
+    ['cam1', 'cam2', 'liveu3', 'liveu4', 'vod'].forEach(feed => {
+      const canvas = canvases[feed];
+      if (canvas) drawFeedCanvas(feed, canvas.ctx, canvas.element.width, canvas.element.height, framesCount);
+    });
 
     // Preview bus mirrors the cued source before it is taken to Program.
     if (canvases.preview) {
@@ -4439,44 +4432,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6. Draw Feed 6 (Program Out / PGM)
-    const pgmW = canvases.pgm.element.width;
-    const pgmH = canvases.pgm.element.height;
-    const pgmCtx = canvases.pgm.ctx;
-    if (state.activeSource === 'ad') {
-      drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
-    } else if (state.activeSource === 'replay') {
-      drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
-    } else if (state.activeSource === 'playout') {
-      drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
-    } else if (state.activeSource) {
-      try {
+    if (canvases.pgm) {
+      const pgmW = canvases.pgm.element.width;
+      const pgmH = canvases.pgm.element.height;
+      const pgmCtx = canvases.pgm.ctx;
+      if (state.activeSource === 'ad') {
+        drawStreamAdBreak(pgmCtx, pgmW, pgmH, framesCount);
+      } else if (state.activeSource === 'replay') {
+        drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
+      } else if (state.activeSource === 'playout') {
+        drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
+      } else if (state.activeSource) {
+        try {
+          pgmCtx.clearRect(0, 0, pgmW, pgmH);
+          pgmCtx.drawImage(canvases[state.activeSource].element, 0, 0, pgmW, pgmH);
+        } catch (e) {
+          if (state.activeSource === 'cam1') drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
+          else if (state.activeSource === 'cam2' || state.activeSource === 'liveu3' || state.activeSource === 'liveu4') drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
+          else if (state.activeSource === 'vod') drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
+          else if (state.activeSource === 'replay') drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
+          else if (state.activeSource === 'playout') drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
+          else drawStreamLossStatic(pgmCtx, pgmW, pgmH);
+        }
+      } else {
         pgmCtx.clearRect(0, 0, pgmW, pgmH);
-        pgmCtx.drawImage(canvases[state.activeSource].element, 0, 0, pgmW, pgmH);
-      } catch (e) {
-        if (state.activeSource === 'cam1') drawStreamCam1(pgmCtx, pgmW, pgmH, framesCount, state.unrecoveredLoss);
-        else if (state.activeSource === 'cam2' || state.activeSource === 'liveu3' || state.activeSource === 'liveu4') drawStreamCam2(pgmCtx, pgmW, pgmH, framesCount);
-        else if (state.activeSource === 'vod') drawStreamVOD(pgmCtx, pgmW, pgmH, framesCount);
-        else if (state.activeSource === 'replay') drawStreamReplay(pgmCtx, pgmW, pgmH, framesCount);
-        else if (state.activeSource === 'playout') drawStreamPlayout(pgmCtx, pgmW, pgmH, framesCount);
-        else drawStreamLossStatic(pgmCtx, pgmW, pgmH);
+        pgmCtx.fillStyle = '#020408';
+        pgmCtx.fillRect(0, 0, pgmW, pgmH);
+        pgmCtx.fillStyle = '#ffffff';
+        pgmCtx.font = 'bold 14px Outfit';
+        pgmCtx.textAlign = 'center';
+        pgmCtx.fillText('NO PROGRAM SOURCE', pgmW / 2, pgmH / 2);
+        pgmCtx.textAlign = 'left';
       }
-    } else {
-      pgmCtx.clearRect(0, 0, pgmW, pgmH);
-      pgmCtx.fillStyle = '#020408';
-      pgmCtx.fillRect(0, 0, pgmW, pgmH);
-      pgmCtx.fillStyle = '#ffffff';
-      pgmCtx.font = 'bold 14px Outfit';
-      pgmCtx.textAlign = 'center';
-      pgmCtx.fillText('NO PROGRAM SOURCE', pgmW / 2, pgmH / 2);
-      pgmCtx.textAlign = 'left';
-    }
 
-    if (state.activeGraphics || state.tickerOn || state.bugOn) {
-      drawGraphicsOverlay(pgmCtx, pgmW, pgmH, {
-        lowerThird: state.activeGraphics === 'lowerThird',
-        ticker: state.tickerOn,
-        bug: state.bugOn
-      }, framesCount);
+      if (state.activeGraphics || state.tickerOn || state.bugOn) {
+        drawGraphicsOverlay(pgmCtx, pgmW, pgmH, {
+          lowerThird: state.activeGraphics === 'lowerThird',
+          ticker: state.tickerOn,
+          bug: state.bugOn
+        }, framesCount);
+      }
     }
     syncProgramEmbed();
 
@@ -4501,7 +4496,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Custom rolling line chart configuration
   const chartCanvas = document.getElementById('telemetry-chart');
-  const chartCtx = chartCanvas.getContext('2d');
+  const chartCtx = chartCanvas?.getContext('2d');
   
   // Rolling historical arrays
   const chartHistory = {
@@ -4512,6 +4507,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateSRTSimulation() {
     // Read current slider inputs
+    if (!el.slideLoss || !el.slideJitter || !el.slideRtt || !el.slideBuffer) return;
     state.lossPercent = parseFloat(el.slideLoss.value);
     state.jitterMs = parseInt(el.slideJitter.value);
     state.rttMs = parseInt(el.slideRtt.value);
@@ -4623,6 +4619,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Canvas Telemetry Chart Renderer
   function drawChart() {
+    if (!chartCanvas || !chartCtx) return;
     const w = chartCanvas.width = chartCanvas.parentNode.getBoundingClientRect().width;
     const h = chartCanvas.height = chartCanvas.parentNode.getBoundingClientRect().height;
     
@@ -4688,18 +4685,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   
   // Fail Primary contribution path
-  el.btnFailPrimary.addEventListener('click', () => {
+  el.btnFailPrimary?.addEventListener('click', () => {
     state.primaryFailed = true;
     setSourceState('liveu1', 'ALARM');
-    el.btnFailPrimary.disabled = true;
-    el.btnRestorePrimary.disabled = false;
+    if (el.btnFailPrimary) el.btnFailPrimary.disabled = true;
+    if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = false;
     
     // Activate Alarm overlays on screen and node graph
-    el.alarmOverlayCam1.classList.add('alarm-active');
+    el.alarmOverlayCam1?.classList.add('alarm-active');
     
     // Update quick badges
-    el.matrixAlarm.textContent = "ALARM: FAIL";
-    el.matrixAlarm.className = "badge-value text-red pulse-red";
+    if (el.matrixAlarm) {
+      el.matrixAlarm.textContent = "ALARM: FAIL";
+      el.matrixAlarm.className = "badge-value text-red pulse-red";
+    }
     
     updateOrchestratorRouting();
 
@@ -4721,7 +4720,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.activeSource = 'cam2'; // Route backup Cam
         if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
         state.programSourceOverride = 'liveu2';
-        el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
+        if (el.pgmActiveSource) el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
         updateBadges();
         updatePGMFooter();
         updateOrchestratorRouting();
@@ -4738,14 +4737,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Restore Primary contribution path
-  el.btnRestorePrimary.addEventListener('click', () => {
+  el.btnRestorePrimary?.addEventListener('click', () => {
     state.primaryFailed = false;
     setSourceState('liveu1', 'ONLINE');
-    el.btnFailPrimary.disabled = false;
-    el.btnRestorePrimary.disabled = true;
+    if (el.btnFailPrimary) el.btnFailPrimary.disabled = false;
+    if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = true;
     
     // Remove alarm overlays
-    el.alarmOverlayCam1.classList.remove('alarm-active');
+    el.alarmOverlayCam1?.classList.remove('alarm-active');
     
     updateOrchestratorRouting();
     renderTxSafety();
@@ -4760,7 +4759,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.activeSource = 'cam1';
         if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
         state.programSourceOverride = 'liveu1';
-        el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
+        if (el.pgmActiveSource) el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
         updateBadges();
         updatePGMFooter();
         updateOrchestratorRouting();
@@ -4773,7 +4772,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // SCTE-35 Cue ad insertion injector
-  el.btnInjectScte.addEventListener('click', () => {
+  el.btnInjectScte?.addEventListener('click', () => {
     if (state.adActive) return;
     
     state.adActive = true;
@@ -4781,23 +4780,23 @@ document.addEventListener('DOMContentLoaded', () => {
     state.preAdRoute = {
       activeSource: state.activeSource,
       programSourceOverride: state.programSourceOverride,
-      label: el.pgmActiveSource.textContent
+      label: el.pgmActiveSource?.textContent || null
     };
-    el.btnInjectScte.disabled = true;
-    el.btnCancelScte.disabled = false;
+    if (el.btnInjectScte) el.btnInjectScte.disabled = true;
+    if (el.btnCancelScte) el.btnCancelScte.disabled = false;
     
     // Update active source to ad break loop
     state.activeSource = 'ad';
     if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
     state.programSourceOverride = 'ad';
-    el.pgmActiveSource.textContent = "SOURCE: AD-LOOP (SCTE-35)";
+    if (el.pgmActiveSource) el.pgmActiveSource.textContent = "SOURCE: AD-LOOP (SCTE-35)";
     updateBadges();
     updatePGMFooter();
     updateOrchestratorRouting();
     syncProgramEmbed();
     
     // Show countdown banner on PGM screen
-    el.adBreakBanner.style.display = 'block';
+    if (el.adBreakBanner) el.adBreakBanner.style.display = 'block';
     
     // Logs
     addLog('info', 'SCTE', 'SCTE-35 Digital Program Insertion triggered. Event ID: 4092. Out-Of-Network Splice=TRUE.');
@@ -4811,14 +4810,14 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(state.adIntervalId);
         endAdBreak();
       } else {
-        el.adCountdownVal.textContent = `AD BREAK: ${state.adTimeRemaining.toFixed(1)}s`;
+        if (el.adCountdownVal) el.adCountdownVal.textContent = `AD BREAK: ${state.adTimeRemaining.toFixed(1)}s`;
         renderTxSafety();
       }
     }, 100);
   });
 
   // Cancel SCTE splice
-  el.btnCancelScte.addEventListener('click', () => {
+  el.btnCancelScte?.addEventListener('click', () => {
     if (!state.adActive) return;
     
     clearInterval(state.adIntervalId);
@@ -4829,27 +4828,27 @@ document.addEventListener('DOMContentLoaded', () => {
   function endAdBreak() {
     state.adActive = false;
     state.adTimeRemaining = 0.0;
-    el.btnInjectScte.disabled = false;
-    el.btnCancelScte.disabled = true;
+    if (el.btnInjectScte) el.btnInjectScte.disabled = false;
+    if (el.btnCancelScte) el.btnCancelScte.disabled = true;
     
     // Hide overlay
-    el.adBreakBanner.style.display = 'none';
+    if (el.adBreakBanner) el.adBreakBanner.style.display = 'none';
     
     // Restore the exact route that was on air before SCTE interrupted it.
     if (state.preAdRoute?.activeSource) {
       state.activeSource = state.preAdRoute.activeSource;
       state.programSourceOverride = state.preAdRoute.programSourceOverride;
-      el.pgmActiveSource.textContent = state.preAdRoute.label || `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
+      if (el.pgmActiveSource) el.pgmActiveSource.textContent = state.preAdRoute.label || `SOURCE: ${getProgramRouteLabel(state.activeSource)}`;
     } else if (state.primaryFailed) {
       state.activeSource = 'cam2';
       if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
       state.programSourceOverride = 'liveu2';
-      el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
+      if (el.pgmActiveSource) el.pgmActiveSource.textContent = "SOURCE: LiveU 2 (DR FAILOVER)";
     } else {
       state.activeSource = 'cam1';
       if (!state.onAirStartedAt) state.onAirStartedAt = Date.now();
       state.programSourceOverride = 'liveu1';
-      el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
+      if (el.pgmActiveSource) el.pgmActiveSource.textContent = "SOURCE: LiveU 1";
     }
     state.preAdRoute = null;
     updateBadges();
