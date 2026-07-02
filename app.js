@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const NDI_SOURCES = JSON.parse(JSON.stringify(DEFAULT_NDI_SOURCES));
   const DEFAULT_YOUTUBE_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
   const WORKSPACE_STATE_KEY = 'mcr-studio-workspace-state-v1';
+  const MEDIA_DB_NAME = 'mcr-studio-media-store';
+  const MEDIA_DB_VERSION = 1;
+  const MEDIA_STORE_NAME = 'localVideos';
   const REGION_PRESETS = {
     'eu-west-1': { code: 'eu-west-1', label: 'Ireland', encoder: 'Dublin contribution encoder', ingest: 'EU ingest gateway' },
     'eu-west-2': { code: 'eu-west-2', label: 'London', encoder: 'London contribution encoder', ingest: 'UK ingest gateway' },
@@ -1182,6 +1185,123 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.keys(state.localVideos).forEach(feed => teardownLocalVideo(feed));
   }
 
+  function openMediaStore() {
+    if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is not available'));
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(MEDIA_DB_NAME, MEDIA_DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(MEDIA_STORE_NAME)) db.createObjectStore(MEDIA_STORE_NAME, { keyPath: 'feed' });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Unable to open media store'));
+    });
+  }
+
+  async function savePersistedLocalVideo(feed, file) {
+    try {
+      const db = await openMediaStore();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE_NAME, 'readwrite');
+        tx.objectStore(MEDIA_STORE_NAME).put({
+          feed,
+          fileName: file.name,
+          type: file.type || 'video/mp4',
+          savedAt: new Date().toISOString(),
+          blob: file
+        });
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Unable to save local video'));
+      });
+      db.close();
+    } catch (error) {
+      addLog('warning', 'VIDEO', `Local file assigned, but browser media persistence failed: ${error.message}`);
+    }
+  }
+
+  async function getPersistedLocalVideo(feed) {
+    try {
+      const db = await openMediaStore();
+      const entry = await new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE_NAME, 'readonly');
+        const request = tx.objectStore(MEDIA_STORE_NAME).get(feed);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Unable to read local video'));
+      });
+      db.close();
+      return entry;
+    } catch (error) {
+      addLog('warning', 'VIDEO', `Unable to restore persisted local video: ${error.message}`);
+      return null;
+    }
+  }
+
+  async function deletePersistedLocalVideo(feed) {
+    try {
+      const db = await openMediaStore();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MEDIA_STORE_NAME, 'readwrite');
+        tx.objectStore(MEDIA_STORE_NAME).delete(feed);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Unable to clear local video'));
+      });
+      db.close();
+    } catch (error) {
+      console.warn('Unable to clear persisted local video', error);
+    }
+  }
+
+  function attachLocalVideoBlob(feed, blob, fileName, { persistFile = null, restored = false } = {}) {
+    if (!feed || !blob) return;
+    if (!restored && getFeedAssignment(feed) === 'localVideo') {
+      handleConfiguredSourceChange(feed, state.tileSourceIds[feed], state.tileSourceIds[feed], 'its local file changed', { force: true });
+    }
+    teardownLocalVideo(feed);
+    const url = URL.createObjectURL(blob);
+    const videoEl = document.createElement('video');
+    videoEl.autoplay = true;
+    videoEl.loop = true;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.className = 'hidden-video';
+    videoEl.src = url;
+    document.body.appendChild(videoEl);
+    state.localVideos[feed] = { fileName, url, videoEl, ready: false };
+    if (feed === 'cam2') {
+      state.cam2FileName = fileName;
+      state.cam2FileURL = url;
+      state.cam2VideoReady = false;
+    }
+    videoEl.addEventListener('loadedmetadata', () => {
+      if (!state.localVideos[feed]) return;
+      state.localVideos[feed].ready = true;
+      if (feed === 'cam2') state.cam2VideoReady = true;
+      updateSourceOverlays();
+      updateTAKEButton();
+      updateBadges();
+      updateOrchestratorRouting();
+      renderOperatorWorkflowStatus();
+    }, { once: true });
+    videoEl.load();
+    videoEl.play().catch(() => {});
+    assignMediaTarget('localVideo', feed);
+    if (persistFile) savePersistedLocalVideo(feed, persistFile);
+    updateSourceOverlays();
+    addLog('info', 'VIDEO', `${restored ? 'Restored' : 'Local file loaded to'} ${getTileName(feed)}: ${fileName}`);
+  }
+
+  async function restorePersistedLocalVideosIfNeeded() {
+    const restoreTargets = TILE_FEEDS.filter(feed => getFeedAssignment(feed) === 'localVideo' && !state.localVideos[feed]);
+    await Promise.all(restoreTargets.map(async feed => {
+      const entry = await getPersistedLocalVideo(feed);
+      if (entry?.blob) {
+        attachLocalVideoBlob(feed, entry.blob, entry.fileName || 'Restored local video', { restored: true });
+      } else {
+        addLog('warning', 'VIDEO', `${getTileName(feed)} is assigned to Local File, but no browser-stored file is available. Reload it in Setup.`);
+      }
+    }));
+  }
+
   function getVideoResolution(video) {
     return (video && video.videoWidth && video.videoHeight)
       ? `${video.videoWidth}x${video.videoHeight}`
@@ -1920,7 +2040,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state.tileSources[feed]) return;
     const wasLocalVideo = getFeedAssignment(feed) === 'localVideo';
     setTileSource(feed, feed === 'vod' ? 'vod' : 'none');
-    if (wasLocalVideo) teardownLocalVideo(feed);
+    if (wasLocalVideo) {
+      teardownLocalVideo(feed);
+      deletePersistedLocalVideo(feed);
+    }
     if (state.previewFeed === feed) clearPreviewUI();
     if (state.activeSource === feed) {
       clearProgramOut(`${getTileName(feed)} removed from PROGRAM because its source was cleared.`);
@@ -3338,36 +3461,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = el.localVideoFileInput.files?.[0];
     if (!file) return;
     const target = pendingLocalAssignTarget || el.selectVideoTarget.value || 'cam2';
-    if (getFeedAssignment(target) === 'localVideo') {
-      handleConfiguredSourceChange(target, state.tileSourceIds[target], state.tileSourceIds[target], 'its local file changed', { force: true });
-    }
-    teardownLocalVideo(target);
-    const url = URL.createObjectURL(file);
-    const videoEl = document.createElement('video');
-    videoEl.autoplay = true;
-    videoEl.loop = true;
-    videoEl.muted = true;
-    videoEl.playsInline = true;
-    videoEl.className = 'hidden-video';
-    videoEl.src = url;
-    document.body.appendChild(videoEl);
-    state.localVideos[target] = { fileName: file.name, url, videoEl, ready: false };
-    if (target === 'cam2') {
-      state.cam2FileName = file.name;
-      state.cam2FileURL = url;
-      state.cam2VideoReady = false;
-    }
-    videoEl.addEventListener('loadedmetadata', () => {
-      state.localVideos[target].ready = true;
-      if (target === 'cam2') state.cam2VideoReady = true;
-      updateSourceOverlays();
-    }, { once: true });
-    videoEl.load();
-    videoEl.play().catch(() => {});
-    assignMediaTarget('localVideo', target);
+    attachLocalVideoBlob(target, file, file.name, { persistFile: file });
     pendingLocalAssignTarget = null;
     updateSourceOverlays();
-    addLog('info', 'VIDEO', `Local file loaded to ${getTileName(target)}: ${file.name}`);
     el.localVideoFileInput.value = '';
   });
 
@@ -3437,6 +3533,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fileName = state.localVideos[feed].fileName;
     teardownLocalVideo(feed);
+    deletePersistedLocalVideo(feed);
     clearTileSource(feed);
     if (state.mediaAssignments.localVideo === feed) state.mediaAssignments.localVideo = null;
     addLog('info', 'VIDEO', `Local video cleared from ${getTileName(feed)}: ${fileName}.`);
@@ -4212,9 +4309,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadWorkspaceState();
     refreshWorkspaceUiAfterStateLoad('Workspace state synced from another MCR page.');
     resumePersistedWebcamIfNeeded();
+    restorePersistedLocalVideosIfNeeded();
   });
 
   loadWorkspaceState();
+  restorePersistedLocalVideosIfNeeded();
   updateSourceOverlays();
   hydratePageSwitcherLinks();
   updateTAKEButton();
