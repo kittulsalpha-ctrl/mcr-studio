@@ -569,6 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
     workflowConfiguredCount: byId("workflow-configured-count"),
     workflowPreviewSource: byId("workflow-preview-source"),
     workflowProgramSource: byId("workflow-program-source"),
+    workflowMonitorState: byId("workflow-monitor-state"),
+    workflowLastEvent: byId("workflow-last-event"),
     setupSummaryCam1: byId("setup-summary-cam1"),
     setupSummaryCam1State: byId("setup-summary-cam1-state"),
     setupSummaryCam2: byId("setup-summary-cam2"),
@@ -716,6 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.logs.length > 100) state.logs.shift();
     
     renderLogs();
+    renderOperatorWorkflowStatus();
     renderAIOpsAssistant();
   }
 
@@ -1002,6 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
   el.btnClearLogs?.addEventListener('click', () => {
     state.logs = [];
     renderLogs();
+    renderOperatorWorkflowStatus();
   });
 
   el.logTagFilter?.addEventListener('change', renderLogs);
@@ -2388,9 +2392,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const configuredCount = TILE_FEEDS.filter(feed => state.tileSourceIds[feed] && state.tileSourceIds[feed] !== 'none').length;
     const previewLabel = state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—';
     const programLabel = state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR';
+    const delivery = getDeliveryHealthSnapshot();
+    const lastOperatorEvent = [...state.logs].reverse().find(log => ['MIX', 'MUX', 'ROUTE', 'WEB', 'VIDEO', 'NDI', 'INSP', 'CG', 'AUDIO', 'REPLAY', 'PLYT', 'API', 'DEMO', 'SCTE'].includes(log.tag));
+    const lastEventLabel = lastOperatorEvent ? `${lastOperatorEvent.tag}: ${lastOperatorEvent.message}` : 'NO EVENTS';
     setMetricText(el.workflowConfiguredCount, `${configuredCount} SOURCE${configuredCount === 1 ? '' : 'S'}`, configuredCount ? 'text-green' : 'text-muted');
     setMetricText(el.workflowPreviewSource, previewLabel, state.previewFeed ? 'text-blue' : 'text-muted');
     setMetricText(el.workflowProgramSource, programLabel, state.activeSource ? 'text-red' : 'text-muted');
+    setMetricText(el.workflowMonitorState, delivery.status, delivery.statusClass);
+    setMetricText(el.workflowLastEvent, lastEventLabel, lastOperatorEvent ? 'text-blue' : 'text-muted');
   }
 
   function renderSetupAssignmentSummary() {
