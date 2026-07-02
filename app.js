@@ -569,6 +569,14 @@ document.addEventListener('DOMContentLoaded', () => {
     workflowConfiguredCount: byId("workflow-configured-count"),
     workflowPreviewSource: byId("workflow-preview-source"),
     workflowProgramSource: byId("workflow-program-source"),
+    setupSummaryCam1: byId("setup-summary-cam1"),
+    setupSummaryCam1State: byId("setup-summary-cam1-state"),
+    setupSummaryCam2: byId("setup-summary-cam2"),
+    setupSummaryCam2State: byId("setup-summary-cam2-state"),
+    setupSummaryLiveu3: byId("setup-summary-liveu3"),
+    setupSummaryLiveu3State: byId("setup-summary-liveu3-state"),
+    setupSummaryLiveu4: byId("setup-summary-liveu4"),
+    setupSummaryLiveu4State: byId("setup-summary-liveu4-state"),
     regionValue: byId("region-value"),
     regionPresetSelect: byId("region-preset-select"),
     setupRegionLabel: byId("setup-region-label"),
@@ -2385,6 +2393,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.workflowProgramSource, programLabel, state.activeSource ? 'text-red' : 'text-muted');
   }
 
+  function renderSetupAssignmentSummary() {
+    const summaryMap = {
+      cam1: [el.setupSummaryCam1, el.setupSummaryCam1State],
+      cam2: [el.setupSummaryCam2, el.setupSummaryCam2State],
+      liveu3: [el.setupSummaryLiveu3, el.setupSummaryLiveu3State],
+      liveu4: [el.setupSummaryLiveu4, el.setupSummaryLiveu4State]
+    };
+    Object.entries(summaryMap).forEach(([feed, nodes]) => {
+      const [sourceNode, stateNode] = nodes;
+      const metadata = getFeedMetadata(feed);
+      const status = getFeedStatus(feed);
+      const hasSignal = feedHasActiveSignal(feed);
+      setMetricText(sourceNode, metadata.source || 'No Input', hasSignal ? 'text-green' : status === 'NO SOURCE' ? 'text-muted' : 'text-amber');
+      setMetricText(stateNode, status, hasSignal ? 'text-green' : status === 'NO SOURCE' ? 'text-muted' : 'text-amber');
+    });
+  }
+
   function inspectFeed(feed) {
     if (!feed || !state.tileSources[feed]) return;
     state.inspectedFeed = feed;
@@ -3147,6 +3172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.webcamReady) statusParts.unshift('Webcam ONLINE');
     if (Object.values(state.localVideos).some(local => local.ready)) statusParts.unshift('Local video PLAYING');
     if (el.actionStatus) el.actionStatus.textContent = statusParts.length ? statusParts.join(' · ') : 'No source routed yet';
+    renderSetupAssignmentSummary();
     updateSourceInspector();
     updateHeaderMetrics();
   }

@@ -2969,6 +2969,64 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   background: rgba(14, 165, 233, 0.12);
 }
 
+.setup-workflow-panel,
+.setup-assignment-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.setup-workflow-panel {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+.setup-assignment-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.setup-workflow-panel > div,
+.setup-assignment-summary > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 7px;
+  background: rgba(2, 6, 23, 0.48);
+}
+
+.setup-workflow-panel span,
+.setup-assignment-summary span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font: 800 8px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.setup-workflow-panel strong,
+.setup-assignment-summary strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font: 800 11px var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setup-workflow-panel small,
+.setup-assignment-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.setup-workflow-panel .workflow-setup-link {
+  display: grid;
+  place-items: center;
+}
+
 body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) .btn-solo {
   min-width: 118px;
 }
@@ -2993,10 +3051,20 @@ body.workspace-operations .screen-card.graphics-engine-card {
   .operator-workflow-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .setup-workflow-panel,
+  .setup-assignment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
   .operator-workflow-card {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-workflow-panel,
+  .setup-assignment-summary {
     grid-template-columns: 1fr;
   }
 }
