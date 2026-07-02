@@ -2240,7 +2240,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const local = getLocalVideo(feed);
       return {
         codec: 'Local File',
-        source: local?.fileName || 'No File',
+        source: local?.fileName || 'Reload file in Setup',
         resolution: local?.ready ? getVideoResolution(local.videoEl) : 'N/A',
         bitrate: local?.ready ? `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps` : '0.0 Mbps',
         rtt: local?.ready ? `${state.rttMs}ms` : '--'
