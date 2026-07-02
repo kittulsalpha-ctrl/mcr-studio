@@ -2806,6 +2806,15 @@ document.addEventListener('DOMContentLoaded', () => {
       el.txEncoderLadder.textContent = state.activeSource ? '1080/720/540/360' : 'IDLE';
       el.txEncoderLadder.className = state.activeSource ? 'text-green' : 'text-muted';
     }
+    const backupFeed = getRecommendedBackupFeed() || (!state.activeSource ? TILE_FEEDS.find(feed => feedHasActiveSignal(feed)) : null);
+    if (el.btnEmergencyBackup) {
+      el.btnEmergencyBackup.disabled = !backupFeed;
+      el.btnEmergencyBackup.style.opacity = backupFeed ? '1.0' : '0.45';
+      el.btnEmergencyBackup.classList.toggle('btn-disabled', !backupFeed);
+      el.btnEmergencyBackup.title = backupFeed
+        ? `Route ${getProgramRouteLabel(backupFeed)} to Program immediately.`
+        : 'No healthy backup source is available.';
+    }
     if (el.scteTimelineProgress) {
       const pct = state.adActive ? Math.max(0, Math.min(100, ((30 - state.adTimeRemaining) / 30) * 100)) : 0;
       el.scteTimelineProgress.style.width = `${pct}%`;
@@ -3321,19 +3330,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateTAKEButton() {
-    if (state.previewFeed) {
-      if (el.btnTake) {
-        el.btnTake.textContent = 'TAKE TO AIR';
-        el.btnTake.disabled = false;
-        el.btnTake.style.opacity = '1.0';
-      }
-    } else {
-      if (el.btnTake) {
-        el.btnTake.textContent = 'TAKE TO AIR';
-        el.btnTake.disabled = true;
-        el.btnTake.style.opacity = '0.5';
-      }
-    }
+    const previewReady = !!state.previewFeed && feedHasActiveSignal(state.previewFeed);
+    [el.btnTake, el.btnCut].forEach(button => {
+      if (!button) return;
+      button.disabled = !previewReady;
+      button.style.opacity = previewReady ? '1.0' : '0.45';
+      button.classList.toggle('btn-disabled', !previewReady);
+      button.title = previewReady
+        ? 'Send the current Preview source to Program Out.'
+        : 'Select a healthy source in Preview before taking Program.';
+    });
   }
 
   function updateBadges() {
@@ -3380,6 +3386,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.btnClearProgram) {
       el.btnClearProgram.disabled = !state.activeSource;
       el.btnClearProgram.style.opacity = state.activeSource ? '1.0' : '0.5';
+      el.btnClearProgram.classList.toggle('btn-disabled', !state.activeSource);
+    }
+    if (el.btnFadeBlack) {
+      el.btnFadeBlack.disabled = !state.activeSource;
+      el.btnFadeBlack.style.opacity = state.activeSource ? '1.0' : '0.5';
+      el.btnFadeBlack.classList.toggle('btn-disabled', !state.activeSource);
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();
@@ -3646,7 +3658,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addLog('warning', 'MIX', 'Emergency backup cancelled by operator.');
       return;
     }
-    const backupFeed = ['cam2', 'liveu3', 'liveu4', 'cam1'].find(feed => feedHasActiveSignal(feed));
+    const backupFeed = getRecommendedBackupFeed() || (!state.activeSource ? TILE_FEEDS.find(feed => feedHasActiveSignal(feed)) : null);
     if (!backupFeed) {
       clearProgramOut('Emergency backup failed: no healthy contribution source available.');
       addLog('alarm', 'MIX', 'Emergency backup unavailable. No healthy contribution source found.');
