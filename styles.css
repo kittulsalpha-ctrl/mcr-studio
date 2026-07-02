@@ -4043,3 +4043,201 @@ body.workspace-setup .multiviewer-container {
     width: 100%;
   }
 }
+
+/* Dedicated Monitoring/NOC layout: alarms, delivery path, telemetry, and runbook only. */
+body.workspace-monitoring .monitor-only-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+body.workspace-monitoring .panel-active-alarms { order: 1; }
+body.workspace-monitoring .panel-program-delivery { order: 2; }
+body.workspace-monitoring .panel-orchestrator { order: 3; }
+body.workspace-monitoring .panel-engineering { order: 4; }
+body.workspace-monitoring .panel-telemetry { order: 5; }
+body.workspace-monitoring .panel-service-health { order: 6; }
+body.workspace-monitoring .panel-dr-playout { order: 7; }
+body.workspace-monitoring .panel-cloud-topology { order: 8; }
+body.workspace-monitoring .panel-logs { order: 9; }
+body.workspace-monitoring .panel-incident-response { order: 10; }
+
+body.workspace-monitoring .panel-active-alarms,
+body.workspace-monitoring .panel-program-delivery,
+body.workspace-monitoring .panel-orchestrator,
+body.workspace-monitoring .panel-engineering,
+body.workspace-monitoring .panel-service-health,
+body.workspace-monitoring .panel-incident-response,
+body.workspace-monitoring .panel-logs,
+body.workspace-monitoring .monitoring-detail {
+  grid-column: 1 / -1 !important;
+  grid-row: auto !important;
+  display: block;
+  border-radius: 8px;
+}
+
+body.workspace-monitoring .panel-telemetry,
+body.workspace-monitoring .panel-dr-playout,
+body.workspace-monitoring .panel-logs {
+  display: block;
+}
+
+body.workspace-monitoring .panel-orchestrator .node-editor-wrapper,
+body.workspace-monitoring .panel-orchestrator .node-inspector {
+  display: block;
+}
+
+body.workspace-monitoring .panel-orchestrator .source-inspector,
+body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
+  display: none;
+}
+
+.active-alarm-body,
+.service-tile-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.active-alarm-body {
+  grid-template-columns: minmax(180px, 0.72fr) minmax(260px, 1fr) minmax(320px, 1.4fr);
+  align-items: stretch;
+}
+
+.alarm-hero-count,
+.alarm-severity-grid > div,
+.alarm-current-card > div,
+.service-tile,
+.dr-monitor-grid > div {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.56);
+  padding: 10px;
+}
+
+.alarm-hero-count span,
+.alarm-severity-grid span,
+.alarm-current-card span,
+.service-tile span,
+.dr-monitor-grid span,
+.monitor-region-select {
+  display: block;
+  color: var(--text-secondary);
+  font: 800 7px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.alarm-hero-count strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--neon-red);
+  font: 800 38px/1 var(--font-display);
+}
+
+.alarm-hero-count small,
+.service-tile small,
+.dr-monitor-grid small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font: 8px/1.35 var(--font-mono);
+}
+
+.alarm-severity-grid,
+.alarm-current-card,
+.dr-monitor-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.alarm-severity-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.alarm-current-card {
+  grid-template-columns: minmax(110px, 0.6fr) minmax(90px, 0.42fr) minmax(220px, 1fr);
+}
+
+.alarm-severity-grid strong,
+.alarm-current-card strong,
+.service-tile strong,
+.dr-monitor-grid strong {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  font: 800 11px var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.monitor-region-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monitor-region-select select {
+  min-width: 170px;
+  height: 26px;
+  color: var(--text-primary);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.84);
+  font: 700 9px var(--font-mono);
+}
+
+.service-tile-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.service-tile {
+  min-height: 74px;
+}
+
+body.workspace-monitoring .panel-orchestrator .node-editor-wrapper {
+  min-height: 260px;
+  background: rgba(2, 6, 23, 0.42);
+}
+
+body.workspace-monitoring .panel-orchestrator #node-svg {
+  width: 100%;
+  max-height: 360px;
+}
+
+body.workspace-monitoring .panel-logs .console-logs-wrapper {
+  min-height: 220px;
+  max-height: 320px;
+}
+
+@media (max-width: 1100px) {
+  .active-alarm-body,
+  .alarm-current-card {
+    grid-template-columns: 1fr;
+  }
+
+  .service-tile-grid,
+  body.workspace-monitoring .engineering-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .alarm-severity-grid,
+  .service-tile-grid,
+  body.workspace-monitoring .engineering-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-header-tools {
+    justify-content: flex-start;
+  }
+}

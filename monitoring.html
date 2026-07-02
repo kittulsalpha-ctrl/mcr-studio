@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-5" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-6" />
 </head>
 
 <body class="workspace-monitoring">
@@ -89,10 +89,54 @@
 
       <!-- Monitor page: NOC / MCR health engineering only. Operator switching lives on index.html. -->
       <section class="controls-container monitor-only-container">
-        <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
+
+        <div class="control-panel panel-active-alarms" data-workspace-panel="monitoring">
+          <div class="panel-header">
+            <h3>ACTIVE ALARMS</h3>
+            <span class="badge-green font-fira" id="active-alarm-state">NOMINAL</span>
+          </div>
+          <div class="panel-body active-alarm-body">
+            <div class="alarm-hero-count">
+              <span>OPEN CONDITIONS</span>
+              <strong id="active-alarm-count">0</strong>
+              <small id="active-alarm-summary">No active alarm conditions.</small>
+            </div>
+            <div class="alarm-severity-grid">
+              <div><span>CRITICAL</span><strong class="text-red" id="alarm-critical-count">0</strong></div>
+              <div><span>WARNING</span><strong class="text-amber" id="alarm-warning-count">0</strong></div>
+              <div><span>INFO</span><strong class="text-blue" id="alarm-info-count">0</strong></div>
+            </div>
+            <div class="alarm-current-card">
+              <div>
+                <span>AFFECTED</span>
+                <strong id="alarm-affected-service">Cloud chain ready</strong>
+              </div>
+              <div>
+                <span>DURATION</span>
+                <strong id="alarm-duration">00:00</strong>
+              </div>
+              <div>
+                <span>RECOMMENDED ACTION</span>
+                <strong id="alarm-recommended-action">Continue monitoring contribution, encode, and CDN health.</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-program-delivery" data-workspace-panel="monitoring">
           <div class="panel-header">
             <h3>PROGRAM DELIVERY</h3>
-            <span class="badge-blue font-fira">LIVE ROUTE</span>
+            <div class="monitor-header-tools">
+              <label class="monitor-region-select">REGION
+                <select id="region-preset-select">
+                  <option value="eu-west-1">eu-west-1 Ireland</option>
+                  <option value="eu-west-2">eu-west-2 London</option>
+                  <option value="ap-south-1">ap-south-1 Mumbai</option>
+                  <option value="us-east-1">us-east-1 Virginia</option>
+                </select>
+              </label>
+              <span class="badge-blue font-fira">LIVE ROUTE</span>
+            </div>
           </div>
 
           <div class="panel-body">
@@ -123,6 +167,16 @@
             <div class="route-summary-strip font-fira">
               <span class="route-summary-preview" id="route-summary-preview">PREVIEW: —</span>
             </div>
+          </div>
+        </div>
+
+        <div class="control-panel panel-orchestrator" data-workspace-panel="monitoring">
+          <div class="panel-header">
+            <h3>SIGNAL PATH</h3>
+            <span class="badge-blue font-fira">SOURCE → CLOUD → EDGE</span>
+          </div>
+
+          <div class="panel-body">
             <div class="node-editor-wrapper">
               <svg id="node-svg" viewBox="0 0 540 280" preserveAspectRatio="xMidYMid meet">
                 <defs>
@@ -229,109 +283,12 @@
                 <strong class="text-green">Cloud Switcher</strong> routes the active Program source through the protected delivery path.
               </span>
             </div>
-
-            <div class="source-inspector" id="source-inspector">
-              <div class="source-inspector-header">
-                <span>SELECTED SOURCE</span>
-                <span class="font-fira" id="source-inspector-tile">MULTIVIEW 1</span>
-              </div>
-              <div class="source-inspector-summary">
-                <div><span>INPUT</span><strong id="source-inspector-route">Browser Cam</strong></div>
-                <div><span>SIGNAL</span><strong id="source-inspector-signal">NO SIGNAL</strong></div>
-              </div>
-              <div class="source-inspector-grid">
-                <div><span>STATE</span><strong id="source-inspector-state">OFFLINE</strong></div>
-                <div><span>IN PREVIEW</span><strong id="source-inspector-preview">NO</strong></div>
-                <div><span>ON PROGRAM</span><strong id="source-inspector-program">NO</strong></div>
-                <div><span>MONITOR AUDIO</span><strong id="source-inspector-audio">OPEN</strong></div>
-              </div>
-              <div class="source-inspector-meta font-fira" id="source-inspector-meta">Select a tile or press PREVIEW to inspect its route.</div>
-            </div>
-
-            <details class="advanced-sim-controls">
-              <summary>Advanced source simulation</summary>
-              <div class="source-state-grid">
-                <label>LiveU 1
-                  <select class="source-state-select" id="source-state-liveu1">
-                    <option value="ONLINE" selected>ONLINE</option>
-                    <option value="STANDBY">STANDBY</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                    <option value="ALARM">ALARM</option>
-                  </select>
-                </label>
-                <label>LiveU 2
-                  <select class="source-state-select" id="source-state-liveu2">
-                    <option value="ONLINE">ONLINE</option>
-                    <option value="STANDBY" selected>STANDBY</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                    <option value="ALARM">ALARM</option>
-                  </select>
-                </label>
-                <label>LiveU 3
-                  <select class="source-state-select" id="source-state-liveu3">
-                    <option value="ONLINE" selected>ONLINE</option>
-                    <option value="STANDBY">STANDBY</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                    <option value="ALARM">ALARM</option>
-                  </select>
-                </label>
-                <label>LiveU 4
-                  <select class="source-state-select" id="source-state-liveu4">
-                    <option value="ONLINE" selected>ONLINE</option>
-                    <option value="STANDBY">STANDBY</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                    <option value="ALARM">ALARM</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="source-detection-grid">
-                <div class="source-detection-row">
-                  <span>LiveU 1</span>
-                  <label><input type="checkbox" id="detect-black-liveu1" /> BLACK</label>
-                  <label><input type="checkbox" id="detect-silence-liveu1" /> SILENCE</label>
-                  <label><input type="checkbox" id="detect-frozen-liveu1" /> FREEZE</label>
-                </div>
-                <div class="source-detection-row">
-                  <span>LiveU 2</span>
-                  <label><input type="checkbox" id="detect-black-liveu2" /> BLACK</label>
-                  <label><input type="checkbox" id="detect-silence-liveu2" /> SILENCE</label>
-                  <label><input type="checkbox" id="detect-frozen-liveu2" /> FREEZE</label>
-                </div>
-                <div class="source-detection-row">
-                  <span>LiveU 3</span>
-                  <label><input type="checkbox" id="detect-black-liveu3" /> BLACK</label>
-                  <label><input type="checkbox" id="detect-silence-liveu3" /> SILENCE</label>
-                  <label><input type="checkbox" id="detect-frozen-liveu3" /> FREEZE</label>
-                </div>
-                <div class="source-detection-row">
-                  <span>LiveU 4</span>
-                  <label><input type="checkbox" id="detect-black-liveu4" /> BLACK</label>
-                  <label><input type="checkbox" id="detect-silence-liveu4" /> SILENCE</label>
-                  <label><input type="checkbox" id="detect-frozen-liveu4" /> FREEZE</label>
-                </div>
-              </div>
-
-              <div class="ndi-bridge-panel">
-                <div class="ndi-bridge-header">
-                  <span>NDI BRIDGE DISCOVERY</span>
-                  <span class="font-fira" id="ndi-bridge-status">NOT SCANNED</span>
-                </div>
-                <div class="ndi-bridge-controls">
-                  <button class="btn-filter" id="btn-scan-ndi">SCAN NDI</button>
-                  <select class="source-state-select" id="ndi-source-select">
-                    <option value="">No NDI sources discovered</option>
-                  </select>
-                </div>
-                <div class="ndi-bridge-hint font-fira" id="ndi-bridge-hint">Browser preview uses a future NDI-to-WebRTC/HLS bridge.</div>
-              </div>
-            </details>
           </div>
         </div>
 
         <div class="control-panel panel-incident-response" data-workspace-panel="monitoring">
           <div class="panel-header">
-            <h3>INCIDENT &amp; ACTIONS</h3>
+            <h3>OPS RUNBOOK ADVISOR</h3>
             <span class="badge-amber font-fira" id="incident-status-badge">STANDBY</span>
           </div>
           <div class="panel-body incident-response-body">
@@ -341,7 +298,7 @@
               <small id="incident-current-detail">Signal path and cloud distribution are nominal.</small>
             </div>
             <div class="incident-recommendation">
-              <span>AI RECOMMENDATION</span>
+              <span>RUNBOOK RECOMMENDATION</span>
               <strong id="incident-recommendation">Continue monitoring.</strong>
             </div>
             <div class="incident-advisor">
@@ -377,6 +334,23 @@
           </div>
         </div>
 
+        <div class="control-panel panel-service-health" data-workspace-panel="monitoring">
+          <div class="panel-header">
+            <h3>CLOUD CHAIN HEALTH</h3>
+            <span class="badge-blue font-fira">SERVICE TILE VIEW</span>
+          </div>
+          <div class="panel-body service-tile-grid">
+            <div class="service-tile"><span>SRT Gateway</span><strong id="svc-srt-status">READY</strong><small id="svc-srt-metric">RTT 25ms · Primary</small></div>
+            <div class="service-tile"><span>MediaConnect</span><strong id="svc-mediaconnect-status">READY</strong><small id="svc-mediaconnect-metric">Flow armed · A/B ready</small></div>
+            <div class="service-tile"><span>MediaLive</span><strong id="svc-medialive-status">READY</strong><small id="svc-medialive-metric">Encoder waiting · Primary</small></div>
+            <div class="service-tile"><span>MediaPackage</span><strong id="svc-mediapackage-status">READY</strong><small id="svc-mediapackage-metric">Origin ready · Backup</small></div>
+            <div class="service-tile"><span>Origin</span><strong id="svc-origin-status">READY</strong><small id="svc-origin-metric">ABR origin · Healthy</small></div>
+            <div class="service-tile"><span>CDN Edge</span><strong id="svc-cdn-status">READY</strong><small id="svc-cdn-metric">Edge 110ms · Global</small></div>
+            <div class="service-tile"><span>Encoder</span><strong id="svc-encoder-status">READY</strong><small id="svc-encoder-metric">Ladder 1080/720/540</small></div>
+            <div class="service-tile"><span>Monitoring Probe</span><strong id="svc-probe-status">WATCHING</strong><small id="svc-probe-metric">QoS probe · Simulated</small></div>
+          </div>
+        </div>
+
         <details class="monitoring-detail panel-cloud-topology" data-workspace-panel="monitoring">
           <summary><span>ARCHITECTURE DETAIL</span><small>CLOUD PRODUCTION CHAIN</small></summary>
           <div class="control-panel">
@@ -389,7 +363,7 @@
           <div class="control-panel">
           <div class="panel-header">
             <h3>SRT CONTRIBUTOR TELEMETRY</h3>
-            <span class="badge-amber font-fira">SIMULATION CONTROLS</span>
+            <span class="badge-amber font-fira">SIMULATED TELEMETRY</span>
           </div>
 
           <div class="panel-body grid-2-col">
@@ -455,27 +429,27 @@
         </details>
 
         <details class="monitoring-detail panel-dr-playout" data-workspace-panel="monitoring">
-          <summary><span>DR &amp; TEST CONTROLS</span><small>FAILOVER AND SCTE SIMULATION</small></summary>
+          <summary><span>DR / FAILOVER MONITORING</span><small>PRIMARY AND BACKUP PATH STATUS</small></summary>
           <div class="control-panel">
           <div class="panel-header">
             <h3>MASTER PLAYOUT & DISASTER RECOVERY</h3>
-            <span class="badge-pink font-fira">MCR TRIGGER CORE</span>
+            <span class="badge-pink font-fira">DR STATUS</span>
           </div>
 
           <div class="panel-body dr-buttons-row">
             <div class="dr-group">
-              <span class="dr-title">SIMULATED FAILURES</span>
-              <div class="btn-grid">
-                <button class="btn btn-danger" id="btn-fail-primary">FAIL PRIMARY ENCODER</button>
-                <button class="btn btn-success" id="btn-restore-primary" disabled>RESTORE PRIMARY ENCODER</button>
+              <span class="dr-title">PRIMARY / BACKUP PATH</span>
+              <div class="dr-monitor-grid">
+                <div><span>PRIMARY</span><strong id="dr-primary-monitor">PROTECTED</strong></div>
+                <div><span>BACKUP</span><strong id="dr-backup-monitor">HOT STANDBY</strong></div>
               </div>
             </div>
 
             <div class="dr-group">
-              <span class="dr-title">ADVERTISEMENT SPLICE INJECTOR</span>
-              <div class="btn-grid">
-                <button class="btn btn-pink" id="btn-inject-scte">INJECT SCTE-35 AD CUE (30S)</button>
-                <button class="btn btn-secondary" id="btn-cancel-scte" disabled>CANCEL AD SPLICE</button>
+              <span class="dr-title">SCTE-35 MONITORING</span>
+              <div class="dr-monitor-grid">
+                <div><span>NEXT MARKER</span><strong id="scte-next-monitor">NONE ARMED</strong></div>
+                <div><span>WINDOW</span><strong id="scte-window-monitor">CLEAR</strong></div>
               </div>
             </div>
           </div>
@@ -491,7 +465,7 @@
               <button class="btn-filter" data-filter="operator" id="filter-info">OPERATOR</button>
               <button class="btn-filter" data-filter="alarm" id="filter-alarm">ALARM</button>
               <button class="btn-filter" data-filter="cloud" id="filter-warning">CLOUD</button>
-              <button class="btn-filter" data-filter="ai">AI</button>
+              <button class="btn-filter" data-filter="ai">RUNBOOK</button>
               <button class="btn-filter" data-filter="scte">SCTE</button>
               <select class="log-tag-filter" id="log-tag-filter">
                 <option value="all">ALL TAGS</option>
@@ -522,6 +496,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=mcr-flow-5"></script>
+  <script src="app.js?v=mcr-flow-6"></script>
 </body>
 </html>

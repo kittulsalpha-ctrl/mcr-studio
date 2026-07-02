@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clock Systems
     localDrift: 0,
     onAirStartedAt: null,
+    alarmStartedAt: null,
     regionPreset: localStorage.getItem('mcr-region-preset') || 'us-east-1',
     
     // Telemetry Sliders
@@ -504,6 +505,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btnIncidentTakeBackup: byId("btn-incident-take-backup"),
     btnIncidentResolve: byId("btn-incident-resolve"),
     btnIncidentSummary: byId("btn-incident-summary"),
+    activeAlarmState: byId("active-alarm-state"),
+    activeAlarmCount: byId("active-alarm-count"),
+    activeAlarmSummary: byId("active-alarm-summary"),
+    alarmCriticalCount: byId("alarm-critical-count"),
+    alarmWarningCount: byId("alarm-warning-count"),
+    alarmInfoCount: byId("alarm-info-count"),
+    alarmAffectedService: byId("alarm-affected-service"),
+    alarmDuration: byId("alarm-duration"),
+    alarmRecommendedAction: byId("alarm-recommended-action"),
     audioMixerChannels: byId("audio-mixer-channels"),
     audioAfvToggle: byId("audio-afv-toggle"),
     audioPgmBus: byId("audio-pgm-bus"),
@@ -549,6 +559,26 @@ document.addEventListener('DOMContentLoaded', () => {
     engNetworkDetail: byId("eng-network-detail"),
     engRegionStatus: byId("eng-region-status"),
     engRegionDetail: byId("eng-region-detail"),
+    svcSrtStatus: byId("svc-srt-status"),
+    svcSrtMetric: byId("svc-srt-metric"),
+    svcMediaConnectStatus: byId("svc-mediaconnect-status"),
+    svcMediaConnectMetric: byId("svc-mediaconnect-metric"),
+    svcMediaLiveStatus: byId("svc-medialive-status"),
+    svcMediaLiveMetric: byId("svc-medialive-metric"),
+    svcMediaPackageStatus: byId("svc-mediapackage-status"),
+    svcMediaPackageMetric: byId("svc-mediapackage-metric"),
+    svcOriginStatus: byId("svc-origin-status"),
+    svcOriginMetric: byId("svc-origin-metric"),
+    svcCdnStatus: byId("svc-cdn-status"),
+    svcCdnMetric: byId("svc-cdn-metric"),
+    svcEncoderStatus: byId("svc-encoder-status"),
+    svcEncoderMetric: byId("svc-encoder-metric"),
+    svcProbeStatus: byId("svc-probe-status"),
+    svcProbeMetric: byId("svc-probe-metric"),
+    drPrimaryMonitor: byId("dr-primary-monitor"),
+    drBackupMonitor: byId("dr-backup-monitor"),
+    scteNextMonitor: byId("scte-next-monitor"),
+    scteWindowMonitor: byId("scte-window-monitor"),
     signalFlowSource: byId("signal-flow-source"),
     signalFlowTransport: byId("signal-flow-transport"),
     signalFlowMediaConnect: byId("signal-flow-mediaconnect"),
@@ -2473,6 +2503,45 @@ document.addEventListener('DOMContentLoaded', () => {
     return alarms;
   }
 
+  function getAlarmSeverity(alarm) {
+    if (/INPUT LOSS|QC ALARM|PRIMARY PATH FAILED|SRT UNDERFLOW|CDN DEGRADED/i.test(alarm)) return 'critical';
+    if (/HIGH RTT|PACKET LOSS|BLACK|SILENCE|FREEZE/i.test(alarm)) return 'warning';
+    return 'info';
+  }
+
+  function getAlarmAffectedArea(alarm) {
+    if (/CDN/i.test(alarm)) return 'CDN Edge';
+    if (/PRIMARY PATH|SRT|RTT|PACKET/i.test(alarm)) return 'Contribution transport';
+    if (/LiveU/i.test(alarm)) return alarm.split(' ').slice(0, 2).join(' ');
+    return 'Cloud chain';
+  }
+
+  function renderActiveAlarmHero() {
+    if (!el.activeAlarmCount) return;
+    const alarms = getActiveAlarmSummary();
+    if (alarms.length && !state.alarmStartedAt) state.alarmStartedAt = Date.now();
+    if (!alarms.length) state.alarmStartedAt = null;
+
+    const critical = alarms.filter(alarm => getAlarmSeverity(alarm) === 'critical').length;
+    const warning = alarms.filter(alarm => getAlarmSeverity(alarm) === 'warning').length;
+    const info = Math.max(0, alarms.length - critical - warning);
+    const primaryAlarm = alarms[0] || null;
+    const incident = getIncidentSnapshot();
+
+    el.activeAlarmCount.textContent = String(alarms.length);
+    el.activeAlarmSummary.textContent = primaryAlarm || 'No active alarm conditions.';
+    setMetricText(el.alarmCriticalCount, String(critical), critical ? 'text-red' : 'text-muted');
+    setMetricText(el.alarmWarningCount, String(warning), warning ? 'text-amber' : 'text-muted');
+    setMetricText(el.alarmInfoCount, String(info), info ? 'text-blue' : 'text-muted');
+    setMetricText(el.alarmAffectedService, primaryAlarm ? getAlarmAffectedArea(primaryAlarm) : 'Cloud chain ready', primaryAlarm ? critical ? 'text-red' : 'text-amber' : 'text-green');
+    setMetricText(el.alarmDuration, state.alarmStartedAt ? formatElapsedTime(Date.now() - state.alarmStartedAt) : '00:00', alarms.length ? 'text-amber' : 'text-muted');
+    setMetricText(el.alarmRecommendedAction, incident.hasIncident ? incident.deliveryHealth.action : 'Continue monitoring contribution, encode, and CDN health.', incident.hasIncident ? 'text-amber' : 'text-green');
+    if (el.activeAlarmState) {
+      el.activeAlarmState.textContent = alarms.length ? critical ? 'CRITICAL' : 'WARNING' : 'NOMINAL';
+      el.activeAlarmState.className = alarms.length ? critical ? 'badge-red font-fira' : 'badge-amber font-fira' : 'badge-green font-fira';
+    }
+  }
+
   function getRecommendedBackupFeed() {
     const current = state.activeSource;
     return ['cam2', 'liveu3', 'liveu4', 'cam1'].find(feed => feed !== current && feedHasActiveSignal(feed)) || null;
@@ -2741,6 +2810,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
+    setMetricText(el.svcSrtStatus, state.primaryFailed ? 'BACKUP' : state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : 'HEALTHY', state.primaryFailed || state.rttMs >= 160 || state.lossPercent >= 5 ? 'text-amber' : 'text-green');
+    if (el.svcSrtMetric) el.svcSrtMetric.textContent = `RTT ${state.rttMs}ms · ${state.lossPercent.toFixed(1)}% loss · ${state.primaryFailed ? 'Backup' : 'Primary'}`;
+    setMetricText(el.svcMediaConnectStatus, mediaConnectTelemetry?.status || delivery.mediaConnectStatus, mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.primaryFailed ? 'text-amber' : delivery.hasProgram ? 'text-green' : 'text-blue');
+    if (el.svcMediaConnectMetric) el.svcMediaConnectMetric.textContent = `${state.primaryFailed ? 'Flow B active' : 'Flow A/B ready'} · ${selectedRegion.code}`;
+    setMetricText(el.svcMediaLiveStatus, mediaLiveTelemetry?.status || delivery.mediaLiveStatus, mediaLiveTelemetry ? serviceStatusClass(mediaLiveTelemetry.status) : delivery.hasProgram && delivery.programHealthy ? 'text-green' : delivery.hasProgram ? 'text-red' : 'text-blue');
+    if (el.svcMediaLiveMetric) el.svcMediaLiveMetric.textContent = `${selectedRegion.encoder} · ${delivery.hasProgram ? 'Program input' : 'Ready'}`;
+    setMetricText(el.svcMediaPackageStatus, mediaPackageTelemetry?.status || delivery.packageStatus, mediaPackageTelemetry ? serviceStatusClass(mediaPackageTelemetry.status) : delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue');
+    if (el.svcMediaPackageMetric) el.svcMediaPackageMetric.textContent = `ABR origin · ${state.primaryFailed ? 'Backup protected' : 'Primary protected'}`;
+    setMetricText(el.svcOriginStatus, delivery.deliveryDegraded ? 'DEGRADED' : 'READY', delivery.deliveryDegraded ? 'text-red' : 'text-green');
+    if (el.svcOriginMetric) el.svcOriginMetric.textContent = `${delivery.packageStatus} · HLS/DASH`;
+    setMetricText(el.svcCdnStatus, cloudFrontTelemetry?.status || delivery.cdnStatus, cloudFrontTelemetry ? serviceStatusClass(cloudFrontTelemetry.status) : delivery.deliveryDegraded ? 'text-red' : delivery.hasProgram && delivery.programHealthy ? 'text-green' : 'text-blue');
+    if (el.svcCdnMetric) el.svcCdnMetric.textContent = `Edge ${90 + state.rttMs}ms · ${delivery.deliveryDegraded ? 'QoS warning' : 'Healthy'}`;
+    setMetricText(el.svcEncoderStatus, delivery.hasProgram ? delivery.programHealthy ? 'ENCODING' : 'INPUT WAIT' : 'READY', delivery.hasProgram ? delivery.programHealthy ? 'text-green' : 'text-red' : 'text-blue');
+    if (el.svcEncoderMetric) el.svcEncoderMetric.textContent = `Ladder 1080/720/540 · ${state.calculatedBw.toFixed(1)} Mbps`;
+    setMetricText(el.svcProbeStatus, alarms.length ? 'ALARMING' : 'WATCHING', alarms.length ? 'text-amber' : 'text-green');
+    if (el.svcProbeMetric) el.svcProbeMetric.textContent = `${alarms.length} alarm${alarms.length === 1 ? '' : 's'} · Simulated probe`;
+    setMetricText(el.drPrimaryMonitor, state.primaryFailed ? 'FAILED' : 'PROTECTED', state.primaryFailed ? 'text-red' : 'text-green');
+    setMetricText(el.drBackupMonitor, state.primaryFailed ? 'ACTIVE' : 'HOT STANDBY', state.primaryFailed ? 'text-amber' : 'text-blue');
+    setMetricText(el.scteNextMonitor, state.adActive ? 'AD CUE ACTIVE' : 'NONE ARMED', state.adActive ? 'text-amber' : 'text-muted');
+    setMetricText(el.scteWindowMonitor, state.adActive ? 'SPLICE OPEN' : 'CLEAR', state.adActive ? 'text-amber' : 'text-green');
+    renderActiveAlarmHero();
     const deliveryStages = [directConnectTelemetry, mediaConnectTelemetry, mediaLiveTelemetry, mediaPackageTelemetry, cloudFrontTelemetry].filter(Boolean);
     const telemetryFault = deliveryStages.some(service => ['DEGRADED', 'ALARM', 'FAILED'].includes(service.status));
     const deliveryState = telemetryFault ? 'ATTENTION REQUIRED' : delivery.status;
