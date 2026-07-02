@@ -2188,6 +2188,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderReplayPlayoutServers() {
+    const replaySourceReady = feedHasActiveSignal(state.replayPlayout.replay.source);
+    const hasReplayClip = !!getSelectedReplayClip();
+    const hasPlayoutAsset = !!getSelectedPlayoutAsset();
+    const replayCued = state.previewFeed === 'replay';
+    const playoutCued = state.previewFeed === 'playout';
+    const canReturnLive = ['replay', 'playout'].includes(state.activeSource) && feedHasActiveSignal(state.replayPlayout.returnLiveSource || 'cam1');
+
     if (el.replayClipSelect) {
       const current = state.replayPlayout.replay.selectedClip;
       el.replayClipSelect.innerHTML = state.replayPlayout.replay.clips.map(clip => (
@@ -2209,6 +2216,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const asset = getSelectedPlayoutAsset();
       el.playoutAssetStatus.textContent = `${asset.label} · ${asset.type} · ${asset.duration}`;
     }
+    [el.btnReplayMarkIn, el.btnReplayMarkOut, el.btnReplayCreate].forEach(button => {
+      setControlEnabled(
+        button,
+        replaySourceReady,
+        'Mark or save a replay clip from the selected healthy source.',
+        'Select a replay source with signal before marking clips.'
+      );
+    });
+    setControlEnabled(el.btnPreviewReplay, replaySourceReady && hasReplayClip, 'Cue the selected replay clip in Preview.', 'Replay source or clip is not ready.');
+    setControlEnabled(el.btnTakeReplay, replayCued, 'Take the cued replay clip to Program.', 'Cue a replay clip to Preview before taking it to air.');
+    setControlEnabled(el.btnReturnLiveReplay, canReturnLive, 'Return Program to the remembered live source.', 'Return Live is available only while replay/playout is on air.');
+    setControlEnabled(el.btnPreviewPlayout, hasPlayoutAsset, 'Cue the selected playout asset in Preview.', 'No playout asset is selected.');
+    setControlEnabled(el.btnTakePlayout, playoutCued, 'Take the cued playout asset to Program.', 'Cue a playout asset to Preview before taking it to air.');
+    setControlEnabled(el.btnReturnLivePlayout, canReturnLive, 'Return Program to the remembered live source.', 'Return Live is available only while replay/playout is on air.');
   }
 
   function markReplayPoint(point) {
@@ -2235,6 +2256,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function previewServerSource(feed) {
+    if (feed === 'replay' && !feedHasActiveSignal(state.replayPlayout.replay.source)) {
+      addLog('warning', 'REPLAY', `Replay cannot be cued because ${getTileName(state.replayPlayout.replay.source)} has no usable signal.`);
+      renderReplayPlayoutServers();
+      return;
+    }
     captureReturnLiveSource();
     setPreview(feed);
     addLog('info', feed === 'replay' ? 'REPLAY' : 'PLYT', `${getProgramRouteLabel(feed)} cued to Preview.`);
@@ -2251,6 +2277,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function returnToLiveFromServer() {
     const target = state.replayPlayout.returnLiveSource || 'cam1';
+    if (!feedHasActiveSignal(target)) {
+      addLog('warning', 'ROUTE', `Return Live blocked because ${getProgramRouteLabel(target)} has no usable signal.`);
+      renderReplayPlayoutServers();
+      return;
+    }
     setPreview(target);
     routePreviewToProgram('RETURN LIVE');
     addLog('info', 'ROUTE', `Returned to live source ${getProgramRouteLabel(target)}.`);
@@ -2306,6 +2337,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!node) return;
     node.textContent = value;
     node.className = className;
+  }
+
+  function setControlEnabled(button, enabled, titleWhenEnabled = '', titleWhenDisabled = '') {
+    if (!button) return;
+    button.disabled = !enabled;
+    button.style.opacity = enabled ? '1.0' : '0.45';
+    button.classList.toggle('btn-disabled', !enabled);
+    if (titleWhenEnabled || titleWhenDisabled) {
+      button.title = enabled ? titleWhenEnabled : titleWhenDisabled;
+    }
   }
 
   function getSelectedRegion() {
@@ -3332,13 +3373,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTAKEButton() {
     const previewReady = !!state.previewFeed && feedHasActiveSignal(state.previewFeed);
     [el.btnTake, el.btnCut].forEach(button => {
-      if (!button) return;
-      button.disabled = !previewReady;
-      button.style.opacity = previewReady ? '1.0' : '0.45';
-      button.classList.toggle('btn-disabled', !previewReady);
-      button.title = previewReady
-        ? 'Send the current Preview source to Program Out.'
-        : 'Select a healthy source in Preview before taking Program.';
+      setControlEnabled(
+        button,
+        previewReady,
+        'Send the current Preview source to Program Out.',
+        'Select a healthy source in Preview before taking Program.'
+      );
     });
   }
 
@@ -3384,14 +3424,10 @@ document.addEventListener('DOMContentLoaded', () => {
       graphicsLine.textContent = layers.length ? `GRAPHICS: ${layers.join(' + ')} ON AIR` : state.graphicsPreview ? `GRAPHICS PREVIEW: ${graphicsLabel(state.graphicsPreview)}` : 'GRAPHICS: CLEAR';
     }
     if (el.btnClearProgram) {
-      el.btnClearProgram.disabled = !state.activeSource;
-      el.btnClearProgram.style.opacity = state.activeSource ? '1.0' : '0.5';
-      el.btnClearProgram.classList.toggle('btn-disabled', !state.activeSource);
+      setControlEnabled(el.btnClearProgram, !!state.activeSource, 'Take Program off air.', 'Program is already off air.');
     }
     if (el.btnFadeBlack) {
-      el.btnFadeBlack.disabled = !state.activeSource;
-      el.btnFadeBlack.style.opacity = state.activeSource ? '1.0' : '0.5';
-      el.btnFadeBlack.classList.toggle('btn-disabled', !state.activeSource);
+      setControlEnabled(el.btnFadeBlack, !!state.activeSource, 'Fade Program Out to black.', 'Program is already off air.');
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();
@@ -3433,6 +3469,10 @@ document.addEventListener('DOMContentLoaded', () => {
     el.btnTakeGraphics?.classList.toggle('btn-active-graphics', !!state.graphicsPreview);
     el.btnToggleTicker?.classList.toggle('btn-active-graphics', state.tickerOn);
     el.btnToggleBug?.classList.toggle('btn-active-graphics', state.bugOn);
+    setControlEnabled(el.btnTakeGraphics, !!state.activeSource && !!state.graphicsPreview, 'Key the previewed graphic over Program.', 'Program must be on air and a graphic must be previewed first.');
+    setControlEnabled(el.btnToggleTicker, !!state.activeSource, 'Toggle the ticker graphic over Program Out.', 'Program must be on air before keying ticker graphics.');
+    setControlEnabled(el.btnToggleBug, !!state.activeSource, 'Toggle the live/score bug over Program Out.', 'Program must be on air before keying bug graphics.');
+    setControlEnabled(el.btnClearGraphics, !!state.graphicsPreview || layers.length > 0, 'Clear previewed and on-air graphics.', 'No graphics are currently previewed or on air.');
     updatePGMFooter();
   }
 
@@ -3444,6 +3484,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function takeGraphic() {
+    if (!state.activeSource) {
+      addLog('warning', 'CG', 'Graphics take blocked: Program is off air.');
+      updateGraphicsUI();
+      return;
+    }
+    if (!state.graphicsPreview) {
+      addLog('warning', 'CG', 'Graphics take blocked: preview a graphic before taking it to air.');
+      updateGraphicsUI();
+      return;
+    }
     const graphic = state.graphicsPreview || 'lowerThird';
     state.activeGraphics = graphic;
     state.graphicsPreview = null;
@@ -3464,6 +3514,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function toggleGraphicsLayer(layer) {
+    if (!state.activeSource) {
+      addLog('warning', 'CG', `${graphicsLabel(layer)} blocked: Program is off air.`);
+      updateGraphicsUI();
+      return;
+    }
     if (layer === 'ticker') state.tickerOn = !state.tickerOn;
     if (layer === 'bug') state.bugOn = !state.bugOn;
     updateGraphicsUI();
