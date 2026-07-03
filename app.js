@@ -286,6 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
       pgm: false
     },
     
+    // Guided client demo sequence
+    clientDemo: {
+      running: false,
+      timers: []
+    },
+
     // Console Logs
     logs: []
   };
@@ -604,6 +610,8 @@ document.addEventListener('DOMContentLoaded', () => {
     workflowProgramSource: byId("workflow-program-source"),
     workflowMonitorState: byId("workflow-monitor-state"),
     workflowLastEvent: byId("workflow-last-event"),
+    workflowDemoStep: byId("workflow-demo-step"),
+    btnStartClientDemo: byId("btn-start-client-demo"),
     setupSummaryCam1: byId("setup-summary-cam1"),
     setupSummaryCam1State: byId("setup-summary-cam1-state"),
     setupSummaryCam2: byId("setup-summary-cam2"),
@@ -4010,9 +4018,131 @@ document.addEventListener('DOMContentLoaded', () => {
     addLog('warning', 'AI', `Incident summary: ${incident.alarms.join(', ')}. Program=${program}. ${recommendation}`);
   }
 
+  function clearClientDemoTimers() {
+    state.clientDemo.timers.forEach(timer => clearTimeout(timer));
+    state.clientDemo.timers = [];
+  }
+
+  function setClientDemoStep(label, className = 'text-blue') {
+    setMetricText(el.workflowDemoStep, label, className);
+  }
+
+  function scheduleClientDemoStep(delayMs, label, action, className = 'text-blue') {
+    const timer = setTimeout(() => {
+      state.clientDemo.timers = state.clientDemo.timers.filter(activeTimer => activeTimer !== timer);
+      if (!state.clientDemo.running) return;
+      setClientDemoStep(label, className);
+      action?.();
+    }, delayMs);
+    state.clientDemo.timers.push(timer);
+  }
+
+  function setClientDemoAlarm() {
+    state.primaryFailed = true;
+    state.lossPercent = Math.max(state.lossPercent, 8.5);
+    state.rttMs = Math.max(state.rttMs, 185);
+    state.jitterMs = Math.max(state.jitterMs, 54);
+    if (el.slideLoss) el.slideLoss.value = state.lossPercent;
+    if (el.slideRtt) el.slideRtt.value = state.rttMs;
+    if (el.slideJitter) el.slideJitter.value = state.jitterMs;
+    setSourceState('liveu1', 'ALARM');
+    setSourceState('liveu2', 'ONLINE');
+    el.alarmOverlayCam1?.classList.add('alarm-active');
+    if (el.btnFailPrimary) el.btnFailPrimary.disabled = true;
+    if (el.btnRestorePrimary) el.btnRestorePrimary.disabled = false;
+    updateSourceStateControls();
+    updateSRTSimulation();
+    updateOrchestratorRouting();
+    renderIncidentResponse();
+    renderAIOpsAssistant();
+    addLog('alarm', 'SRT', 'Client demo incident: primary LiveU path lost packet lock.');
+    addLog('warning', 'AI', 'Runbook Recommendation: preview backup path, then take backup if Program confidence drops.');
+  }
+
+  function completeClientDemo() {
+    state.clientDemo.running = false;
+    clearClientDemoTimers();
+    if (el.btnStartClientDemo) {
+      el.btnStartClientDemo.disabled = false;
+      el.btnStartClientDemo.textContent = 'RESTART CLIENT DEMO';
+    }
+    setClientDemoStep('COMPLETE', 'text-green');
+    addLog('info', 'DEMO', 'Client demo completed: route, graphics, alarm, backup, and resolution shown.');
+    saveWorkspaceState();
+  }
+
+  function startClientDemo() {
+    clearClientDemoTimers();
+    state.clientDemo.running = true;
+    if (el.btnStartClientDemo) {
+      el.btnStartClientDemo.disabled = true;
+      el.btnStartClientDemo.textContent = 'DEMO RUNNING';
+    }
+
+    applyDemoPreset('football', { updateUrl: false });
+    state.activeSource = null;
+    state.previewFeed = null;
+    state.programSourceOverride = null;
+    state.onAirStartedAt = null;
+    state.primaryFailed = false;
+    state.lossPercent = 0.4;
+    state.rttMs = 34;
+    state.jitterMs = 8;
+    setSourceState('liveu1', 'ONLINE');
+    setSourceState('liveu2', 'STANDBY');
+    clearGraphics('Graphics cleared for client demo reset.');
+    clearPreviewUI();
+    syncAudioFollowVideo('client demo reset');
+    updateSRTSimulation();
+    updateOrchestratorRouting();
+    renderIncidentResponse();
+    renderOperatorWorkflowStatus();
+    setClientDemoStep('STARTING', 'text-blue');
+    addLog('info', 'DEMO', 'Client demo started: Cloud MCR happy path and incident path.');
+
+    scheduleClientDemoStep(900, 'SOURCE READY', () => {
+      addLog('info', 'DEMO', 'Primary LiveU source is locked through ingest, switcher, encoder, and CDN simulation.');
+    }, 'text-green');
+
+    scheduleClientDemoStep(2100, 'PREVIEW', () => {
+      setPreview('cam1');
+    });
+
+    scheduleClientDemoStep(3600, 'TAKE TO AIR', () => {
+      routePreviewToProgram('CLIENT DEMO TAKE');
+    }, 'text-red');
+
+    scheduleClientDemoStep(5100, 'GRAPHICS', () => {
+      previewGraphic('lowerThird');
+      takeGraphic();
+    }, 'text-pink');
+
+    scheduleClientDemoStep(6900, 'INCIDENT', () => {
+      setClientDemoAlarm();
+    }, 'text-red');
+
+    scheduleClientDemoStep(8700, 'BACKUP PREVIEW', () => {
+      previewIncidentBackup();
+    }, 'text-amber');
+
+    scheduleClientDemoStep(10400, 'BACKUP ON AIR', () => {
+      takeIncidentBackup();
+    }, 'text-red');
+
+    scheduleClientDemoStep(12300, 'SUMMARY', () => {
+      generateIncidentSummary();
+    }, 'text-blue');
+
+    scheduleClientDemoStep(14100, 'RESOLVED', () => {
+      resolveIncident();
+      completeClientDemo();
+    }, 'text-green');
+  }
+
   // TAKE button: route preview to program
   el.btnTake?.addEventListener('click', () => routePreviewToProgram('TAKE'));
   el.btnCut?.addEventListener('click', () => routePreviewToProgram('CUT'));
+  el.btnStartClientDemo?.addEventListener('click', startClientDemo);
   el.btnFadeBlack?.addEventListener('click', () => {
     if (state.txSafety.programProtection && !window.confirm('Program Protection is enabled. Fade Program to black?')) {
       addLog('warning', 'MIX', 'Fade to black cancelled by Program Protection.');
