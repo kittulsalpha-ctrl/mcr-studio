@@ -4,11 +4,38 @@ Browser-based Cloud MCR/PCR prototype for monitoring, routing, preview/program s
 
 This project is a working front-end demo for a modern hybrid broadcast operations cockpit. It combines a multiviewer, preview/program switching, source routing, CG graphics overlays, signal-path visibility, cloud distribution awareness, alarms/QC, incident logs, and an operational AI assistant.
 
+## Client Demo Positioning
+
+Position this repo as a **sellable prototype**, not a finished 24/7 broadcast product. The product story is:
+
+> MCR Studio is a browser-based Cloud MCR/PCR control surface that shows how operators can switch live sources, monitor cloud delivery, manage incidents, and prepare real backend integrations from one control-room interface.
+
+For a client presentation, start with `OPERATE`, then show `SETUP`, then finish with `MONITOR`:
+
+1. `OPERATE`: show the live control-room value first: Multiview, Preview, Program Out, Take to Air, graphics, audio, cues, and emergency backup.
+2. `SETUP`: show how engineering configures sources, regions, OBS/NDI/API readiness, and the integration roadmap.
+3. `MONITOR`: show the NOC/MCR confidence layer: alarms, signal path, SRT telemetry, cloud chain health, DR status, incident timeline, and runbook advisor.
+
+This avoids presenting the project as a settings dashboard. The first impression should be live broadcast control.
+
+## Product Architecture Story
+
+The long-term product should be explained as five layers:
+
+1. **Browser Control Surface**: Operate, Monitor, and Setup pages for PCR operators, MCR/NOC engineers, and system admins.
+2. **Edge Gateway**: local or cloud gateway for OBS, NDI, SRT, WebRTC, RTSP, LiveU receivers, QC probes, and browser-safe preview streams.
+3. **Control Orchestrator**: backend authority for Preview, Program, Off Air, audio buses, graphics, replay, playout, logs, alarms, and shared operator state.
+4. **Cloud Media Chain**: MediaConnect, switcher, MediaLive, origin packaging, CDN Edge, primary/backup route, and regional failover.
+5. **Ops Intelligence**: alarm correlation, incident timeline, runbook recommendations, show summaries, and operator action history.
+
+The current static GitHub Pages app proves the workflow and UI. The Node Edge Agent proves the first backend boundary. A production product requires the gateway, orchestrator, media engines, authentication, and telemetry collectors.
+
 ## Current Demo Scope
 
 - `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Graphics Overlay controls, Program Audio with Follow Video, Show Cues, Replay Server, and Playout Server.
-- `MONITORING`: NOC-style workspace for signal path, Source Inspector, NDI bridge placeholder, AI Ops Assistant, client integration readiness, cloud broadcast health, production chain topology, SRT telemetry, disaster recovery controls, SCTE cue simulation, alarms/QC, and incident timeline.
-- `index.html` is the Operations screen. `monitoring.html` is the dedicated Monitoring/NOC screen. Open both URLs in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
+- `MONITORING`: NOC-style workspace for Active Alarms, Program Delivery, Signal Path, Delivery Health, SRT telemetry, Cloud Chain Health, DR/SCTE monitoring, Operator & Incident Timeline, and Ops Runbook Advisor.
+- `SETUP`: engineering/admin workspace for source configuration, local test inputs, OBS mapping, NDI bridge placeholder, region presets, scenario presets, backend readiness, and the integration roadmap.
+- `index.html` is the Operate screen. `monitoring.html` is the dedicated Monitoring/NOC screen. `setup.html` is the engineering Setup screen. Open Operate and Monitoring in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
 
 ## Graphics vs Playout
 

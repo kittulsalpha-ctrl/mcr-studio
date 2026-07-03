@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-7" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-8" />
 </head>
 
 <body class="workspace-setup">
@@ -678,6 +678,13 @@
               <span>PRODUCTION TARGET</span>
               <strong>Cloud control surface connected to real contribution, switching, audio, graphics, replay, playout, encode, CDN, QC, and AI incident services.</strong>
             </div>
+            <div class="architecture-ladder" aria-label="Cloud MCR product architecture">
+              <div><span>1</span><strong>Browser Control Surface</strong><small>Operate, Monitor, and Setup views for PCR/MCR/NOC teams.</small></div>
+              <div><span>2</span><strong>Edge Gateway</strong><small>OBS, NDI, SRT, WebRTC, RTSP, LiveU, QC probes, and preview conversion.</small></div>
+              <div><span>3</span><strong>Control Orchestrator</strong><small>Owns Preview, Program, audio, graphics, replay, playout, logs, and state.</small></div>
+              <div><span>4</span><strong>Cloud Media Chain</strong><small>MediaConnect, switcher, MediaLive, origin packaging, CDN, and backup path.</small></div>
+              <div><span>5</span><strong>Ops Intelligence</strong><small>Alarms, incident timeline, runbooks, summaries, and recommended operator actions.</small></div>
+            </div>
             <div class="integration-grid">
               <div class="integration-card">
                 <span>Contribution</span>
@@ -745,6 +752,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-7"></script>
+  <script src="app.js?v=mcr-flow-8"></script>
 </body>
 </html>
