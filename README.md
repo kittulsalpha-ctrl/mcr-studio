@@ -18,6 +18,8 @@ For a client presentation, start with `OPERATE`, then show `SETUP`, then finish 
 
 This avoids presenting the project as a settings dashboard. The first impression should be live broadcast control.
 
+For a step-by-step presentation flow, use `CLIENT_DEMO_SCRIPT.md`.
+
 ## Product Architecture Story
 
 The long-term product should be explained as five layers:
