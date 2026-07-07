@@ -3106,9 +3106,16 @@ body.workspace-operations .screen-card.graphics-engine-card {
 }
 
 /* Automation workspace: AI orchestration and human-approved broadcast runbooks. */
+body.workspace-automation .mcr-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .automation-workspace {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 .automation-hero {
@@ -3156,9 +3163,10 @@ body.workspace-operations .screen-card.graphics-engine-card {
 
 .automation-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 0.7fr);
   gap: 16px;
   align-items: start;
+  min-width: 0;
 }
 
 .automation-main,
@@ -3168,10 +3176,15 @@ body.workspace-operations .screen-card.graphics-engine-card {
   min-width: 0;
 }
 
-.automation-agent-grid,
+.automation-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
 .automation-rules-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 10px;
 }
 
@@ -3183,6 +3196,7 @@ body.workspace-operations .screen-card.graphics-engine-card {
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 8px;
   background: rgba(2, 6, 23, 0.52);
+  overflow: hidden;
 }
 
 .automation-card-head,
@@ -3199,6 +3213,7 @@ body.workspace-operations .screen-card.graphics-engine-card {
 .digital-twin-stage strong {
   color: var(--text-primary);
   font: 850 12px var(--font-display);
+  overflow-wrap: anywhere;
 }
 
 .automation-agent-card small,
@@ -3209,6 +3224,7 @@ body.workspace-operations .screen-card.graphics-engine-card {
   color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .automation-agent-card em,
@@ -3269,15 +3285,16 @@ body.workspace-operations .screen-card.graphics-engine-card {
 }
 
 .automation-flow {
-  display: grid;
-  grid-template-columns: repeat(17, minmax(0, auto));
+  display: flex;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+  min-width: 0;
 }
 
 .automation-node {
+  flex: 0 0 138px;
   min-width: 120px;
   min-height: 82px;
   padding: 10px;
@@ -3326,6 +3343,7 @@ body.workspace-operations .screen-card.graphics-engine-card {
 }
 
 .automation-arrow {
+  flex: 0 0 auto;
   color: var(--neon-blue);
   font: 900 18px var(--font-display);
 }
@@ -3450,6 +3468,7 @@ body.workspace-operations .screen-card.graphics-engine-card {
 .digital-twin-grid {
   grid-template-columns: repeat(9, minmax(110px, 1fr));
   overflow-x: auto;
+  min-width: 0;
 }
 
 .digital-twin-stage {
@@ -3494,9 +3513,8 @@ body.workspace-operations .screen-card.graphics-engine-card {
     grid-template-columns: 1fr;
   }
 
-  .automation-agent-grid,
   .automation-rules-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
