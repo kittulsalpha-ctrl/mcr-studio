@@ -12,7 +12,7 @@ Say this clearly:
 
 ## Recommended Demo Flow
 
-Start with `OPERATE`, then show `MONITOR`, then finish with `SETUP`.
+Start with `OPERATE`, then show `MONITOR`, then `SETUP`, and finish with `AUTOMATION`.
 
 Do not start with Setup. Clients should first see the control-room value.
 
@@ -112,6 +112,45 @@ Say:
 
 > Real NDI, SRT, WebRTC, LiveU receiver, AWS, replay, playout, and audio integration will require backend gateways and authenticated APIs. This page is where those integrations are exposed cleanly without cluttering the live operator view.
 
+## 4. Automation: AI Orchestrator Story
+
+Open:
+
+```text
+https://kittulsalpha-ctrl.github.io/mcr-studio/automation.html
+```
+
+Talk track:
+
+> Automation is not replacing the operator. It is the orchestration layer that detects issues, correlates telemetry, recommends runbook actions, prepares routes, and asks for human approval before any risky Program action.
+
+Show:
+
+- Broadcast AI Agent Overview.
+- Event-Driven Automation Rules.
+- Workflow Designer.
+- Broadcast Digital Twin.
+- Autonomous Incident Simulation.
+- AI Recommendation Panel.
+- Automation Timeline.
+
+Press:
+
+```text
+SIMULATE PACKET LOSS
+```
+
+Then show:
+
+- The contribution node becomes critical.
+- Agent cards move to warning state.
+- Recommendation says backup can be previewed, but Take requires operator approval.
+- Timeline records detected, analyzed, recommended, and guardrail events.
+
+Say:
+
+> This is the future control layer: AI can detect, analyze, recommend, preview, and prepare. It should not take a destructive action like Take, Emergency Backup, or Failover without operator approval.
+
 ## What Is Real Today
 
 - Static GitHub Pages UI.
@@ -157,6 +196,7 @@ Yes. The static UI can be hosted now. A production product needs authentication,
 - Backup preview and backup take work.
 - Monitor page shows Active Alarms, Signal Path, Cloud Chain Health, Timeline, and Runbook Advisor.
 - Setup page clearly separates source configuration from live operation.
+- Automation page shows AI agents, rules, digital twin, simulations, recommendations, and operator approval guardrails.
 - GitHub Pages deployment is green.
 - Public URL returns `200 OK`.
 
@@ -164,4 +204,4 @@ Yes. The static UI can be hosted now. A production product needs authentication,
 
 Use this if you only have two minutes:
 
-> MCR Studio shows how a live cloud control room can work in the browser. Operators switch sources in Operate, engineers watch signal health in Monitor, and admins configure integrations in Setup. Today the media chain is simulated for safe demos, but the architecture is ready for real gateways, cloud telemetry, OBS, NDI/SRT/WebRTC, AWS Media Services, QC probes, and AI-assisted incident runbooks.
+> MCR Studio shows how a live cloud control room can work in the browser. Operators switch sources in Operate, engineers watch signal health in Monitor, admins configure integrations in Setup, and AI-assisted orchestration lives in Automation. Today the media chain is simulated for safe demos, but the architecture is ready for real gateways, cloud telemetry, OBS, NDI/SRT/WebRTC, AWS Media Services, QC probes, and human-approved AI runbooks.

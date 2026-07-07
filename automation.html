@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Broadcast AI Orchestrator</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-9" />
+</head>
+
+<body class="workspace-automation">
+  <div class="app-container">
+
+    <header class="mcr-header">
+      <div class="header-logo">
+        <div class="logo-indicator pulse-green"></div>
+        <h1>MONKS <span class="neon-text-blue">MCR-STUDIO</span></h1>
+        <span class="version-tag">v3.6-AI</span>
+      </div>
+
+      <nav class="page-switcher" aria-label="MCR pages">
+        <a class="page-switcher-link" id="nav-operations" href="index.html" title="Operate sources, Preview, Program, graphics, and audio."><span>OPERATE</span><small>Switch &amp; route</small></a>
+        <a class="page-switcher-link" id="nav-monitoring" href="monitoring.html" title="Monitor signal health, cloud delivery, alarms, and incidents."><span>MONITOR</span><small>Health &amp; alarms</small></a>
+        <a class="page-switcher-link" id="nav-setup" href="setup.html" title="Configure sources, OBS mapping, presets, and integration readiness."><span>SETUP</span><small>Sources &amp; API</small></a>
+        <a class="page-switcher-link page-switcher-active" id="nav-automation" href="automation.html" aria-current="page" title="AI orchestration, runbooks, and workflow automation."><span>AUTOMATION</span><small>AI orchestration</small></a>
+      </nav>
+
+      <div class="header-badges">
+        <div class="badge badge-on-air" id="badge-on-air">
+          <span class="badge-label">ON AIR</span>
+          <span class="badge-value text-red" id="on-air-value">OFF</span>
+        </div>
+        <div class="badge" id="badge-on-air-timer">
+          <span class="badge-label">ON AIR TIME</span>
+          <span class="badge-value" id="on-air-timer-value">00:00:00</span>
+        </div>
+        <div class="badge" id="badge-status">
+          <span class="badge-label">SYSTEM STATUS</span>
+          <span class="badge-value text-green" id="system-health-value">ACTIVE-ACTIVE</span>
+        </div>
+        <div class="badge" id="badge-tx-route">
+          <span class="badge-label">DELIVERY PATH</span>
+          <span class="badge-value text-blue" id="tx-route-value">PRIMARY</span>
+        </div>
+        <div class="badge" id="badge-throughput">
+          <span class="badge-label">BANDWIDTH</span>
+          <span class="badge-value" id="total-bw-value">18.4 Mbps</span>
+        </div>
+        <div class="badge" id="badge-alerts">
+          <span class="badge-label">ALARM STATE</span>
+          <span class="badge-value text-green" id="matrix-alarm-value">OK</span>
+        </div>
+        <div class="badge" id="badge-control-api">
+          <span class="badge-label">CONTROL LINK</span>
+          <span class="badge-value text-amber" id="control-api-value">SIM</span>
+        </div>
+        <div class="badge" id="badge-operating-mode">
+          <span class="badge-label">OPERATING MODE</span>
+          <span class="badge-value text-amber" id="operating-mode-value">DEMO</span>
+        </div>
+        <div class="badge" id="badge-region">
+          <span class="badge-label">REGION</span>
+          <span class="badge-value text-blue" id="region-value">US-EAST-1</span>
+        </div>
+      </div>
+
+      <div class="header-clocks">
+        <div class="clock-box border-right">
+          <span class="clock-label">UTC TIME</span>
+          <span class="clock-time font-fira" id="utc-clock">13:37:00</span>
+        </div>
+        <div class="clock-box">
+          <span class="clock-label">LOCAL TIME</span>
+          <span class="clock-time font-fira" id="local-clock">19:07:00</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="mcr-workspace automation-workspace" data-workspace-panel="automation">
+      <section class="automation-hero">
+        <div>
+          <span class="eyebrow">AI ORCHESTRATOR</span>
+          <h2>Cloud Broadcast Operations Platform</h2>
+          <p>Event-driven runbooks, broadcast digital twin, workflow health, and operator-approved automation for cloud MCR/PCR operations.</p>
+        </div>
+        <div class="automation-guardrails">
+          <span class="status-chip status-healthy">Program Protection Enabled</span>
+          <span class="status-chip status-warning">Operator Approval Required</span>
+          <span class="status-chip status-warning">Manual Take Required</span>
+          <span class="status-chip status-inactive">Auto Failover Disabled</span>
+        </div>
+      </section>
+
+      <section class="automation-layout">
+        <div class="automation-main">
+          <section class="control-panel panel-automation-agents">
+            <div class="panel-header">
+              <h3>Broadcast AI Agent Overview</h3>
+              <span class="badge-blue font-fira">SIMULATED AGENTS</span>
+            </div>
+            <div class="automation-agent-grid" id="automation-agent-grid"></div>
+          </section>
+
+          <section class="control-panel panel-automation-flow">
+            <div class="panel-header">
+              <h3>Workflow Designer</h3>
+              <span class="badge-green font-fira">HUMAN-IN-THE-LOOP</span>
+            </div>
+            <div class="automation-flow" id="automation-flow"></div>
+          </section>
+
+          <section class="control-panel panel-digital-twin">
+            <div class="panel-header">
+              <h3>Broadcast Digital Twin</h3>
+              <span class="badge-blue font-fira">END-TO-END SIGNAL GRAPH</span>
+            </div>
+            <div class="digital-twin-grid" id="digital-twin-grid"></div>
+          </section>
+
+          <section class="control-panel panel-automation-rules">
+            <div class="panel-header">
+              <h3>Event-Driven Automation Rules</h3>
+              <span class="badge-amber font-fira">APPROVAL GATED</span>
+            </div>
+            <div class="automation-rules-grid" id="automation-rules-grid"></div>
+          </section>
+        </div>
+
+        <aside class="automation-side">
+          <section class="control-panel panel-node-detail">
+            <div class="panel-header">
+              <h3>Node Inspector</h3>
+              <span class="badge-blue font-fira">CLICK A NODE</span>
+            </div>
+            <div class="automation-node-detail" id="automation-node-detail"></div>
+          </section>
+
+          <section class="control-panel panel-simulation">
+            <div class="panel-header">
+              <h3>Autonomous Incident Simulation</h3>
+              <span class="status-chip status-warning" id="automation-incident-badge">NOMINAL</span>
+            </div>
+            <div class="automation-sim-buttons">
+              <button class="btn-filter" data-automation-sim="packet">SIMULATE PACKET LOSS</button>
+              <button class="btn-filter" data-automation-sim="silence">SIMULATE AUDIO SILENCE</button>
+              <button class="btn-filter" data-automation-sim="encoder">SIMULATE ENCODER FAILURE</button>
+              <button class="btn-filter" data-automation-sim="cdn">SIMULATE CDN LATENCY</button>
+              <button class="btn-filter" id="btn-automation-reset">RESET SIMULATION</button>
+            </div>
+            <div class="automation-safety-note">
+              <strong>Safety Guardrail</strong>
+              <small id="automation-suggested-action">No operator action required.</small>
+            </div>
+          </section>
+
+          <section class="control-panel panel-ai-recommendations">
+            <div class="panel-header">
+              <h3>AI Recommendation Panel</h3>
+              <span class="badge-blue font-fira">RUNBOOK</span>
+            </div>
+            <ul class="automation-reco-list" id="automation-reco-list"></ul>
+          </section>
+
+          <section class="control-panel panel-automation-timeline">
+            <div class="panel-header">
+              <h3>Automation Timeline</h3>
+              <span class="badge-green font-fira">EVENTS</span>
+            </div>
+            <div class="automation-timeline" id="automation-timeline"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js?v=mcr-flow-9"></script>
+</body>
+</html>

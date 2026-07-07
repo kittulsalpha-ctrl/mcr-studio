@@ -106,6 +106,71 @@ document.addEventListener('DOMContentLoaded', () => {
       primaryFailed: false
     }
   };
+  const AUTOMATION_AGENTS = [
+    { id: 'monitoring', name: 'Monitoring Agent', status: 'Healthy', task: 'Correlating cloud chain health', confidence: 94, lastAction: 'Verified MediaLive/CDN telemetry' },
+    { id: 'qc', name: 'QC Agent', status: 'Healthy', task: 'Watching black, freeze, silence', confidence: 91, lastAction: 'No active QC defect' },
+    { id: 'routing', name: 'Routing Agent', status: 'Standby', task: 'Preparing backup route only', confidence: 88, lastAction: 'Backup path preflight complete' },
+    { id: 'audio', name: 'Audio Agent', status: 'Healthy', task: 'Tracking embedded audio pairs', confidence: 89, lastAction: 'AFV alignment checked' },
+    { id: 'graphics', name: 'Graphics Agent', status: 'Healthy', task: 'Validating lower-third readiness', confidence: 86, lastAction: 'Key/fill engine ready' },
+    { id: 'playout', name: 'Playout Agent', status: 'Standby', task: 'Slate and filler assets ready', confidence: 87, lastAction: 'End slate verified' },
+    { id: 'incident', name: 'Incident Agent', status: 'Healthy', task: 'Runbook recommendation engine', confidence: 92, lastAction: 'No active incident' },
+    { id: 'scheduler', name: 'Scheduler Agent', status: 'Healthy', task: 'Checking show cue timing', confidence: 85, lastAction: 'Next SCTE window checked' },
+    { id: 'metadata', name: 'Metadata Agent', status: 'Healthy', task: 'Validating event metadata', confidence: 83, lastAction: 'Match ID and slate tags aligned' },
+    { id: 'cost', name: 'Cost Optimizer', status: 'Standby', task: 'Watching cloud resource posture', confidence: 81, lastAction: 'No scale-down action recommended' }
+  ];
+  const AUTOMATION_RULES = [
+    { trigger: 'LiveU 2 telemetry', condition: 'Packet loss > 5%', action: 'Preview backup source and raise warning', status: 'Enabled' },
+    { trigger: 'Audio QC probe', condition: 'Silence > 10 sec', action: 'Alert operator and check backup audio', status: 'Enabled' },
+    { trigger: 'MediaLive encoder', condition: 'Encoder error active', action: 'Recommend backup encoder path', status: 'Enabled' },
+    { trigger: 'Playout SCTE watcher', condition: 'SCTE marker missing', action: 'Alert playout operator', status: 'Enabled' },
+    { trigger: 'CDN edge telemetry', condition: 'Latency above threshold', action: 'Recommend alternate edge path', status: 'Enabled' },
+    { trigger: 'Program route safety', condition: 'Any destructive action requested', action: 'Require operator approval', status: 'Enabled' }
+  ];
+  const AUTOMATION_NODES = [
+    { id: 'liveu', name: 'LiveU / SRT Input', stage: 'Contribution', service: 'LiveU Receiver / SRT Gateway', latency: 35, bitrate: '6.2 Mbps', loss: '0.2%', region: 'ap-south-1 Mumbai', backup: 'Ready' },
+    { id: 'mediaconnect', name: 'MediaConnect', stage: 'Ingest', service: 'AWS MediaConnect Flow', latency: 42, bitrate: '6.1 Mbps', loss: '0.1%', region: 'ap-south-1 Mumbai', backup: 'Ready' },
+    { id: 'qc', name: 'QC Probe', stage: 'Routing', service: 'TAG/QC Probe', latency: 12, bitrate: 'Probe', loss: '0.0%', region: 'Primary MCR', backup: 'Ready' },
+    { id: 'router', name: 'Cloud Router', stage: 'Routing', service: 'Cloud Switcher', latency: 18, bitrate: 'Program bus', loss: '0.0%', region: 'ap-south-1 Mumbai', backup: 'Ready' },
+    { id: 'graphics', name: 'Graphics', stage: 'Production', service: 'CG Keyer', latency: 8, bitrate: 'Key/fill', loss: '0.0%', region: 'Production VPC', backup: 'Ready' },
+    { id: 'medialive', name: 'MediaLive', stage: 'Encoding', service: 'AWS MediaLive Channel', latency: 75, bitrate: 'ABR ladder', loss: '0.0%', region: 'ap-south-1 Mumbai', backup: 'Ready' },
+    { id: 'mediapackage', name: 'MediaPackage', stage: 'Packaging', service: 'Origin Packaging', latency: 95, bitrate: 'HLS/DASH', loss: '0.0%', region: 'ap-south-1 Mumbai', backup: 'Ready' },
+    { id: 'cdn', name: 'CDN', stage: 'CDN', service: 'CloudFront Edge', latency: 118, bitrate: 'Edge delivery', loss: '0.0%', region: 'Global edge', backup: 'Ready' },
+    { id: 'viewer', name: 'Viewer', stage: 'Viewer', service: 'Player telemetry', latency: 180, bitrate: 'Adaptive', loss: '0.0%', region: 'Audience', backup: 'N/A' }
+  ];
+  const AUTOMATION_SCENARIOS = {
+    packet: {
+      node: 'liveu',
+      status: 'critical',
+      alarm: 'Packet loss detected on primary LiveU/SRT contribution.',
+      recommendation: 'Backup path is ready. Preview Backup before Take. Operator Approval Required for Program change.',
+      suggestedAction: 'Preview backup source; Manual Take Required if Program confidence drops.',
+      agentUpdates: { monitoring: 'Warning', routing: 'Warning', incident: 'Warning' }
+    },
+    silence: {
+      node: 'qc',
+      status: 'warning',
+      alarm: 'Audio silence detected for more than 10 seconds.',
+      recommendation: 'Audio silence detected. Check embedded audio pair 1/2 and verify backup audio.',
+      suggestedAction: 'Alert audio operator; do not change Program route automatically.',
+      agentUpdates: { qc: 'Warning', audio: 'Warning', incident: 'Warning' }
+    },
+    encoder: {
+      node: 'medialive',
+      status: 'critical',
+      alarm: 'MediaLive encoder error reported on primary pipeline.',
+      recommendation: 'MediaLive backup encoder healthy. Manual failover recommended.',
+      suggestedAction: 'Prepare backup encoder route; Operator Approval Required before failover.',
+      agentUpdates: { monitoring: 'Warning', routing: 'Warning', incident: 'Warning', cost: 'Standby' }
+    },
+    cdn: {
+      node: 'cdn',
+      status: 'warning',
+      alarm: 'CDN edge latency is above broadcast threshold.',
+      recommendation: 'CDN latency rising. Monitor alternate edge path and validate origin health.',
+      suggestedAction: 'Recommend alternate edge path; keep Program route protected.',
+      agentUpdates: { monitoring: 'Warning', incident: 'Warning', cost: 'Warning' }
+    }
+  };
 
   // ==========================================================================
   // 1. STATE MANAGEMENT
@@ -290,6 +355,17 @@ document.addEventListener('DOMContentLoaded', () => {
     clientDemo: {
       running: false,
       timers: []
+    },
+    automation: {
+      selectedNodeId: 'liveu',
+      nodeStatus: {},
+      agentStatus: {},
+      activeIncident: null,
+      recommendation: 'All automation agents are nominal. Program Protection Enabled; Manual Take Required for route changes.',
+      timeline: [
+        { time: '00:00:00', type: 'ready', message: 'AI Orchestrator initialized in simulation mode.' },
+        { time: '00:00:02', type: 'guardrail', message: 'Program Protection Enabled. Destructive actions require operator approval.' }
+      ]
     },
 
     // Console Logs
@@ -612,6 +688,16 @@ document.addEventListener('DOMContentLoaded', () => {
     workflowLastEvent: byId("workflow-last-event"),
     workflowDemoStep: byId("workflow-demo-step"),
     btnStartClientDemo: byId("btn-start-client-demo"),
+    automationAgentGrid: byId("automation-agent-grid"),
+    automationRulesGrid: byId("automation-rules-grid"),
+    automationFlow: byId("automation-flow"),
+    automationNodeDetail: byId("automation-node-detail"),
+    automationRecoList: byId("automation-reco-list"),
+    automationTimeline: byId("automation-timeline"),
+    automationIncidentBadge: byId("automation-incident-badge"),
+    automationSuggestedAction: byId("automation-suggested-action"),
+    digitalTwinGrid: byId("digital-twin-grid"),
+    btnAutomationReset: byId("btn-automation-reset"),
     setupSummaryCam1: byId("setup-summary-cam1"),
     setupSummaryCam1State: byId("setup-summary-cam1-state"),
     setupSummaryCam2: byId("setup-summary-cam2"),
@@ -822,6 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-operations')?.setAttribute('href', `index.html${suffix}`);
     document.getElementById('nav-monitoring')?.setAttribute('href', `monitoring.html${suffix}`);
     document.getElementById('nav-setup')?.setAttribute('href', `setup.html${suffix}`);
+    document.getElementById('nav-automation')?.setAttribute('href', `automation.html${suffix}`);
   }
 
   async function backendCommand(endpoint, payload = {}) {
@@ -1107,11 +1194,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.endsWith('monitoring.html')) {
       return 'monitoring';
     }
+    if (path.endsWith('automation.html')) {
+      return 'automation';
+    }
     return 'operations';
   }
 
   function setWorkspaceView(view = 'operations') {
-    const activeView = ['operations', 'monitoring', 'setup'].includes(view) ? view : 'operations';
+    const activeView = ['operations', 'monitoring', 'setup', 'automation'].includes(view) ? view : 'operations';
     document.querySelectorAll('.operator-view-tab').forEach(button => {
       button.classList.toggle('view-tab-active', button.dataset.workspace === activeView);
     });
@@ -1121,6 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.toggle('workspace-monitoring', activeView === 'monitoring');
     document.body.classList.toggle('workspace-operations', activeView === 'operations');
     document.body.classList.toggle('workspace-setup', activeView === 'setup');
+    document.body.classList.toggle('workspace-automation', activeView === 'automation');
   }
 
   document.querySelectorAll('.operator-view-tab').forEach(button => {
@@ -2561,6 +2652,229 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.workflowProgramSource, programLabel, state.activeSource ? 'text-red' : 'text-muted');
     setMetricText(el.workflowMonitorState, delivery.status, delivery.statusClass);
     setMetricText(el.workflowLastEvent, lastEventLabel, lastOperatorEvent ? 'text-blue' : 'text-muted');
+  }
+
+  function automationStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (['critical', 'alarm', 'error'].includes(normalized)) return 'status-critical';
+    if (['warning', 'standby'].includes(normalized)) return 'status-warning';
+    if (['inactive', 'offline', 'disabled'].includes(normalized)) return 'status-inactive';
+    return 'status-healthy';
+  }
+
+  function automationTextClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (['critical', 'alarm', 'error'].includes(normalized)) return 'text-red';
+    if (['warning', 'standby'].includes(normalized)) return 'text-amber';
+    if (['inactive', 'offline', 'disabled'].includes(normalized)) return 'text-muted';
+    return 'text-green';
+  }
+
+  function getAutomationClock() {
+    const now = new Date();
+    return now.toISOString().slice(11, 19);
+  }
+
+  function addAutomationTimeline(type, message) {
+    state.automation.timeline.unshift({ time: getAutomationClock(), type, message });
+    state.automation.timeline = state.automation.timeline.slice(0, 14);
+    renderAutomationTimeline();
+  }
+
+  function getAutomationNode(nodeId) {
+    return AUTOMATION_NODES.find(node => node.id === nodeId) || AUTOMATION_NODES[0];
+  }
+
+  function renderAutomationAgents() {
+    if (!hasElement(el.automationAgentGrid)) return;
+    el.automationAgentGrid.innerHTML = AUTOMATION_AGENTS.map(agent => {
+      const status = state.automation.agentStatus[agent.id] || agent.status;
+      const confidence = status === 'Warning' ? Math.max(72, agent.confidence - 12) : agent.confidence;
+      const task = status === 'Warning' ? 'Analyzing active incident' : agent.task;
+      const action = status === 'Warning' ? 'Raised runbook recommendation' : agent.lastAction;
+      return `
+        <article class="automation-agent-card">
+          <div class="automation-card-head">
+            <strong>${agent.name}</strong>
+            <span class="status-chip ${automationStatusClass(status)}">${status}</span>
+          </div>
+          <small>${task}</small>
+          <div class="automation-confidence">
+            <span>Confidence</span>
+            <b class="font-fira ${automationTextClass(status)}">${confidence}%</b>
+          </div>
+          <em>${action}</em>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderAutomationRules() {
+    if (!hasElement(el.automationRulesGrid)) return;
+    el.automationRulesGrid.innerHTML = AUTOMATION_RULES.map(rule => `
+      <article class="automation-rule-card">
+        <span class="status-chip ${rule.status === 'Enabled' ? 'status-healthy' : 'status-inactive'}">${rule.status}</span>
+        <strong>${rule.trigger}</strong>
+        <small>IF ${rule.condition}</small>
+        <em>THEN ${rule.action}</em>
+      </article>
+    `).join('');
+  }
+
+  function renderAutomationFlow() {
+    if (!hasElement(el.automationFlow)) return;
+    el.automationFlow.innerHTML = AUTOMATION_NODES.map((node, index) => {
+      const status = state.automation.nodeStatus[node.id] || 'healthy';
+      const selected = state.automation.selectedNodeId === node.id ? ' automation-node-selected' : '';
+      const arrow = index < AUTOMATION_NODES.length - 1 ? '<span class="automation-arrow">→</span>' : '';
+      return `
+        <button class="automation-node ${automationStatusClass(status)}${selected}" data-automation-node="${node.id}" type="button">
+          <span>${node.stage}</span>
+          <strong>${node.name}</strong>
+          <small>${status.toUpperCase()}</small>
+        </button>
+        ${arrow}
+      `;
+    }).join('');
+    el.automationFlow.querySelectorAll('[data-automation-node]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.automation.selectedNodeId = button.dataset.automationNode;
+        renderAutomationFlow();
+        renderAutomationNodeDetail();
+      });
+    });
+  }
+
+  function renderAutomationNodeDetail() {
+    if (!hasElement(el.automationNodeDetail)) return;
+    const node = getAutomationNode(state.automation.selectedNodeId);
+    const status = state.automation.nodeStatus[node.id] || 'healthy';
+    const lastAlarm = state.automation.activeIncident?.node === node.id ? state.automation.activeIncident.alarm : 'No active alarm.';
+    const recommendation = state.automation.activeIncident?.node === node.id
+      ? state.automation.activeIncident.recommendation
+      : 'Continue monitoring. Program Protection Enabled.';
+    el.automationNodeDetail.innerHTML = `
+      <div class="automation-detail-head">
+        <span>${node.stage}</span>
+        <strong>${node.name}</strong>
+        <b class="status-chip ${automationStatusClass(status)}">${status.toUpperCase()}</b>
+      </div>
+      <div class="automation-detail-grid">
+        <div><span>Latency</span><strong class="font-fira">${status === 'critical' ? node.latency + 110 : status === 'warning' ? node.latency + 45 : node.latency} ms</strong></div>
+        <div><span>Bitrate</span><strong class="font-fira">${node.bitrate}</strong></div>
+        <div><span>Packet Loss</span><strong class="font-fira">${status === 'critical' ? '8.7%' : status === 'warning' ? '3.2%' : node.loss}</strong></div>
+        <div><span>Region</span><strong>${node.region}</strong></div>
+        <div><span>Service</span><strong>${node.service}</strong></div>
+        <div><span>Backup</span><strong>${node.backup}</strong></div>
+      </div>
+      <div class="automation-detail-callout">
+        <span>Last Alarm</span>
+        <strong>${lastAlarm}</strong>
+        <small>${recommendation}</small>
+      </div>
+    `;
+  }
+
+  function renderAutomationRecommendations() {
+    if (!hasElement(el.automationRecoList)) return;
+    const items = state.automation.activeIncident
+      ? [
+          state.automation.activeIncident.recommendation,
+          state.automation.activeIncident.suggestedAction,
+          'Operator Approval Required before Take, Emergency Backup, or Failover.',
+          'Program Protection Enabled. Auto Failover Disabled for destructive actions.'
+        ]
+      : [
+          'All monitored paths are nominal.',
+          'Backup path is ready. Manual Take Required for Program changes.',
+          'No autonomous destructive action is armed.',
+          'Continue monitoring contribution, QC, encoder, origin, and CDN edge health.'
+        ];
+    el.automationRecoList.innerHTML = items.map(item => `<li>${item}</li>`).join('');
+    if (el.automationIncidentBadge) {
+      const active = !!state.automation.activeIncident;
+      el.automationIncidentBadge.textContent = active ? 'ACTIVE INCIDENT' : 'NOMINAL';
+      el.automationIncidentBadge.className = `status-chip ${active ? 'status-warning' : 'status-healthy'}`;
+    }
+    if (el.automationSuggestedAction) {
+      el.automationSuggestedAction.textContent = state.automation.activeIncident?.suggestedAction || 'No operator action required.';
+    }
+  }
+
+  function renderAutomationTimeline() {
+    if (!hasElement(el.automationTimeline)) return;
+    el.automationTimeline.innerHTML = state.automation.timeline.map(event => `
+      <div class="automation-timeline-row">
+        <span class="font-fira">${event.time}</span>
+        <strong>${event.type.toUpperCase()}</strong>
+        <small>${event.message}</small>
+      </div>
+    `).join('');
+  }
+
+  function renderDigitalTwin() {
+    if (!hasElement(el.digitalTwinGrid)) return;
+    const stageNodes = ['liveu', 'mediaconnect', 'router', 'graphics', 'router', 'medialive', 'mediapackage', 'cdn', 'viewer'];
+    const stages = [
+      ['Contribution', 'LiveU/SRT Gateway', 'Ready'],
+      ['Ingest', 'MediaConnect Flow', 'Ready'],
+      ['Routing', 'Cloud Router', 'Ready'],
+      ['Production', 'CG / Audio / Replay', 'Ready'],
+      ['Playout', 'Playout Server', 'Ready'],
+      ['Encoding', 'MediaLive', 'Ready'],
+      ['Packaging', 'MediaPackage', 'Ready'],
+      ['CDN', 'CloudFront Edge', 'Ready'],
+      ['Viewer', 'Player Telemetry', 'N/A']
+    ];
+    el.digitalTwinGrid.innerHTML = stages.map(([stage, service, backup], index) => {
+      const relatedNodeId = stageNodes[index] || AUTOMATION_NODES[index]?.id || 'viewer';
+      const status = state.automation.nodeStatus[relatedNodeId] || (state.automation.activeIncident && index > 4 ? 'warning' : 'healthy');
+      const latency = 18 + (index * 22) + (status === 'critical' ? 90 : status === 'warning' ? 35 : 0);
+      return `
+        <article class="digital-twin-stage">
+          <span class="status-dot ${automationStatusClass(status)}"></span>
+          <strong>${stage}</strong>
+          <small>${service}</small>
+          <div><b class="font-fira">${latency} ms</b><em>${backup}</em></div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderAutomationWorkspace() {
+    renderAutomationAgents();
+    renderAutomationRules();
+    renderAutomationFlow();
+    renderAutomationNodeDetail();
+    renderAutomationRecommendations();
+    renderAutomationTimeline();
+    renderDigitalTwin();
+  }
+
+  function runAutomationSimulation(type) {
+    const scenario = AUTOMATION_SCENARIOS[type];
+    if (!scenario) return;
+    state.automation.activeIncident = scenario;
+    state.automation.selectedNodeId = scenario.node;
+    state.automation.nodeStatus = { [scenario.node]: scenario.status };
+    state.automation.agentStatus = { ...scenario.agentUpdates };
+    state.automation.recommendation = scenario.recommendation;
+    addAutomationTimeline('detected', scenario.alarm);
+    addAutomationTimeline('analyzed', 'Root Cause Hypothesis generated from workflow telemetry.');
+    addAutomationTimeline('recommended', scenario.recommendation);
+    addAutomationTimeline('guardrail', 'Operator Approval Required. Manual Take Required.');
+    addLog('warning', 'AI', `Automation simulation: ${scenario.alarm}`);
+    renderAutomationWorkspace();
+  }
+
+  function resetAutomationSimulation() {
+    state.automation.activeIncident = null;
+    state.automation.selectedNodeId = 'liveu';
+    state.automation.nodeStatus = {};
+    state.automation.agentStatus = {};
+    state.automation.recommendation = 'All automation agents are nominal. Program Protection Enabled; Manual Take Required for route changes.';
+    addAutomationTimeline('reset', 'Automation simulation reset. All nodes returned to nominal.');
+    renderAutomationWorkspace();
   }
 
   function renderSetupAssignmentSummary() {
@@ -4433,6 +4747,10 @@ document.addEventListener('DOMContentLoaded', () => {
     importScenarioFile(el.scenarioImportInput.files?.[0]);
     el.scenarioImportInput.value = '';
   });
+  document.querySelectorAll('[data-automation-sim]').forEach(button => {
+    button.addEventListener('click', () => runAutomationSimulation(button.dataset.automationSim));
+  });
+  el.btnAutomationReset?.addEventListener('click', resetAutomationSimulation);
 
   window.addEventListener('storage', event => {
     if (event.key !== WORKSPACE_STATE_KEY || !event.newValue || isRestoringWorkspaceState) return;
@@ -4448,6 +4766,7 @@ document.addEventListener('DOMContentLoaded', () => {
   hydratePageSwitcherLinks();
   updateTAKEButton();
   updateBadges();
+  renderAutomationWorkspace();
   updatePGMFooter();
   updateSourceStateControls();
   updateDetectionControls();
@@ -5547,6 +5866,14 @@ document.addEventListener('DOMContentLoaded', () => {
       removePageSection('#screen-pgm, #screen-vod');
       removePageSection('[data-workspace-panel="operations"]');
       removePageSection('.panel-ai-ops, .panel-incident-response, .panel-cloud-topology, .panel-telemetry, .panel-dr-playout, .panel-logs');
+      removePageSection('[data-workspace-panel="automation"]');
+      return;
+    }
+
+    if (view === 'automation') {
+      removePageSection('.multiviewer-container');
+      removePageSection('[data-workspace-panel="operations"], [data-workspace-panel="monitoring"], [data-workspace-panel="setup"]');
+      removePageSection('#source-url-modal');
     }
   }
 
