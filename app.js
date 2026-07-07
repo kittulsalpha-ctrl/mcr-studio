@@ -3098,7 +3098,17 @@ document.addEventListener('DOMContentLoaded', () => {
         : delivery.action
       : 'Continue monitoring contribution, cloud routing, and CDN health.';
 
-    const enableBackup = !!incident.backupFeed;
+    const actionRow = el.incidentStatusBadge.closest('.panel-incident-response')?.querySelector('.incident-action-row');
+    if (actionRow) {
+      actionRow.hidden = !incident.hasIncident;
+      actionRow.style.display = incident.hasIncident ? '' : 'none';
+    }
+
+    [el.btnIncidentPreviewBackup, el.btnIncidentTakeBackup, el.btnIncidentResolve, el.btnIncidentSummary].forEach(button => {
+      if (button) button.style.display = incident.hasIncident ? '' : 'none';
+    });
+
+    const enableBackup = incident.hasIncident && !!incident.backupFeed;
     [el.btnIncidentPreviewBackup, el.btnIncidentTakeBackup].forEach(button => {
       if (!button) return;
       button.disabled = !enableBackup;
@@ -3285,6 +3295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'A transport, origin, or delivery telemetry stage is reporting degraded state.'
         : delivery.condition;
     }
+    renderIncidentResponse();
     renderCloudTopology();
     renderAudioMixer();
     renderReplayPlayoutServers();

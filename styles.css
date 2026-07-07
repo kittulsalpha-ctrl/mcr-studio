@@ -1857,6 +1857,10 @@ body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) 
   gap: 6px;
 }
 
+.incident-action-row[hidden] {
+  display: none !important;
+}
+
 .incident-action-row .btn-filter {
   min-height: 24px;
 }
