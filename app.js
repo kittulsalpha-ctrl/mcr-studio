@@ -316,6 +316,16 @@ document.addEventListener('DOMContentLoaded', () => {
       liveu3: { black: false, silence: false, frozen: false },
       liveu4: { black: false, silence: false, frozen: false }
     },
+    ingest: {
+      selectedFeed: 'cam1',
+      records: {
+        cam1: { event: 'Football MCR Demo', location: 'Main camera / touchline', engineer: 'Ingest Desk', status: 'TESTING', confidence: 72 },
+        cam2: { event: 'Football MCR Demo', location: 'Backup path / studio', engineer: 'Ingest Desk', status: 'BOOKED', confidence: 64 },
+        liveu3: { event: 'Football MCR Demo', location: 'Field reporter / fan zone', engineer: 'Ingest Desk', status: 'READY', confidence: 88 },
+        liveu4: { event: 'Football MCR Demo', location: 'Remote ISO / beauty cam', engineer: 'Ingest Desk', status: 'READY', confidence: 84 }
+      },
+      log: []
+    },
     // Per-tile custom sources (e.g., RTSP/OBS/HTTP/YouTube URL attachments)
     customSources: {
       // feedId: { type: string, url: string, embedUrl?: string, videoEl?: HTMLVideoElement, frameEl?: HTMLIFrameElement, ready: boolean }
@@ -706,6 +716,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSummaryLiveu3State: byId("setup-summary-liveu3-state"),
     setupSummaryLiveu4: byId("setup-summary-liveu4"),
     setupSummaryLiveu4State: byId("setup-summary-liveu4-state"),
+    ingestSelectedFeed: byId("ingest-selected-feed"),
+    ingestEvent: byId("ingest-event"),
+    ingestLocation: byId("ingest-location"),
+    ingestEngineer: byId("ingest-engineer"),
+    ingestStatus: byId("ingest-status"),
+    ingestConfidence: byId("ingest-confidence"),
+    ingestConfidenceValue: byId("ingest-confidence-value"),
+    ingestSelectedSource: byId("ingest-selected-source"),
+    ingestSelectedSignal: byId("ingest-selected-signal"),
+    ingestSelectedHandoff: byId("ingest-selected-handoff"),
+    ingestLogStrip: byId("ingest-log-strip"),
+    btnIngestHandoff: byId("btn-ingest-handoff"),
     regionValue: byId("region-value"),
     regionPresetSelect: byId("region-preset-select"),
     setupRegionLabel: byId("setup-region-label"),
@@ -1734,6 +1756,11 @@ document.addEventListener('DOMContentLoaded', () => {
       activeSource: state.activeSource,
       programSourceOverride: state.programSourceOverride,
       mutedFeeds: { ...state.mutedFeeds },
+      ingest: {
+        selectedFeed: state.ingest.selectedFeed,
+        records: JSON.parse(JSON.stringify(state.ingest.records)),
+        log: [...state.ingest.log]
+      },
       primaryFailed: state.primaryFailed
     };
   }
@@ -1801,6 +1828,12 @@ document.addEventListener('DOMContentLoaded', () => {
       state.programSourceOverride = saved.programSourceOverride || null;
       state.primaryFailed = !!saved.primaryFailed;
       state.mutedFeeds = { ...state.mutedFeeds, ...saved.mutedFeeds };
+      state.ingest = {
+        ...state.ingest,
+        ...saved.ingest,
+        records: { ...state.ingest.records, ...saved.ingest?.records },
+        log: Array.isArray(saved.ingest?.log) ? saved.ingest.log.slice(0, 5) : state.ingest.log
+      };
       document.querySelectorAll('.btn-solo').forEach(button => button.classList.remove('btn-active-solo'));
       document.querySelectorAll('.screen-card').forEach(card => card.classList.remove('preview-active'));
       if (state.previewFeed) {
@@ -1829,6 +1862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCloudTopology();
     renderTxSafety();
     syncProgramEmbed();
+    renderIngestDesk();
     updateSourceInspector();
     if (el.pgmActiveSource) el.pgmActiveSource.textContent = state.activeSource ? `SOURCE: ${getProgramRouteLabel(state.activeSource)}` : 'SOURCE: NONE';
     if (syncMessage) addLog('info', 'SYNC', syncMessage);
@@ -2877,6 +2911,115 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAutomationWorkspace();
   }
 
+  function getIngestRecord(feed) {
+    if (!state.ingest.records[feed]) {
+      state.ingest.records[feed] = {
+        event: 'Unassigned event',
+        location: getTileName(feed),
+        engineer: 'Ingest Desk',
+        status: 'BOOKED',
+        confidence: 50
+      };
+    }
+    return state.ingest.records[feed];
+  }
+
+  function getEffectiveIngestStatus(feed) {
+    if (state.activeSource === feed) return 'ON AIR';
+    const record = getIngestRecord(feed);
+    if (!feedHasActiveSignal(feed) && record.status === 'READY') return 'TESTING';
+    return record.status || 'BOOKED';
+  }
+
+  function getEffectiveIngestConfidence(feed) {
+    const record = getIngestRecord(feed);
+    const hasSignal = feedHasActiveSignal(feed);
+    const status = getEffectiveIngestStatus(feed);
+    let confidence = Number(record.confidence) || 0;
+    if (!hasSignal) confidence = Math.min(confidence, 25);
+    if (status === 'READY' && hasSignal) confidence = Math.max(confidence, 86);
+    if (status === 'ON AIR' && hasSignal) confidence = Math.max(confidence, 92);
+    if (status === 'FAULT') confidence = Math.min(confidence, 35);
+    return Math.max(0, Math.min(100, Math.round(confidence)));
+  }
+
+  function ingestStatusClass(status, confidence = 0) {
+    if (status === 'ON AIR') return 'text-red';
+    if (status === 'READY' && confidence >= 80) return 'text-green';
+    if (status === 'FAULT') return 'text-red';
+    if (status === 'TESTING') return 'text-amber';
+    return 'text-blue';
+  }
+
+  function addIngestLog(message) {
+    state.ingest.log.unshift(`${new Date().toLocaleTimeString([], { hour12: false })} ${message}`);
+    state.ingest.log = state.ingest.log.slice(0, 5);
+    renderIngestLog();
+  }
+
+  function renderIngestLog() {
+    if (!hasElement(el.ingestLogStrip)) return;
+    el.ingestLogStrip.textContent = state.ingest.log.length ? state.ingest.log.join('  •  ') : 'No ingest actions yet.';
+  }
+
+  function renderIngestDesk() {
+    if (!hasElement(el.ingestSelectedFeed)) return;
+    const feed = state.ingest.selectedFeed || 'cam1';
+    state.inspectedFeed = feed;
+    const record = getIngestRecord(feed);
+    const metadata = getFeedMetadata(feed);
+    const hasSignal = feedHasActiveSignal(feed);
+    const status = getEffectiveIngestStatus(feed);
+    const confidence = getEffectiveIngestConfidence(feed);
+    const ready = hasSignal && confidence >= 80 && (status === 'READY' || status === 'ON AIR');
+
+    el.ingestSelectedFeed.value = feed;
+    el.ingestEvent.value = record.event || '';
+    el.ingestLocation.value = record.location || '';
+    el.ingestEngineer.value = record.engineer || '';
+    el.ingestStatus.value = record.status || 'BOOKED';
+    el.ingestConfidence.value = String(record.confidence ?? confidence);
+    setMetricText(el.ingestConfidenceValue, `${confidence}%`, confidence >= 80 ? 'text-green' : confidence >= 50 ? 'text-amber' : 'text-red');
+    setMetricText(el.ingestSelectedSource, metadata.source || 'No Input', hasSignal ? 'text-green' : 'text-muted');
+    setMetricText(el.ingestSelectedSignal, hasSignal ? 'LOCKED' : 'NO SIGNAL', hasSignal ? 'text-green' : 'text-red');
+    setMetricText(el.ingestSelectedHandoff, ready ? 'READY FOR OPERATE' : status, ingestStatusClass(status, confidence));
+    if (el.btnIngestHandoff) {
+      el.btnIngestHandoff.disabled = !hasSignal;
+      el.btnIngestHandoff.textContent = ready ? 'READY FOR OPERATE' : 'MARK READY FOR OPERATE';
+      el.btnIngestHandoff.title = hasSignal ? 'Mark this source as validated and ready for the Operate screen.' : 'A source must have signal lock before handoff.';
+    }
+    renderIngestLog();
+  }
+
+  function persistIngestDeskField(field, value) {
+    const feed = state.ingest.selectedFeed || 'cam1';
+    const record = getIngestRecord(feed);
+    record[field] = field === 'confidence' ? Number(value) : value;
+    renderIngestDesk();
+    renderSetupAssignmentSummary();
+    updateSourceInspector();
+    saveWorkspaceState();
+  }
+
+  function markSelectedIngestReady() {
+    const feed = state.ingest.selectedFeed || 'cam1';
+    const record = getIngestRecord(feed);
+    if (!feedHasActiveSignal(feed)) {
+      addIngestLog(`${getTileName(feed)} handoff blocked: no signal lock`);
+      addLog('warning', 'INGEST', `${getTileName(feed)} cannot be handed to Operate because signal is not locked.`);
+      renderIngestDesk();
+      return;
+    }
+    record.status = 'READY';
+    record.confidence = Math.max(Number(record.confidence) || 0, 90);
+    addIngestLog(`${getTileName(feed)} marked READY by ${record.engineer || 'Ingest Desk'}`);
+    addLog('info', 'INGEST', `${getTileName(feed)} validated for Operate handoff: ${record.event || 'event'} · ${record.location || 'location'}.`);
+    renderIngestDesk();
+    renderSetupAssignmentSummary();
+    updateSourceInspector();
+    saveWorkspaceState();
+  }
+
   function renderSetupAssignmentSummary() {
     const summaryMap = {
       cam1: [el.setupSummaryCam1, el.setupSummaryCam1State],
@@ -2889,14 +3032,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const metadata = getFeedMetadata(feed);
       const status = getFeedStatus(feed);
       const hasSignal = feedHasActiveSignal(feed);
+      const ingestStatus = getEffectiveIngestStatus(feed);
+      const confidence = getEffectiveIngestConfidence(feed);
       setMetricText(sourceNode, metadata.source || 'No Input', hasSignal ? 'text-green' : status === 'NO SOURCE' ? 'text-muted' : 'text-amber');
-      setMetricText(stateNode, status, hasSignal ? 'text-green' : status === 'NO SOURCE' ? 'text-muted' : 'text-amber');
+      setMetricText(stateNode, `${ingestStatus} · ${confidence}%`, ingestStatusClass(ingestStatus, confidence));
     });
+    renderIngestDesk();
   }
 
   function inspectFeed(feed) {
     if (!feed || !state.tileSources[feed]) return;
     state.inspectedFeed = feed;
+    if (TILE_FEEDS.includes(feed)) state.ingest.selectedFeed = feed;
+    renderIngestDesk();
     updateSourceInspector();
   }
 
@@ -2925,7 +3073,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setMetricText(el.sourceInspectorSignal, hasSignal ? 'LOCKED' : 'NO SIGNAL', hasSignal ? 'text-green' : 'text-red');
 
     if (el.sourceInspectorMeta) {
-      el.sourceInspectorMeta.textContent = `TECHNICAL: ${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
+      const record = getIngestRecord(feed);
+      const confidence = getEffectiveIngestConfidence(feed);
+      el.sourceInspectorMeta.textContent = `INGEST: ${record.event || 'Unassigned'} · ${record.location || getTileName(feed)} · ${confidence}% confidence · TECHNICAL: ${metadata.codec} · ${metadata.resolution} · ${metadata.bitrate} · RTT ${metadata.rtt}`;
     }
     renderAIOpsAssistant();
     renderEngineeringDashboard();
@@ -3704,12 +3854,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasSignal = feedHasActiveSignal(feed);
       const assignment = getFeedAssignment(feed);
       if (previewButton) {
+        const ingestStatus = getEffectiveIngestStatus(feed);
+        const confidence = getEffectiveIngestConfidence(feed);
         previewButton.disabled = !hasSignal;
         previewButton.classList.toggle('btn-disabled', !hasSignal);
         previewButton.title = assignment === 'none'
           ? 'Configure this source in Ingest before sending it to Preview.'
           : hasSignal
-            ? 'Send this source to the Preview bus.'
+            ? `${ingestStatus} · ${confidence}% confidence. Send this source to the Preview bus.`
             : 'This source has no usable signal.';
       }
     });
@@ -4762,6 +4914,22 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', () => runAutomationSimulation(button.dataset.automationSim));
   });
   el.btnAutomationReset?.addEventListener('click', resetAutomationSimulation);
+  el.ingestSelectedFeed?.addEventListener('change', event => {
+    state.ingest.selectedFeed = event.target.value || 'cam1';
+    state.inspectedFeed = state.ingest.selectedFeed;
+    renderIngestDesk();
+    updateSourceInspector();
+    saveWorkspaceState();
+  });
+  el.ingestEvent?.addEventListener('input', event => persistIngestDeskField('event', event.target.value));
+  el.ingestLocation?.addEventListener('input', event => persistIngestDeskField('location', event.target.value));
+  el.ingestEngineer?.addEventListener('input', event => persistIngestDeskField('engineer', event.target.value));
+  el.ingestStatus?.addEventListener('change', event => {
+    persistIngestDeskField('status', event.target.value);
+    addIngestLog(`${getTileName(state.ingest.selectedFeed)} status set to ${event.target.value}`);
+  });
+  el.ingestConfidence?.addEventListener('input', event => persistIngestDeskField('confidence', event.target.value));
+  el.btnIngestHandoff?.addEventListener('click', markSelectedIngestReady);
 
   window.addEventListener('storage', event => {
     if (event.key !== WORKSPACE_STATE_KEY || !event.newValue || isRestoringWorkspaceState) return;
@@ -4774,6 +4942,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadWorkspaceState();
   restorePersistedLocalVideosIfNeeded();
   updateSourceOverlays();
+  renderIngestDesk();
+  updateSourceInspector();
   hydratePageSwitcherLinks();
   updateTAKEButton();
   updateBadges();

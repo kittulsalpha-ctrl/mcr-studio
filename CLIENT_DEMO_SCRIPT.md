@@ -100,6 +100,7 @@ Talk track:
 Show:
 
 - Contribution Source Ingest.
+- Source metadata, signal lock, handoff confidence, and Ready for Operate status.
 - Webcam/local file setup for browser demo.
 - OBS / Local Production Mapping.
 - NDI / IP gateway discovery placeholder.

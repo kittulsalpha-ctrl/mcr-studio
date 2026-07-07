@@ -37,7 +37,7 @@ The current static GitHub Pages app proves the workflow and UI. The Node Edge Ag
 
 - `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Graphics Overlay controls, Program Audio with Follow Video, Show Cues, Replay Server, and Playout Server.
 - `MONITORING`: NOC-style workspace for Active Alarms, Program Delivery, Signal Path, Delivery Health, SRT telemetry, Cloud Chain Health, DR/SCTE monitoring, Operator & Incident Timeline, and Ops Runbook Advisor.
-- `INGEST`: ingest/source-engineering workspace for contribution source onboarding, local test inputs, OBS mapping, NDI/IP gateway placeholder, metadata, region presets, ingest presets, gateway/API readiness, and the integration roadmap.
+- `INGEST`: ingest/source-engineering workspace for contribution source onboarding, local test inputs, OBS mapping, NDI/IP gateway placeholder, source metadata, handoff confidence, region presets, ingest presets, gateway/API readiness, and the integration roadmap.
 - `AI OPS`: AI runbook workspace for broadcast agents, event-driven rules, workflow graph, digital twin, incident simulations, recommendations, and operator approval guardrails.
 - `index.html` is the Operate screen. `monitoring.html` is the dedicated Monitoring/NOC screen. `setup.html` is the Ingest screen. `automation.html` is the AI Ops screen. Open Operate and Monitoring in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
 

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-15" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-16" />
 </head>
 
 <body class="workspace-setup">
@@ -111,6 +111,57 @@
           <div><span>MULTIVIEW 3</span><strong id="setup-summary-liveu3">—</strong><small id="setup-summary-liveu3-state">—</small></div>
           <div><span>MULTIVIEW 4</span><strong id="setup-summary-liveu4">—</strong><small id="setup-summary-liveu4-state">—</small></div>
         </div>
+
+        <section class="ingest-desk-panel" aria-label="Ingest source desk">
+          <div class="ingest-desk-header">
+            <div>
+              <span>INGEST DESK</span>
+              <strong>Source Metadata &amp; Handoff</strong>
+            </div>
+            <label>Selected input
+              <select id="ingest-selected-feed">
+                <option value="cam1">MULTIVIEW 1</option>
+                <option value="cam2">MULTIVIEW 2</option>
+                <option value="liveu3">MULTIVIEW 3</option>
+                <option value="liveu4">MULTIVIEW 4</option>
+              </select>
+            </label>
+          </div>
+          <div class="ingest-desk-grid">
+            <label>Event / booking
+              <input id="ingest-event" type="text" maxlength="48" />
+            </label>
+            <label>Camera / location
+              <input id="ingest-location" type="text" maxlength="48" />
+            </label>
+            <label>Ingest engineer
+              <input id="ingest-engineer" type="text" maxlength="36" />
+            </label>
+            <label>Source status
+              <select id="ingest-status">
+                <option value="BOOKED">BOOKED</option>
+                <option value="TESTING">TESTING</option>
+                <option value="READY">READY</option>
+                <option value="ON AIR">ON AIR</option>
+                <option value="FAULT">FAULT</option>
+              </select>
+            </label>
+            <label>Confidence
+              <input id="ingest-confidence" type="range" min="0" max="100" step="1" />
+            </label>
+            <div class="ingest-confidence-card">
+              <span>HANDOFF CONFIDENCE</span>
+              <strong id="ingest-confidence-value">--%</strong>
+            </div>
+          </div>
+          <div class="ingest-handoff-strip">
+            <div><span>SOURCE</span><strong id="ingest-selected-source">—</strong></div>
+            <div><span>SIGNAL</span><strong id="ingest-selected-signal">—</strong></div>
+            <div><span>OPERATE HANDOFF</span><strong id="ingest-selected-handoff">NOT READY</strong></div>
+            <button class="btn btn-secondary" id="btn-ingest-handoff" type="button">MARK READY FOR OPERATE</button>
+          </div>
+          <div class="ingest-log-strip font-fira" id="ingest-log-strip">No ingest actions yet.</div>
+        </section>
 
         <div class="multiviewer-action-bar">
           <button class="btn btn-secondary" id="btn-start-webcam">START CAMERA</button>
@@ -753,6 +804,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-15"></script>
+  <script src="app.js?v=mcr-flow-16"></script>
 </body>
 </html>
