@@ -363,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activeIncident: null,
       recommendation: 'All automation agents are nominal. Program Protection Enabled; Manual Take Required for route changes.',
       timeline: [
-        { time: '00:00:00', type: 'ready', message: 'AI Orchestrator initialized in simulation mode.' },
+        { time: '00:00:00', type: 'ready', message: 'AI Ops initialized in simulation mode.' },
         { time: '00:00:02', type: 'guardrail', message: 'Program Protection Enabled. Destructive actions require operator approval.' }
       ]
     },
@@ -1396,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (entry?.blob) {
         attachLocalVideoBlob(feed, entry.blob, entry.fileName || 'Restored local video', { restored: true });
       } else {
-        addLog('warning', 'VIDEO', `${getTileName(feed)} is assigned to Local File, but no browser-stored file is available. Reload it in Setup.`);
+        addLog('warning', 'VIDEO', `${getTileName(feed)} is assigned to Local File, but no browser-stored file is available. Reload it in Ingest.`);
       }
     }));
   }
@@ -1848,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.webcamReady = true;
       state.cam1VideoReady = true;
       await el.cam1Video.play().catch(() => {});
-      addLog('info', 'WEB', `Webcam resumed for ${getTileName(assignedFeed)} from saved Setup state.`);
+      addLog('info', 'WEB', `Webcam resumed for ${getTileName(assignedFeed)} from saved Ingest state.`);
       updateSourceOverlays();
       updateOrchestratorRouting();
       updateTAKEButton();
@@ -2339,7 +2339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const local = getLocalVideo(feed);
       return {
         codec: 'Local File',
-        source: local?.fileName || 'Reload file in Setup',
+        source: local?.fileName || 'Reload file in Ingest',
         resolution: local?.ready ? getVideoResolution(local.videoEl) : 'N/A',
         bitrate: local?.ready ? `${(4.3 + Math.random() * 1.3).toFixed(1)} Mbps` : '0.0 Mbps',
         rtt: local?.ready ? `${state.rttMs}ms` : '--'
@@ -2863,7 +2863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addAutomationTimeline('analyzed', 'Root Cause Hypothesis generated from workflow telemetry.');
     addAutomationTimeline('recommended', scenario.recommendation);
     addAutomationTimeline('guardrail', 'Operator Approval Required. Manual Take Required.');
-    addLog('warning', 'AI', `Automation simulation: ${scenario.alarm}`);
+    addLog('warning', 'AI', `AI Ops simulation: ${scenario.alarm}`);
     renderAutomationWorkspace();
   }
 
@@ -2873,7 +2873,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.automation.nodeStatus = {};
     state.automation.agentStatus = {};
     state.automation.recommendation = 'All automation agents are nominal. Program Protection Enabled; Manual Take Required for route changes.';
-    addAutomationTimeline('reset', 'Automation simulation reset. All nodes returned to nominal.');
+    addAutomationTimeline('reset', 'AI Ops simulation reset. All nodes returned to nominal.');
     renderAutomationWorkspace();
   }
 
@@ -3589,7 +3589,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ctx.fillStyle = '#00d2ff';
     ctx.font = 'bold 13px Outfit';
-    ctx.fillText('NDI BRIDGE PREVIEW', 18, 32);
+    ctx.fillText('NDI / IP GATEWAY PREVIEW', 18, 32);
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '10px Fira Code';
     ctx.fillText(source.label || 'NDI source', 18, 50);
@@ -3707,7 +3707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         previewButton.disabled = !hasSignal;
         previewButton.classList.toggle('btn-disabled', !hasSignal);
         previewButton.title = assignment === 'none'
-          ? 'Configure this source in Setup before sending it to Preview.'
+          ? 'Configure this source in Ingest before sending it to Preview.'
           : hasSignal
             ? 'Send this source to the Preview bus.'
             : 'This source has no usable signal.';

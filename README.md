@@ -10,12 +10,12 @@ Position this repo as a **sellable prototype**, not a finished 24/7 broadcast pr
 
 > MCR Studio is a browser-based Cloud MCR/PCR control surface that shows how operators can switch live sources, monitor cloud delivery, manage incidents, and prepare real backend integrations from one control-room interface.
 
-For a client presentation, start with `OPERATE`, then show `MONITOR`, `SETUP`, and finish with `AUTOMATION`:
+For a client presentation, start with `OPERATE`, then show `MONITOR`, `INGEST`, and finish with `AI OPS`:
 
 1. `OPERATE`: show the live control-room value first: Multiview, Preview, Program Out, Take to Air, graphics, audio, cues, and emergency backup.
 2. `MONITOR`: show the NOC/MCR confidence layer: alarms, signal path, SRT telemetry, cloud chain health, DR status, incident timeline, and runbook advisor.
-3. `SETUP`: show how engineering configures sources, regions, OBS/NDI/API readiness, and the integration roadmap.
-4. `AUTOMATION`: show AI orchestration, event-driven rules, the broadcast digital twin, incident simulations, recommendations, and operator approval guardrails.
+3. `INGEST`: show how the ingest/source team configures LiveU, NDI, OBS, file/URL sources, metadata, regions, gateway readiness, and the integration roadmap.
+4. `AI OPS`: show runbook intelligence, event-driven rules, the broadcast digital twin, incident simulations, recommendations, and operator approval guardrails.
 
 This avoids presenting the project as a settings dashboard. The first impression should be live broadcast control.
 
@@ -25,7 +25,7 @@ For a step-by-step presentation flow, use `CLIENT_DEMO_SCRIPT.md`.
 
 The long-term product should be explained as five layers:
 
-1. **Browser Control Surface**: Operate, Monitor, and Setup pages for PCR operators, MCR/NOC engineers, and system admins.
+1. **Browser Control Surface**: Operate, Monitor, Ingest, and AI Ops pages for PCR operators, MCR/NOC engineers, ingest/source engineers, and operations leads.
 2. **Edge Gateway**: local or cloud gateway for OBS, NDI, SRT, WebRTC, RTSP, LiveU receivers, QC probes, and browser-safe preview streams.
 3. **Control Orchestrator**: backend authority for Preview, Program, Off Air, audio buses, graphics, replay, playout, logs, alarms, and shared operator state.
 4. **Cloud Media Chain**: MediaConnect, switcher, MediaLive, origin packaging, CDN Edge, primary/backup route, and regional failover.
@@ -37,9 +37,9 @@ The current static GitHub Pages app proves the workflow and UI. The Node Edge Ag
 
 - `OPERATIONS`: live-control workspace with a dominant Program Out monitor, Preview/Program labels, Take/Cut/Fade/Off Air controls, Emergency Backup, source tiles, Graphics Overlay controls, Program Audio with Follow Video, Show Cues, Replay Server, and Playout Server.
 - `MONITORING`: NOC-style workspace for Active Alarms, Program Delivery, Signal Path, Delivery Health, SRT telemetry, Cloud Chain Health, DR/SCTE monitoring, Operator & Incident Timeline, and Ops Runbook Advisor.
-- `SETUP`: engineering/admin workspace for source configuration, local test inputs, OBS mapping, NDI bridge placeholder, region presets, scenario presets, backend readiness, and the integration roadmap.
-- `AUTOMATION`: AI Orchestrator workspace for broadcast agents, event-driven automation rules, workflow graph, digital twin, incident simulations, recommendations, and operator approval guardrails.
-- `index.html` is the Operate screen. `monitoring.html` is the dedicated Monitoring/NOC screen. `setup.html` is the engineering Setup screen. `automation.html` is the AI Orchestrator screen. Open Operate and Monitoring in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
+- `INGEST`: ingest/source-engineering workspace for contribution source onboarding, local test inputs, OBS mapping, NDI/IP gateway placeholder, metadata, region presets, ingest presets, gateway/API readiness, and the integration roadmap.
+- `AI OPS`: AI runbook workspace for broadcast agents, event-driven rules, workflow graph, digital twin, incident simulations, recommendations, and operator approval guardrails.
+- `index.html` is the Operate screen. `monitoring.html` is the dedicated Monitoring/NOC screen. `setup.html` is the Ingest screen. `automation.html` is the AI Ops screen. Open Operate and Monitoring in separate browser windows or displays for a realistic control-room demo where the multiviewer stays visible while engineering watches alarms, logs, and signal health.
 
 ## Graphics vs Playout
 

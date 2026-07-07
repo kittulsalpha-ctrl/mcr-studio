@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cloud Broadcast MCR Setup</title>
+  <title>Cloud Broadcast MCR Ingest</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-14" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-15" />
 </head>
 
 <body class="workspace-setup">
@@ -25,8 +25,8 @@
       <nav class="page-switcher" aria-label="MCR pages">
         <a class="page-switcher-link" id="nav-operations" href="index.html" title="Operate sources, Preview, Program, graphics, and audio."><span>OPERATE</span><small>Switch &amp; route</small></a>
         <a class="page-switcher-link" id="nav-monitoring" href="monitoring.html" title="Monitor signal health, cloud delivery, alarms, and incidents."><span>MONITOR</span><small>Health &amp; alarms</small></a>
-        <a class="page-switcher-link page-switcher-active" id="nav-setup" href="setup.html" aria-current="page" title="Configure sources, OBS mapping, presets, and integration readiness."><span>SETUP</span><small>Sources &amp; API</small></a>
-        <a class="page-switcher-link" id="nav-automation" href="automation.html" title="AI orchestration, runbooks, and workflow automation."><span>AUTOMATION</span><small>AI orchestration</small></a>
+        <a class="page-switcher-link page-switcher-active" id="nav-setup" href="setup.html" aria-current="page" title="Ingest, configure, and assign contribution sources."><span>INGEST</span><small>Sources &amp; metadata</small></a>
+        <a class="page-switcher-link" id="nav-automation" href="automation.html" title="AI-assisted runbooks, digital twin, and incident guidance."><span>AI OPS</span><small>Runbooks &amp; twin</small></a>
       </nav>
 
       <div class="header-badges">
@@ -91,17 +91,17 @@
       <!-- Left Column: Multi-Viewer Screen Grid (3x2 responsive) -->
       <section class="multiviewer-container">
         <div class="section-title-bar">
-          <h2>Source Setup &amp; Test Inputs</h2>
+          <h2>Contribution Source Ingest</h2>
           <div class="title-decor">
             <span class="active-dot pulse-pink"></span>
             <span class="title-subtext">6-SOURCE PROCESSOR</span>
           </div>
         </div>
 
-        <div class="setup-workflow-panel" aria-label="Setup workflow">
+        <div class="setup-workflow-panel" aria-label="Ingest workflow">
           <div><span>1</span><strong>Choose Tile</strong><small>Select which multiview input you are configuring.</small></div>
-          <div><span>2</span><strong>Choose Source</strong><small>Ready-now, simulated, and backend sources are labelled.</small></div>
-          <div><span>3</span><strong>Connect / Test</strong><small>Confirm signal lock, then go to Operate and send it to Preview.</small></div>
+          <div><span>2</span><strong>Choose Source</strong><small>Assign LiveU, NDI, OBS, file, URL, or gateway feed metadata.</small></div>
+          <div><span>3</span><strong>Validate / Handoff</strong><small>Confirm signal lock, then hand the source to Operate for Preview.</small></div>
           <a class="workflow-setup-link" href="index.html">GO TO OPERATE</a>
         </div>
 
@@ -120,9 +120,9 @@
           <input type="file" id="local-video-file-input" accept="video/*" hidden />
         </div>
         <details class="operator-advanced demo-setup">
-          <summary>SCENARIOS &amp; PRESETS</summary>
+          <summary>INGEST PRESETS</summary>
           <div class="multiviewer-action-bar preset-controls">
-            <label class="action-select-label">Scenario preset:
+            <label class="action-select-label">Ingest preset:
               <select id="select-demo-preset">
                 <option value="clean">Clean Startup</option>
                 <option value="football">Football MCR Demo</option>
@@ -207,7 +207,7 @@
                   <option value="none">No input</option>
                   <option value="webcam" selected>Ready now - Webcam</option>
                   <option value="local">Ready now - Local video file</option>
-                  <option value="obs">Needs local setup - OBS virtual camera</option>
+                  <option value="obs">Requires local OBS virtual camera</option>
                   <option value="rtsp">Needs backend - RTSP network stream</option>
                   <option value="ndi">Needs bridge - NDI source</option>
                   <option value="liveu1">Simulated - LiveU Feed 1</option>
@@ -220,7 +220,7 @@
                 <button class="btn-screen-control btn-attach" data-feed="cam1" id="btn-attach-cam1" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="cam1" id="btn-eject-cam1" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam1" id="btn-mute-cam1" title="Mute or unmute this monitor source.">MUTE</button>
-                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Add or change a custom media URL for this monitor.">URL SETUP</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam1" id="btn-edit-cam1" title="Add or change a custom media URL for this monitor.">URL INGEST</button>
                 <div class="active-badge text-green font-fira" id="badge-state-cam1">OFFLINE</div>
               </div>
             </div>
@@ -266,7 +266,7 @@
                   <option value="none">No input</option>
                   <option value="webcam">Ready now - Webcam</option>
                   <option value="local" selected>Ready now - Local video file</option>
-                  <option value="obs">Needs local setup - OBS virtual camera</option>
+                  <option value="obs">Requires local OBS virtual camera</option>
                   <option value="rtsp">Needs backend - RTSP network stream</option>
                   <option value="ndi">Needs bridge - NDI source</option>
                   <option value="liveu1">Simulated - LiveU Feed 1</option>
@@ -279,7 +279,7 @@
                 <button class="btn-screen-control btn-attach" data-feed="cam2" id="btn-attach-cam2" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="cam2" id="btn-eject-cam2" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-mute" data-feed="cam2" id="btn-mute-cam2" title="Mute or unmute this monitor source.">MUTE</button>
-                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Add or change a custom media URL for this monitor.">URL SETUP</button>
+                <button class="btn-screen-control btn-edit" data-feed="cam2" id="btn-edit-cam2" title="Add or change a custom media URL for this monitor.">URL INGEST</button>
                 <div class="active-badge text-blue font-fira" id="badge-state-cam2">OFFLINE</div>
               </div>
             </div>
@@ -325,7 +325,7 @@
                   <option value="none">No input</option>
                   <option value="webcam">Ready now - Webcam</option>
                   <option value="local">Ready now - Local video file</option>
-                  <option value="obs">Needs local setup - OBS virtual camera</option>
+                  <option value="obs">Requires local OBS virtual camera</option>
                   <option value="rtsp">Needs backend - RTSP network stream</option>
                   <option value="ndi">Needs bridge - NDI source</option>
                   <option value="liveu1">Simulated - LiveU Feed 1</option>
@@ -338,7 +338,7 @@
                 <button class="btn-screen-control btn-attach" data-feed="liveu3" id="btn-attach-liveu3" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="liveu3" id="btn-eject-liveu3" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu3" id="btn-mute-liveu3" title="Mute or unmute this monitor source.">MUTE</button>
-                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Add or change a custom media URL for this monitor.">URL SETUP</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu3" id="btn-edit-liveu3" title="Add or change a custom media URL for this monitor.">URL INGEST</button>
                 <div class="active-badge text-pink font-fira" id="badge-state-liveu3">SIMULATED</div>
               </div>
             </div>
@@ -384,7 +384,7 @@
                   <option value="none">No input</option>
                   <option value="webcam">Ready now - Webcam</option>
                   <option value="local">Ready now - Local video file</option>
-                  <option value="obs">Needs local setup - OBS virtual camera</option>
+                  <option value="obs">Requires local OBS virtual camera</option>
                   <option value="rtsp">Needs backend - RTSP network stream</option>
                   <option value="ndi">Needs bridge - NDI source</option>
                   <option value="liveu1">Simulated - LiveU Feed 1</option>
@@ -397,7 +397,7 @@
                 <button class="btn-screen-control btn-attach" data-feed="liveu4" id="btn-attach-liveu4" title="Connect the selected input to this monitor.">CONNECT</button>
                 <button class="btn-screen-control btn-eject" data-feed="liveu4" id="btn-eject-liveu4" title="Clear this monitor source.">CLEAR</button>
                 <button class="btn-screen-control btn-mute" data-feed="liveu4" id="btn-mute-liveu4" title="Mute or unmute this monitor source.">MUTE</button>
-                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Add or change a custom media URL for this monitor.">URL SETUP</button>
+                <button class="btn-screen-control btn-edit" data-feed="liveu4" id="btn-edit-liveu4" title="Add or change a custom media URL for this monitor.">URL INGEST</button>
                 <div class="active-badge text-amber font-fira" id="badge-state-liveu4">SIMULATED</div>
               </div>
             </div>
@@ -410,7 +410,7 @@
 
       <section class="controls-container setup-only-container">
         <div class="control-panel panel-obs-control" data-workspace-panel="setup">
-          <div class="panel-header"><h3>OBS Program Control</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
+          <div class="panel-header"><h3>OBS / Local Production Mapping</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
           <div class="panel-body obs-control-body">
             <span class="font-fira" id="obs-program-scene">PROGRAM: NOT CONNECTED</span>
             <select id="obs-scene-select" aria-label="OBS scene"></select>
@@ -434,8 +434,8 @@
 
         <div class="control-panel panel-orchestrator" data-workspace-panel="setup">
           <div class="panel-header">
-            <h3>Source Configuration &amp; NDI Bridge</h3>
-            <span class="badge-blue font-fira">INPUT SETUP</span>
+            <h3>Source Routing &amp; Metadata</h3>
+            <span class="badge-blue font-fira">INGEST ROUTING</span>
           </div>
 
           <div class="panel-body">
@@ -589,7 +589,7 @@
             </div>
 
             <details class="advanced-sim-controls" open>
-              <summary>Advanced source simulation</summary>
+              <summary>Source health simulation</summary>
               <div class="source-state-grid">
                 <label>LiveU 1
                   <select class="source-state-select" id="source-state-liveu1">
@@ -654,7 +654,7 @@
 
               <div class="ndi-bridge-panel">
                 <div class="ndi-bridge-header">
-                  <span>NDI BRIDGE DISCOVERY</span>
+                  <span>NDI / IP GATEWAY DISCOVERY</span>
                   <span class="font-fira" id="ndi-bridge-status">NOT SCANNED</span>
                 </div>
                 <div class="ndi-bridge-controls">
@@ -680,7 +680,7 @@
               <strong>Cloud control surface connected to real contribution, switching, audio, graphics, replay, playout, encode, CDN, QC, and AI incident services.</strong>
             </div>
             <div class="architecture-ladder" aria-label="Cloud MCR product architecture">
-              <div><span>1</span><strong>Browser Control Surface</strong><small>Operate, Monitor, and Setup views for PCR/MCR/NOC teams.</small></div>
+              <div><span>1</span><strong>Browser Control Surface</strong><small>Operate, Monitor, Ingest, and AI Ops views for PCR/MCR/NOC teams.</small></div>
               <div><span>2</span><strong>Edge Gateway</strong><small>OBS, NDI, SRT, WebRTC, RTSP, LiveU, QC probes, and preview conversion.</small></div>
               <div><span>3</span><strong>Control Orchestrator</strong><small>Owns Preview, Program, audio, graphics, replay, playout, logs, and state.</small></div>
               <div><span>4</span><strong>Cloud Media Chain</strong><small>MediaConnect, switcher, MediaLive, origin packaging, CDN, and backup path.</small></div>
@@ -717,7 +717,7 @@
 
         <div class="control-panel panel-engineering" data-workspace-panel="setup">
           <div class="panel-header">
-            <h3>API & Backend Readiness</h3>
+            <h3>Gateway &amp; API Readiness</h3>
             <span class="badge-blue font-fira" id="eng-telemetry-source">SIMULATION</span>
           </div>
           <div class="panel-body engineering-grid">
@@ -753,6 +753,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-14"></script>
+  <script src="app.js?v=mcr-flow-15"></script>
 </body>
 </html>

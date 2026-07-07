@@ -12,9 +12,9 @@ Say this clearly:
 
 ## Recommended Demo Flow
 
-Start with `OPERATE`, then show `MONITOR`, then `SETUP`, and finish with `AUTOMATION`.
+Start with `OPERATE`, then show `MONITOR`, then `INGEST`, and finish with `AI OPS`.
 
-Do not start with Setup. Clients should first see the control-room value.
+Do not start with Ingest. Clients should first see the control-room value.
 
 ## 1. Operate: Control Room Story
 
@@ -54,7 +54,7 @@ Explain the sequence:
 
 What the client should notice:
 
-- The workflow is understandable without opening Setup.
+- The workflow is understandable without opening Ingest.
 - Program/Preview routing is clear.
 - Alarms and logs tell the same operational story.
 - The UI demonstrates how real source, switcher, graphics, audio, cloud, and runbook systems can connect later.
@@ -85,7 +85,7 @@ Say:
 
 > In production, these cards would be fed by an orchestrator, QC probes, cloud telemetry collectors, AWS MediaConnect/MediaLive/CloudFront APIs, encoder APIs, and gateway services. The browser should not hold AWS credentials or directly control private broadcast equipment.
 
-## 3. Setup: Engineering / Integration Story
+## 3. Ingest: Source Team / Integration Story
 
 Open:
 
@@ -95,24 +95,24 @@ https://kittulsalpha-ctrl.github.io/mcr-studio/setup.html
 
 Talk track:
 
-> Setup is where engineering configures sources and integration readiness. Operators should not need this during a live show unless they are assigning or testing sources.
+> Ingest is where the source team configures incoming feeds, assigns metadata, validates signal lock, and prepares integration readiness. Operators should not need this during a live show unless they are assigning or testing sources.
 
 Show:
 
-- Source Setup & Test Inputs.
+- Contribution Source Ingest.
 - Webcam/local file setup for browser demo.
-- OBS Program Control and scene mapping.
-- NDI bridge discovery placeholder.
+- OBS / Local Production Mapping.
+- NDI / IP gateway discovery placeholder.
 - Region presets.
-- Scenario presets.
-- API/backend readiness.
+- Ingest presets.
+- Gateway/API readiness.
 - Integration Roadmap.
 
 Say:
 
 > Real NDI, SRT, WebRTC, LiveU receiver, AWS, replay, playout, and audio integration will require backend gateways and authenticated APIs. This page is where those integrations are exposed cleanly without cluttering the live operator view.
 
-## 4. Automation: AI Orchestrator Story
+## 4. AI Ops: Runbook Intelligence Story
 
 Open:
 
@@ -122,17 +122,17 @@ https://kittulsalpha-ctrl.github.io/mcr-studio/automation.html
 
 Talk track:
 
-> Automation is not replacing the operator. It is the orchestration layer that detects issues, correlates telemetry, recommends runbook actions, prepares routes, and asks for human approval before any risky Program action.
+> AI Ops is not replacing the operator. It is the runbook intelligence layer that detects issues, correlates telemetry, recommends actions, prepares routes, and asks for human approval before any risky Program action.
 
 Show:
 
 - Broadcast AI Agent Overview.
-- Event-Driven Automation Rules.
+- Event-Driven Runbook Rules.
 - Workflow Designer.
 - Broadcast Digital Twin.
-- Autonomous Incident Simulation.
-- AI Recommendation Panel.
-- Automation Timeline.
+- Assisted Incident Simulation.
+- AI Ops Recommendation Panel.
+- AI Ops Timeline.
 
 Press:
 
@@ -195,8 +195,8 @@ Yes. The static UI can be hosted now. A production product needs authentication,
 - Incident step updates alarms, logs, and monitoring state.
 - Backup preview and backup take work.
 - Monitor page shows Active Alarms, Signal Path, Cloud Chain Health, Timeline, and Runbook Advisor.
-- Setup page clearly separates source configuration from live operation.
-- Automation page shows AI agents, rules, digital twin, simulations, recommendations, and operator approval guardrails.
+- Ingest page clearly separates source onboarding from live operation.
+- AI Ops page shows AI agents, rules, digital twin, simulations, recommendations, and operator approval guardrails.
 - GitHub Pages deployment is green.
 - Public URL returns `200 OK`.
 
@@ -204,4 +204,4 @@ Yes. The static UI can be hosted now. A production product needs authentication,
 
 Use this if you only have two minutes:
 
-> MCR Studio shows how a live cloud control room can work in the browser. Operators switch sources in Operate, engineers watch signal health in Monitor, admins configure integrations in Setup, and AI-assisted orchestration lives in Automation. Today the media chain is simulated for safe demos, but the architecture is ready for real gateways, cloud telemetry, OBS, NDI/SRT/WebRTC, AWS Media Services, QC probes, and human-approved AI runbooks.
+> MCR Studio shows how a live cloud control room can work in the browser. Operators switch sources in Operate, engineers watch signal health in Monitor, ingest teams onboard and validate sources in Ingest, and AI-assisted runbooks live in AI Ops. Today the media chain is simulated for safe demos, but the architecture is ready for real gateways, cloud telemetry, OBS, NDI/SRT/WebRTC, AWS Media Services, QC probes, and human-approved AI runbooks.

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cloud Broadcast AI Orchestrator</title>
+  <title>Cloud Broadcast AI Ops</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-14" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-15" />
 </head>
 
 <body class="workspace-automation">
@@ -25,8 +25,8 @@
       <nav class="page-switcher" aria-label="MCR pages">
         <a class="page-switcher-link" id="nav-operations" href="index.html" title="Operate sources, Preview, Program, graphics, and audio."><span>OPERATE</span><small>Switch &amp; route</small></a>
         <a class="page-switcher-link" id="nav-monitoring" href="monitoring.html" title="Monitor signal health, cloud delivery, alarms, and incidents."><span>MONITOR</span><small>Health &amp; alarms</small></a>
-        <a class="page-switcher-link" id="nav-setup" href="setup.html" title="Configure sources, OBS mapping, presets, and integration readiness."><span>SETUP</span><small>Sources &amp; API</small></a>
-        <a class="page-switcher-link page-switcher-active" id="nav-automation" href="automation.html" aria-current="page" title="AI orchestration, runbooks, and workflow automation."><span>AUTOMATION</span><small>AI orchestration</small></a>
+        <a class="page-switcher-link" id="nav-setup" href="setup.html" title="Ingest, configure, and assign contribution sources."><span>INGEST</span><small>Sources &amp; metadata</small></a>
+        <a class="page-switcher-link page-switcher-active" id="nav-automation" href="automation.html" aria-current="page" title="AI-assisted runbooks, digital twin, and incident guidance."><span>AI OPS</span><small>Runbooks &amp; twin</small></a>
       </nav>
 
       <div class="header-badges">
@@ -83,9 +83,9 @@
     <main class="mcr-workspace automation-workspace" data-workspace-panel="automation">
       <section class="automation-hero">
         <div>
-          <span class="eyebrow">AI ORCHESTRATOR</span>
-          <h2>Cloud Broadcast Operations Platform</h2>
-          <p>Event-driven runbooks, broadcast digital twin, workflow health, and operator-approved automation for cloud MCR/PCR operations.</p>
+          <span class="eyebrow">AI OPS</span>
+          <h2>Cloud Broadcast Runbook Assistant</h2>
+          <p>Simulated incident intelligence, broadcast digital twin, workflow health, and operator-approved guidance for cloud MCR/PCR operations.</p>
         </div>
         <div class="automation-guardrails">
           <span class="status-chip status-healthy">Program Protection Enabled</span>
@@ -123,7 +123,7 @@
 
           <section class="control-panel panel-automation-rules">
             <div class="panel-header">
-              <h3>Event-Driven Automation Rules</h3>
+              <h3>Event-Driven Runbook Rules</h3>
               <span class="badge-amber font-fira">APPROVAL GATED</span>
             </div>
             <div class="automation-rules-grid" id="automation-rules-grid"></div>
@@ -141,7 +141,7 @@
 
           <section class="control-panel panel-simulation">
             <div class="panel-header">
-              <h3>Autonomous Incident Simulation</h3>
+              <h3>Assisted Incident Simulation</h3>
               <span class="status-chip status-warning" id="automation-incident-badge">NOMINAL</span>
             </div>
             <div class="automation-sim-buttons">
@@ -159,7 +159,7 @@
 
           <section class="control-panel panel-ai-recommendations">
             <div class="panel-header">
-              <h3>AI Recommendation Panel</h3>
+              <h3>AI Ops Recommendation Panel</h3>
               <span class="badge-blue font-fira">RUNBOOK</span>
             </div>
             <ul class="automation-reco-list" id="automation-reco-list"></ul>
@@ -167,7 +167,7 @@
 
           <section class="control-panel panel-automation-timeline">
             <div class="panel-header">
-              <h3>Automation Timeline</h3>
+              <h3>AI Ops Timeline</h3>
               <span class="badge-green font-fira">EVENTS</span>
             </div>
             <div class="automation-timeline" id="automation-timeline"></div>
@@ -177,6 +177,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=mcr-flow-14"></script>
+  <script src="app.js?v=mcr-flow-15"></script>
 </body>
 </html>
