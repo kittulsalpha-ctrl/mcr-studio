@@ -4009,9 +4009,9 @@ body.workspace-operations .screen-card.graphics-engine-card .screen-footer {
 }
 
 body.workspace-operations .tile-source-select,
-body.workspace-operations .btn-attach,
-body.workspace-operations .btn-eject,
-body.workspace-operations .btn-edit,
+body.workspace-operations .screen-card:not(.pgm-stream) .btn-attach,
+body.workspace-operations .screen-card:not(.pgm-stream) .btn-eject,
+body.workspace-operations .screen-card:not(.pgm-stream) .btn-edit,
 body.workspace-operations .assign-controls {
   display: none;
 }
@@ -4177,6 +4177,15 @@ body.workspace-operations .panel-logs .console-logs-wrapper {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   align-items: center;
+}
+
+.tx-control-slot .btn-screen-control {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 8px;
+  text-align: center;
 }
 
 .tx-control-slot .pgm-safety-group {
