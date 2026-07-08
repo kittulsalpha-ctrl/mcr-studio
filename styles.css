@@ -4325,7 +4325,7 @@ body.workspace-operations .panel-logs .console-logs-wrapper {
 }
 
 body.workspace-setup .mcr-workspace {
-  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -4335,8 +4335,44 @@ body.workspace-setup .multiviewer-container {
   gap: 12px;
 }
 
+body.workspace-setup .section-title-bar {
+  order: 1;
+}
+
+body.workspace-setup .setup-workflow-panel {
+  order: 2;
+}
+
+body.workspace-setup .source-monitor-drawer {
+  order: 3;
+}
+
+body.workspace-setup .setup-assignment-summary {
+  order: 4;
+}
+
+body.workspace-setup .ingest-desk-panel {
+  order: 5;
+}
+
+body.workspace-setup .multiviewer-action-bar {
+  order: 6;
+}
+
+body.workspace-setup .demo-setup {
+  order: 7;
+}
+
+body.workspace-setup .assign-controls {
+  order: 8;
+}
+
 body.workspace-setup .multiviewer-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.workspace-setup .source-monitor-drawer .multiviewer-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 body.workspace-setup #screen-pgm,
