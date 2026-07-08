@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-18" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-20" />
 </head>
 
 <body class="workspace-setup">
@@ -25,7 +25,7 @@
       <nav class="page-switcher" aria-label="MCR pages">
         <a class="page-switcher-link" id="nav-operations" href="index.html" title="Operate sources, Preview, Program, graphics, and audio."><span>OPERATE</span><small>Switch &amp; route</small></a>
         <a class="page-switcher-link" id="nav-monitoring" href="monitoring.html" title="Monitor signal health, cloud delivery, alarms, and incidents."><span>MONITOR</span><small>Health &amp; alarms</small></a>
-        <a class="page-switcher-link page-switcher-active" id="nav-setup" href="setup.html" aria-current="page" title="Ingest, configure, and assign contribution sources."><span>INGEST</span><small>Sources &amp; metadata</small></a>
+        <a class="page-switcher-link page-switcher-active" id="nav-setup" href="setup.html" aria-current="page" title="Prepare and validate incoming feeds before operation."><span>INGEST</span><small>Feed setup</small></a>
         <a class="page-switcher-link" id="nav-automation" href="automation.html" title="AI-assisted runbooks, digital twin, and incident guidance."><span>AI OPS</span><small>Runbooks &amp; twin</small></a>
       </nav>
 
@@ -88,24 +88,25 @@
 
     <main class="mcr-workspace">
 
-      <!-- Left Column: Multi-Viewer Screen Grid (3x2 responsive) -->
+      <!-- Ingest/source desk: prepare feeds before they are used on the Operate page. -->
       <section class="multiviewer-container">
         <div class="section-title-bar">
-          <h2>Contribution Source Ingest</h2>
+          <h2>Ingest Desk</h2>
           <div class="title-decor">
             <span class="active-dot pulse-pink"></span>
-            <span class="title-subtext">6-SOURCE PROCESSOR</span>
+            <span class="title-subtext">FEED INTAKE</span>
           </div>
         </div>
 
         <div class="setup-workflow-panel" aria-label="Ingest workflow">
-          <div><span>1</span><strong>Choose Tile</strong><small>Select which multiview input you are configuring.</small></div>
-          <div><span>2</span><strong>Choose Source</strong><small>Assign LiveU, NDI, OBS, file, URL, or gateway feed metadata.</small></div>
-          <div><span>3</span><strong>Validate / Handoff</strong><small>Confirm signal lock, then hand the source to Operate for Preview.</small></div>
+          <div><span>1</span><strong>Assign Slot</strong><small>Choose which monitor slot receives the incoming feed.</small></div>
+          <div><span>2</span><strong>Select Feed Type</strong><small>Use webcam, file, URL, LiveU, OBS, NDI, RTSP, or gateway input.</small></div>
+          <div><span>3</span><strong>Check Signal</strong><small>Confirm lock and mark the feed ready for Operate.</small></div>
           <a class="workflow-setup-link" href="index.html">GO TO OPERATE</a>
         </div>
 
         <div class="setup-assignment-summary" aria-label="Source assignment summary">
+          <div class="setup-summary-empty" id="setup-summary-empty"><span>READY WHEN ASSIGNED</span><strong>No active feed slots yet</strong><small>Assign or validate a source below to show it here.</small></div>
           <div><span>MULTIVIEW 1</span><strong id="setup-summary-cam1">—</strong><small id="setup-summary-cam1-state">—</small></div>
           <div><span>MULTIVIEW 2</span><strong id="setup-summary-cam2">—</strong><small id="setup-summary-cam2-state">—</small></div>
           <div><span>MULTIVIEW 3</span><strong id="setup-summary-liveu3">—</strong><small id="setup-summary-liveu3-state">—</small></div>
@@ -116,9 +117,9 @@
           <div class="ingest-desk-header">
             <div>
               <span>INGEST DESK</span>
-              <strong>Source Metadata &amp; Handoff</strong>
+              <strong>Feed Metadata &amp; Operate Handoff</strong>
             </div>
-            <label>Selected input
+            <label>Multiview slot
               <select id="ingest-selected-feed">
                 <option value="cam1">MULTIVIEW 1</option>
                 <option value="cam2">MULTIVIEW 2</option>
@@ -137,7 +138,7 @@
             <label>Ingest engineer
               <input id="ingest-engineer" type="text" maxlength="36" />
             </label>
-            <label>Source status
+            <label>Feed status
               <select id="ingest-status">
                 <option value="BOOKED">BOOKED</option>
                 <option value="TESTING">TESTING</option>
@@ -146,7 +147,7 @@
                 <option value="FAULT">FAULT</option>
               </select>
             </label>
-            <label>Confidence
+            <label>Signal confidence
               <input id="ingest-confidence" type="range" min="0" max="100" step="1" />
             </label>
             <div class="ingest-confidence-card">
@@ -213,7 +214,12 @@
           <span class="action-status" id="action-status">No source connected</span>
         </div>
 
-        <div class="multiviewer-grid">
+        <details class="source-monitor-drawer">
+          <summary>
+            <span>Technical Slot Monitors</span>
+            <small>Open when assigning, clearing, or testing individual feed slots.</small>
+          </summary>
+          <div class="multiviewer-grid">
 
           <!-- Screen 1: MULTIVIEW 1 -->
           <div class="screen-card active-stream" id="screen-cam1">
@@ -456,7 +462,8 @@
             <div class="screen-program-badge" id="program-badge-liveu4" style="display:none;">ON AIR</div>
           </div>
 
-        </div>
+          </div>
+        </details>
       </section>
 
       <section class="controls-container setup-only-container">
@@ -804,6 +811,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-18"></script>
+  <script src="app.js?v=mcr-flow-20"></script>
 </body>
 </html>

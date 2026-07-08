@@ -3053,6 +3053,10 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.setup-assignment-summary:has(.setup-summary-empty:not([hidden])) {
+  grid-template-columns: 1fr;
+}
+
 .setup-workflow-panel > div,
 .setup-assignment-summary > div {
   min-width: 0;
@@ -3060,6 +3064,15 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 7px;
   background: rgba(2, 6, 23, 0.48);
+}
+
+.setup-assignment-summary > div[hidden] {
+  display: none !important;
+}
+
+.setup-summary-empty {
+  border-style: dashed !important;
+  background: rgba(2, 6, 23, 0.3) !important;
 }
 
 .setup-workflow-panel span,
@@ -3190,6 +3203,38 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.source-monitor-drawer {
+  margin-top: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.36);
+}
+
+.source-monitor-drawer summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: 800 10px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.source-monitor-drawer summary small {
+  color: var(--text-muted);
+  font: 700 9px var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.source-monitor-drawer .multiviewer-grid {
+  padding: 0 12px 12px;
 }
 
 body.workspace-operations .screen-card.active-stream:not(.graphics-engine-card) .btn-solo {

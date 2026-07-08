@@ -708,6 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     automationSuggestedAction: byId("automation-suggested-action"),
     digitalTwinGrid: byId("digital-twin-grid"),
     btnAutomationReset: byId("btn-automation-reset"),
+    setupSummaryEmpty: byId("setup-summary-empty"),
     setupSummaryCam1: byId("setup-summary-cam1"),
     setupSummaryCam1State: byId("setup-summary-cam1-state"),
     setupSummaryCam2: byId("setup-summary-cam2"),
@@ -3027,6 +3028,7 @@ document.addEventListener('DOMContentLoaded', () => {
       liveu3: [el.setupSummaryLiveu3, el.setupSummaryLiveu3State],
       liveu4: [el.setupSummaryLiveu4, el.setupSummaryLiveu4State]
     };
+    let visibleCount = 0;
     Object.entries(summaryMap).forEach(([feed, nodes]) => {
       const [sourceNode, stateNode] = nodes;
       const metadata = getFeedMetadata(feed);
@@ -3034,9 +3036,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasSignal = feedHasActiveSignal(feed);
       const ingestStatus = getEffectiveIngestStatus(feed);
       const confidence = getEffectiveIngestConfidence(feed);
+      const summaryCard = sourceNode?.closest('div');
+      const sourceLabel = metadata.source || 'No Input';
+      const isEmpty = !hasSignal && /^(no input|no file|reload file in ingest)$/i.test(sourceLabel);
+      if (summaryCard) {
+        summaryCard.hidden = isEmpty;
+        summaryCard.classList.toggle('is-empty', isEmpty);
+      }
+      if (!isEmpty) visibleCount += 1;
       setMetricText(sourceNode, metadata.source || 'No Input', hasSignal ? 'text-green' : status === 'NO SOURCE' ? 'text-muted' : 'text-amber');
       setMetricText(stateNode, `${ingestStatus} · ${confidence}%`, ingestStatusClass(ingestStatus, confidence));
     });
+    if (el.setupSummaryEmpty) el.setupSummaryEmpty.hidden = visibleCount > 0;
     renderIngestDesk();
   }
 
