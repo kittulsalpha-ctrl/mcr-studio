@@ -4952,6 +4952,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSourceStateControls();
   updateDetectionControls();
   updateOrchestratorRouting();
+  renderEngineeringDashboard();
+  renderAIOpsAssistant();
+  renderIncidentResponse();
   renderNdiBridge();
   renderReplayPlayoutServers();
   connectBackendOrchestrator();
