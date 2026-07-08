@@ -3212,7 +3212,7 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   background: rgba(2, 6, 23, 0.36);
 }
 
-.source-monitor-drawer summary {
+.source-monitor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3220,13 +3220,12 @@ body.workspace-monitoring .panel-orchestrator .advanced-sim-controls {
   min-height: 40px;
   padding: 10px 12px;
   color: var(--text-primary);
-  cursor: pointer;
   font: 800 10px var(--font-display);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.source-monitor-drawer summary small {
+.source-monitor-header small {
   color: var(--text-muted);
   font: 700 9px var(--font-mono);
   letter-spacing: 0;

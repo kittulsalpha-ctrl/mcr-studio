@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-20" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-21" />
 </head>
 
 <body class="workspace-setup">
@@ -164,61 +164,11 @@
           <div class="ingest-log-strip font-fira" id="ingest-log-strip">No ingest actions yet.</div>
         </section>
 
-        <div class="multiviewer-action-bar">
-          <button class="btn btn-secondary" id="btn-start-webcam">START CAMERA</button>
-          <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAMERA</button>
-          <button class="btn btn-secondary" id="btn-load-local-video">LOAD LOCAL FILE</button>
-          <button class="btn btn-secondary" id="btn-eject-video">CLEAR LOCAL FILE</button>
-          <input type="file" id="local-video-file-input" accept="video/*" hidden />
-        </div>
-        <details class="operator-advanced demo-setup">
-          <summary>INGEST PRESETS</summary>
-          <div class="multiviewer-action-bar preset-controls">
-            <label class="action-select-label">Ingest preset:
-              <select id="select-demo-preset">
-                <option value="clean">Clean Startup</option>
-                <option value="football">Football MCR Demo</option>
-                <option value="youtube">YouTube Live Demo</option>
-                <option value="failover">Failover Drill</option>
-                <option value="adcue">Ad Cue Drill</option>
-              </select>
-            </label>
-            <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD SCENARIO</button>
-            <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this scenario.">COPY LINK</button>
-            <details class="operator-inline-advanced">
-              <summary>SCENARIO FILES</summary>
-              <button class="btn btn-secondary" id="btn-export-scenario" title="Download the current scenario as a JSON file.">EXPORT</button>
-              <button class="btn btn-secondary" id="btn-import-scenario" title="Import a saved scenario JSON file.">IMPORT</button>
-            </details>
-            <input type="file" id="scenario-import-input" accept="application/json,.json" hidden />
-            <span class="preset-link-status font-fira" id="preset-link-status">Preset links use ?preset=name</span>
-          </div>
-        </details>
-        <div class="multiviewer-action-bar assign-controls">
-          <label class="action-select-label">Camera target:
-            <select id="select-webcam-target">
-              <option value="cam1">LiveU 1</option>
-              <option value="cam2">LiveU 2</option>
-              <option value="liveu3">LiveU 3</option>
-              <option value="liveu4">LiveU 4</option>
-            </select>
-          </label>
-          <label class="action-select-label">File target:
-            <select id="select-video-target">
-              <option value="cam1">LiveU 1</option>
-              <option value="cam2">LiveU 2</option>
-              <option value="liveu3">LiveU 3</option>
-              <option value="liveu4">LiveU 4</option>
-            </select>
-          </label>
-          <span class="action-status" id="action-status">No source connected</span>
-        </div>
-
-        <details class="source-monitor-drawer">
-          <summary>
+        <section class="source-monitor-drawer" aria-label="Technical slot monitors">
+          <div class="source-monitor-header">
             <span>Technical Slot Monitors</span>
-            <small>Open when assigning, clearing, or testing individual feed slots.</small>
-          </summary>
+            <small>Always visible so ingest can confirm every monitor slot is present.</small>
+          </div>
           <div class="multiviewer-grid">
 
           <!-- Screen 1: MULTIVIEW 1 -->
@@ -463,7 +413,57 @@
           </div>
 
           </div>
+        </section>
+
+        <div class="multiviewer-action-bar">
+          <button class="btn btn-secondary" id="btn-start-webcam">START CAMERA</button>
+          <button class="btn btn-secondary" id="btn-stop-webcam">STOP CAMERA</button>
+          <button class="btn btn-secondary" id="btn-load-local-video">LOAD LOCAL FILE</button>
+          <button class="btn btn-secondary" id="btn-eject-video">CLEAR LOCAL FILE</button>
+          <input type="file" id="local-video-file-input" accept="video/*" hidden />
+        </div>
+        <details class="operator-advanced demo-setup">
+          <summary>INGEST PRESETS</summary>
+          <div class="multiviewer-action-bar preset-controls">
+            <label class="action-select-label">Ingest preset:
+              <select id="select-demo-preset">
+                <option value="clean">Clean Startup</option>
+                <option value="football">Football MCR Demo</option>
+                <option value="youtube">YouTube Live Demo</option>
+                <option value="failover">Failover Drill</option>
+                <option value="adcue">Ad Cue Drill</option>
+              </select>
+            </label>
+            <button class="btn btn-secondary" id="btn-load-preset" title="Load the selected demo scenario.">LOAD SCENARIO</button>
+            <button class="btn btn-secondary" id="btn-copy-preset-link" title="Copy a shareable URL for this scenario.">COPY LINK</button>
+            <details class="operator-inline-advanced">
+              <summary>SCENARIO FILES</summary>
+              <button class="btn btn-secondary" id="btn-export-scenario" title="Download the current scenario as a JSON file.">EXPORT</button>
+              <button class="btn btn-secondary" id="btn-import-scenario" title="Import a saved scenario JSON file.">IMPORT</button>
+            </details>
+            <input type="file" id="scenario-import-input" accept="application/json,.json" hidden />
+            <span class="preset-link-status font-fira" id="preset-link-status">Preset links use ?preset=name</span>
+          </div>
         </details>
+        <div class="multiviewer-action-bar assign-controls">
+          <label class="action-select-label">Camera target:
+            <select id="select-webcam-target">
+              <option value="cam1">LiveU 1</option>
+              <option value="cam2">LiveU 2</option>
+              <option value="liveu3">LiveU 3</option>
+              <option value="liveu4">LiveU 4</option>
+            </select>
+          </label>
+          <label class="action-select-label">File target:
+            <select id="select-video-target">
+              <option value="cam1">LiveU 1</option>
+              <option value="cam2">LiveU 2</option>
+              <option value="liveu3">LiveU 3</option>
+              <option value="liveu4">LiveU 4</option>
+            </select>
+          </label>
+          <span class="action-status" id="action-status">No source connected</span>
+        </div>
       </section>
 
       <section class="controls-container setup-only-container">
@@ -811,6 +811,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-20"></script>
+  <script src="app.js?v=mcr-flow-21"></script>
 </body>
 </html>
