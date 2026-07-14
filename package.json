@@ -5,9 +5,10 @@
   "description": "Browser-based Cloud MCR/PCR prototype with optional control orchestrator backend.",
   "scripts": {
     "start": "node server.js",
+    "test:srt": "node scripts/srt-loopback-test.js",
     "telemetry:aws": "node aws-telemetry-worker.js",
-    "test": "node --test",
-    "check": "node --check app.js && node --check server.js && node --check media-gateway.js && node --check aws-telemetry-worker.js && node --test"
+    "test": "node --test test/*.test.js",
+    "check": "node --check app.js && node --check server.js && node --check media-gateway.js && node --check scripts/srt-loopback-test.js && node --check aws-telemetry-worker.js && npm test"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.0.0",

@@ -1089,8 +1089,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const status = connected ? gateway?.status || 'READY' : 'BACKEND REQUIRED';
     el.ingestGatewayStatus.textContent = status;
     el.ingestGatewayStatus.className = `${status === 'ONLINE' ? 'badge-green' : status === 'STARTING' || status === 'READY' ? 'badge-blue' : status === 'UNAVAILABLE' ? 'badge-red' : 'badge-amber'} font-fira`;
-    el.ingestGatewayRuntime.textContent = capability?.status === 'AVAILABLE' ? `FFMPEG ${capability.version || 'AVAILABLE'}` : capability?.status || 'NOT CONNECTED';
-    el.ingestGatewaySrt.textContent = capability?.protocols?.srt ? 'AVAILABLE' : capability ? 'RUNTIME REQUIRED' : 'UNKNOWN';
+    el.ingestGatewayRuntime.textContent = capability?.status === 'AVAILABLE'
+      ? `FFMPEG ${capability.version || 'AVAILABLE'}${capability.srtRuntime === 'VLC BRIDGE' ? ' + VLC' : ''}`
+      : capability?.status || 'NOT CONNECTED';
+    el.ingestGatewaySrt.textContent = capability?.protocols?.srt ? capability.srtRuntime || 'AVAILABLE' : capability ? 'RUNTIME REQUIRED' : 'UNKNOWN';
     el.ingestGatewaySrt.className = capability?.protocols?.srt ? 'text-green' : capability ? 'text-amber' : 'text-muted';
     el.ingestGatewayPreview.textContent = source ? `${source.status} · ${source.slot.toUpperCase()}` : 'OFFLINE';
     el.ingestGatewayPreview.className = source?.status === 'ONLINE' ? 'text-green' : source?.status === 'FAILED' ? 'text-red' : source ? 'text-amber' : 'text-muted';
@@ -3657,7 +3659,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.svcSrtMetric) el.svcSrtMetric.textContent = realSrtSource
       ? `${Math.round(realSrtSource.metrics?.bitrateKbps || 0)} kbps · ${realSrtSource.slot.toUpperCase()} · ${realSrtSource.status}`
       : liveGateway && !srtRuntimeAvailable
-        ? 'Install SRT-enabled FFmpeg or GStreamer'
+        ? 'Install SRT-enabled FFmpeg or configure the VLC SRT bridge'
         : `RTT ${state.rttMs}ms · ${state.lossPercent.toFixed(1)}% loss · ${state.primaryFailed ? 'Backup' : 'Primary'}`;
     setMetricText(el.svcMediaConnectStatus, mediaConnectTelemetry?.status || delivery.mediaConnectStatus, mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.primaryFailed ? 'text-amber' : delivery.hasProgram ? 'text-green' : 'text-blue');
     if (el.svcMediaConnectMetric) el.svcMediaConnectMetric.textContent = `${state.primaryFailed ? 'Flow B active' : 'Flow A/B ready'} · ${selectedRegion.code}`;

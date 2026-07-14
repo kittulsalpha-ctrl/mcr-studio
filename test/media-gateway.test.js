@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { MediaGateway, probeFfmpeg, redactInputUrl } = require('../media-gateway');
+const { MediaGateway, buildVlcSrtBridgeConfig, probeFfmpeg, probeVlcSrt, redactInputUrl } = require('../media-gateway');
 
 function waitFor(predicate, timeoutMs = 8000) {
   const startedAt = Date.now();
@@ -32,6 +32,28 @@ test('reports installed FFmpeg transport capabilities truthfully', () => {
   assert.ok(['AVAILABLE', 'UNAVAILABLE'].includes(capability.status));
   assert.equal(typeof capability.protocols.srt, 'boolean');
   assert.equal(typeof capability.protocols.rtmp, 'boolean');
+});
+
+test('reports VLC SRT bridge capability truthfully', () => {
+  const capability = probeVlcSrt(process.env.VLC_PATH || '/Applications/VLC.app/Contents/MacOS/VLC');
+  assert.ok(['AVAILABLE', 'UNAVAILABLE'].includes(capability.status));
+});
+
+test('builds an SRT listener bridge with normalized latency and loopback output', () => {
+  const bridge = buildVlcSrtBridgeConfig('srt://0.0.0.0:9001?mode=listener&latency=200000&passphrase=secret-value&streamid=field-1', 12000);
+  assert.equal(bridge.mode, 'listener');
+  assert.equal(bridge.latencyMs, 200);
+  assert.equal(bridge.ffmpegInputUrl, 'udp://127.0.0.1:12000?fifo_size=1000000&overrun_nonfatal=1');
+  assert.ok(bridge.args.includes('srt://:9001'));
+  assert.ok(bridge.args.includes('--passphrase=secret-value'));
+  assert.ok(bridge.args.includes('--streamid=field-1'));
+});
+
+test('builds an SRT caller bridge with a remote endpoint', () => {
+  const bridge = buildVlcSrtBridgeConfig('srt://encoder.example:9002?mode=caller&latency=250', 12001);
+  assert.equal(bridge.mode, 'caller');
+  assert.equal(bridge.latencyMs, 250);
+  assert.ok(bridge.args.includes('srt://encoder.example:9002'));
 });
 
 test('keeps preview media paths inside the gateway runtime directory', () => {

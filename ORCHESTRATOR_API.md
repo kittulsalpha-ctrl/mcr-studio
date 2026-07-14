@@ -73,7 +73,7 @@ POST /api/ingest/stop
 { "id": "contribution-main" }
 ```
 
-`test` generates a real H.264/AAC contribution signal locally and does not require `inputUrl`. `srt` and `rtmp` require a matching protocol in the configured FFmpeg runtime. The gateway publishes HLS preview assets under `/media/<source-id>/index.m3u8`; these files are runtime artifacts and are not committed to Git.
+`test` generates a real H.264/AAC contribution signal locally and does not require `inputUrl`. `rtmp` requires matching FFmpeg support. SRT uses native FFmpeg support when available; otherwise, the Edge Agent can spawn the configured VLC runtime as an SRT listener/caller bridge to a slot-specific loopback UDP port. FFmpeg then converts that MPEG-TS bridge output into the HLS browser preview. Runtime selection is reported as `mediaGateway.capabilities.srtRuntime` (`FFMPEG`, `VLC BRIDGE`, or `UNAVAILABLE`). The gateway publishes HLS preview assets under `/media/<source-id>/index.m3u8`; these files are runtime artifacts and are not committed to Git.
 
 The public gateway state redacts contribution URL passwords, passphrases, tokens, and stream IDs. Production deployments must additionally protect all control endpoints with authenticated operator roles and TLS.
 

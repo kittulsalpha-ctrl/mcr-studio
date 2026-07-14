@@ -89,7 +89,7 @@ The Edge Agent now includes the first real media-plane component: an FFmpeg-back
 
 The gateway provides:
 
-- Runtime capability detection for FFmpeg, RTMP, and SRT.
+- Runtime capability detection for FFmpeg, RTMP, native FFmpeg SRT, and the VLC SRT bridge.
 - Real H.264/AAC preview generation with short fragmented-MP4 HLS segments.
 - Gateway lifecycle, source state, slot assignment, and FFmpeg progress metrics.
 - Automatic Program fail-safe: if an active gateway source stops or fails, Program is cleared instead of holding a stale frame.
@@ -104,7 +104,29 @@ Run the Edge Agent and open Ingest in backend mode:
 http://127.0.0.1:8080/setup.html?backend=1
 ```
 
-Select **Generated test contribution** and press **START GATEWAY** to verify the complete gateway-to-multiview path without external equipment. The installed FFmpeg binary must list `srt` in `ffmpeg -protocols` before the SRT option becomes available. Set `FFMPEG_PATH` when the SRT-capable binary is not on the default PATH; see `.env.gateway.example`.
+Select **Generated test contribution** and press **START GATEWAY** to verify the complete gateway-to-multiview path without external equipment. For SRT, the gateway prefers native FFmpeg support. When FFmpeg does not list `srt` in `ffmpeg -protocols`, it automatically uses an installed VLC runtime with SRT input/output modules as a local SRT-to-UDP bridge. Set `FFMPEG_PATH`, `VLC_PATH`, and the loopback `SRT_BRIDGE_UDP_BASE` when defaults are unsuitable; see `.env.gateway.example`.
+
+Listener example for a field encoder calling the MCR gateway:
+
+```text
+srt://0.0.0.0:9001?mode=listener&latency=200000
+```
+
+Caller example for connecting to a remote SRT listener:
+
+```text
+srt://encoder.example:9001?mode=caller&latency=200000
+```
+
+The `latency` query accepts FFmpeg-style microseconds (`200000`) or milliseconds (`200`). SRT passphrases and stream IDs are redacted from public gateway state. They remain local process configuration and must be supplied through a protected control plane in production.
+
+Run the real local SRT caller-to-listener test with:
+
+```bash
+npm run test:srt
+```
+
+The harness generates a short MPEG-TS source, sends it through VLC over SRT, waits for the gateway HLS preview to reach `ONLINE`, reports the selected runtime and preview metrics, and then releases every process. It requires permission to open local SRT and UDP sockets.
 
 Chrome and other Media Source browsers load HLS.js on demand for the local preview. Safari uses native HLS playback. A production deployment should bundle and pin this browser dependency rather than relying on a public CDN.
 
@@ -131,13 +153,13 @@ A custom domain is not required for the current GitHub Pages demo. It becomes us
 The browser app currently simulates several broadcast/cloud systems so the workflow can be demonstrated without dedicated infrastructure:
 
 - LiveU contribution feeds are represented as front-end source states.
-- NDI/SRT/WebRTC gateway discovery is represented as a placeholder API contract.
+- NDI/WebRTC gateway discovery remains a placeholder API contract. Local SRT ingest is functional through the Edge Agent, while hosted SRT still requires a deployed gateway service.
 - AWS MediaConnect, MediaLive, and CDN Edge health are simulated.
 - MediaPackage origin/ABR packaging is represented as a separate stage between MediaLive and CDN Edge. It becomes live only when a trusted collector is configured with the client's actual origin telemetry.
 - QC alarms such as input loss, black, freeze, silence, high RTT, packet loss, and CDN degraded are simulated from source state and operator actions.
 - AI Ops Assistant recommendations are generated locally from current source/program/alarm state.
 
-Real webcam, local video file loading, URL embed preview, preview selection, Take to Air, Off Air, source ejection, and the FFmpeg contribution preview gateway are functional prototype features. The gateway's generated test transport is available with standard FFmpeg; SRT is available only when the configured FFmpeg/GStreamer runtime includes SRT support.
+Real webcam, local video file loading, URL embed preview, preview selection, Take to Air, Off Air, source ejection, and the FFmpeg contribution preview gateway are functional prototype features. The gateway's generated test transport is available with standard FFmpeg; SRT is available through native FFmpeg support or the automatic VLC SRT bridge.
 
 ## GitHub Pages Limitation
 
@@ -165,7 +187,7 @@ The agent is intentionally local-only today. A future hosted control plane will 
 ## Roadmap
 
 - Real replay and playout media engines with recording, clip storage, asset playback, and return-to-live routing.
-- Real NDI/SRT/WebRTC gateway bridge.
+- Production-hardened SRT gateway deployment plus real NDI/WebRTC discovery and preview bridges.
 - FFmpeg or GStreamer backend for media ingest, transcode, preview generation, and QC probes.
 - Browser audio meters, silence detection, black/freeze detection, and stream stats.
 - AWS MediaConnect, MediaLive, and CDN API integration.
