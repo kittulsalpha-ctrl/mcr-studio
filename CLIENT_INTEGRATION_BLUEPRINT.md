@@ -17,6 +17,7 @@ The browser should not directly perform every media operation. The browser shoul
 
 - Static GitHub Pages demo for UI and simulated workflows.
 - Node.js Control Orchestrator prototype for shared state, REST commands, logs, and Server-Sent Events.
+- FFmpeg contribution preview gateway with real generated/RTMP media processing, HLS preview output, runtime health, slot assignment, and SRT capability detection.
 - Browser-side webcam, local video, URL embed preview, Preview, Take, Off Air, graphics overlay simulation, replay/playout simulation, alarms, logs, and AI recommendations.
 - Dedicated Operations and Monitoring pages that can run on two displays.
 

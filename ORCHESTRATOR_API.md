@@ -24,6 +24,7 @@ GET /api/state
 GET /api/logs
 GET /api/events
 GET /api/telemetry
+GET /api/ingest
 ```
 
 `/api/events` is a Server-Sent Events stream. It emits `state` events whenever a command changes orchestrator state.
@@ -53,6 +54,28 @@ POST /api/off-air
 POST /api/return-live
 {}
 ```
+
+## Contribution Preview Gateway
+
+```text
+GET /api/ingest
+
+POST /api/ingest/start
+{
+  "id": "contribution-main",
+  "label": "SRT Contribution Main",
+  "transport": "test|srt|rtmp",
+  "slot": "cam1|cam2|liveu3|liveu4",
+  "inputUrl": "srt://0.0.0.0:9001?mode=listener&latency=200000"
+}
+
+POST /api/ingest/stop
+{ "id": "contribution-main" }
+```
+
+`test` generates a real H.264/AAC contribution signal locally and does not require `inputUrl`. `srt` and `rtmp` require a matching protocol in the configured FFmpeg runtime. The gateway publishes HLS preview assets under `/media/<source-id>/index.m3u8`; these files are runtime artifacts and are not committed to Git.
+
+The public gateway state redacts contribution URL passwords, passphrases, tokens, and stream IDs. Production deployments must additionally protect all control endpoints with authenticated operator roles and TLS.
 
 ## Audio
 

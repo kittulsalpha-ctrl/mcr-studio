@@ -83,6 +83,31 @@ See `ORCHESTRATOR_API.md` for the API contract.
 
 See `TELEMETRY_COLLECTOR_API.md` for the normalized Direct Connect, MediaConnect, MediaLive, CloudFront, and encoder telemetry contract. A trusted backend collector posts this data; the browser never holds AWS credentials.
 
+## Contribution Preview Gateway
+
+The Edge Agent now includes the first real media-plane component: an FFmpeg-backed contribution preview gateway. In backend mode, the Ingest page can start a generated test contribution or receive RTMP/SRT input, create a low-latency HLS preview, assign it to a multiview slot, and share that assignment with the Operate page through the existing orchestrator event stream.
+
+The gateway provides:
+
+- Runtime capability detection for FFmpeg, RTMP, and SRT.
+- Real H.264/AAC preview generation with short fragmented-MP4 HLS segments.
+- Gateway lifecycle, source state, slot assignment, and FFmpeg progress metrics.
+- Automatic Program fail-safe: if an active gateway source stops or fails, Program is cleared instead of holding a stale frame.
+- Real Program audio from the gateway preview when Audio Follow Video routes that slot to air.
+- Sensitive SRT URL fields such as passphrases and stream IDs redacted from public API state.
+
+The Edge Agent binds to `127.0.0.1` by default. Set `HOST=0.0.0.0` only inside a protected deployment network when remote access is intentionally required.
+
+Run the Edge Agent and open Ingest in backend mode:
+
+```text
+http://127.0.0.1:8080/setup.html?backend=1
+```
+
+Select **Generated test contribution** and press **START GATEWAY** to verify the complete gateway-to-multiview path without external equipment. The installed FFmpeg binary must list `srt` in `ffmpeg -protocols` before the SRT option becomes available. Set `FFMPEG_PATH` when the SRT-capable binary is not on the default PATH; see `.env.gateway.example`.
+
+Chrome and other Media Source browsers load HLS.js on demand for the local preview. Safari uses native HLS playback. A production deployment should bundle and pin this browser dependency rather than relying on a public CDN.
+
 ## AWS Telemetry Worker
 
 `aws-telemetry-worker.js` is a configuration-driven collector scaffold for AWS Direct Connect, MediaConnect, MediaLive, and CloudFront. Copy `.env.telemetry.example` into the deployment environment, provide resource IDs and an IAM role/profile, then run:
@@ -112,7 +137,7 @@ The browser app currently simulates several broadcast/cloud systems so the workf
 - QC alarms such as input loss, black, freeze, silence, high RTT, packet loss, and CDN degraded are simulated from source state and operator actions.
 - AI Ops Assistant recommendations are generated locally from current source/program/alarm state.
 
-Real webcam, local video file loading, URL embed preview, preview selection, Take to Air, Off Air, and source ejection are browser-side prototype features.
+Real webcam, local video file loading, URL embed preview, preview selection, Take to Air, Off Air, source ejection, and the FFmpeg contribution preview gateway are functional prototype features. The gateway's generated test transport is available with standard FFmpeg; SRT is available only when the configured FFmpeg/GStreamer runtime includes SRT support.
 
 ## GitHub Pages Limitation
 

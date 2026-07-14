@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "telemetry:aws": "node aws-telemetry-worker.js",
-    "check": "node --check app.js && node --check server.js && node --check aws-telemetry-worker.js"
+    "test": "node --test",
+    "check": "node --check app.js && node --check server.js && node --check media-gateway.js && node --check aws-telemetry-worker.js && node --test"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.0.0",

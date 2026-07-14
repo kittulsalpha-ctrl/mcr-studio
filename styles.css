@@ -4386,6 +4386,111 @@ body.workspace-setup .controls-container {
   gap: 12px;
 }
 
+.ingest-gateway-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.ingest-gateway-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(160px, 0.65fr) minmax(280px, 1.8fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.ingest-gateway-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font: 800 8px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ingest-gateway-form select,
+.ingest-gateway-form input {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.82);
+  color: var(--text-primary);
+  font: 700 10px var(--font-mono);
+}
+
+.ingest-gateway-actions {
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) minmax(70px, 0.55fr);
+  gap: 7px;
+}
+
+.ingest-gateway-runtime {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ingest-gateway-runtime > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.46);
+}
+
+.ingest-gateway-runtime span,
+.ingest-gateway-runtime strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ingest-gateway-runtime span {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font: 800 8px var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+.ingest-gateway-runtime strong {
+  color: var(--text-primary);
+  font: 700 10px var(--font-mono);
+}
+
+.ingest-gateway-detail {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1080px) {
+  .ingest-gateway-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ingest-gateway-url-field,
+  .ingest-gateway-actions {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .ingest-gateway-form,
+  .ingest-gateway-runtime {
+    grid-template-columns: 1fr;
+  }
+
+  .ingest-gateway-url-field,
+  .ingest-gateway-actions {
+    grid-column: auto;
+  }
+}
+
 body.workspace-setup [data-workspace-panel="operations"],
 body.workspace-setup [data-workspace-panel="monitoring"]:not(.panel-client-integration):not(.panel-engineering):not(.panel-orchestrator) {
   display: none;

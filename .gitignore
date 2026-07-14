@@ -1,3 +1,4 @@
 node_modules/
 .env.local
 .mcr-studio-local.json
+.runtime/

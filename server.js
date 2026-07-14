@@ -9,6 +9,7 @@ const path = require('path');
 const { URL } = require('url');
 const { randomUUID } = require('crypto');
 const { OBSWebSocket } = require('obs-websocket-js');
+const { MediaGateway } = require('./media-gateway');
 
 const localEnvPath = path.join(__dirname, '.env.local');
 if (fs.existsSync(localEnvPath)) {
@@ -19,6 +20,7 @@ if (fs.existsSync(localEnvPath)) {
 }
 
 const PORT = Number(process.env.PORT || 8080);
+const HOST = process.env.HOST || '127.0.0.1';
 const ROOT = __dirname;
 const TELEMETRY_INGEST_TOKEN = process.env.TELEMETRY_INGEST_TOKEN || '';
 const OBS_WEBSOCKET_ENABLED = process.env.OBS_WEBSOCKET_ENABLED === '1';
@@ -51,7 +53,10 @@ const mimeTypes = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp'
+  '.webp': 'image/webp',
+  '.m3u8': 'application/vnd.apple.mpegurl',
+  '.m4s': 'video/iso.segment',
+  '.mp4': 'video/mp4'
 };
 
 const state = {
@@ -162,12 +167,58 @@ const state = {
     followMcrTake: !!localRuntimeConfig.obs?.followMcrTake,
     mappings: { cam1: '', cam2: '', liveu3: '', liveu4: '', replay: '', playout: '', ...(localRuntimeConfig.obs?.mappings || {}) }
   },
+  mediaGateway: null,
   logs: []
 };
 
 const clients = new Set();
 let obsClient;
 let obsReconnectTimer;
+const mediaGateway = new MediaGateway({
+  root: ROOT,
+  onUpdate(gatewayState) {
+    const previousSources = state.mediaGateway?.sources || [];
+    state.mediaGateway = gatewayState;
+    state.services.ingest.status = gatewayState.status;
+    state.services.ingest.instance = 'local-ffmpeg-gateway';
+    state.agent.capabilities.srtGateway = gatewayState.capabilities.protocols.srt ? 'AVAILABLE' : 'RUNTIME REQUIRED';
+    state.agent.capabilities.rtmpGateway = gatewayState.capabilities.protocols.rtmp ? 'AVAILABLE' : 'NOT AVAILABLE';
+    state.agent.capabilities.previewGateway = gatewayState.capabilities.preview;
+
+    previousSources.forEach(previous => {
+      const stillAssigned = gatewayState.sources.some(source => source.slot === previous.slot && ['STARTING', 'ONLINE'].includes(source.status));
+      if (!stillAssigned && state.sources[previous.slot]?.type === 'gateway') {
+        state.sources[previous.slot] = { ...state.sources[previous.slot], state: 'OFFLINE' };
+      }
+    });
+    gatewayState.sources.forEach(source => {
+      if (!state.sources[source.slot]) return;
+      const sourceState = source.status === 'ONLINE' ? 'ONLINE' : source.status === 'STARTING' ? 'STANDBY' : source.status === 'FAILED' ? 'ALARM' : 'OFFLINE';
+      state.sources[source.slot] = {
+        ...state.sources[source.slot],
+        label: `${source.label} / ${source.slot.toUpperCase()}`,
+        state: sourceState,
+        type: 'gateway',
+        transport: source.transport
+      };
+      const previous = previousSources.find(item => item.id === source.id);
+      const failedNow = ['FAILED', 'STOPPED'].includes(source.status) && !['FAILED', 'STOPPED'].includes(previous?.status);
+      if (failedNow && state.routing.preview === source.slot) state.routing.preview = null;
+      if (failedNow && state.routing.program === source.slot) {
+        state.routing.program = null;
+        state.audio.programBus = null;
+        addLog('alarm', 'INGEST', `${source.label} was removed from Program because the contribution gateway is ${source.status}.`, 'gateway-fail-safe');
+      }
+    });
+    broadcast('state', publicState());
+  }
+});
+state.mediaGateway = mediaGateway.publicState();
+state.services.ingest.status = state.mediaGateway.status;
+state.services.ingest.instance = 'local-ffmpeg-gateway';
+state.agent.capabilities.srtGateway = state.mediaGateway.capabilities.protocols.srt ? 'AVAILABLE' : 'RUNTIME REQUIRED';
+state.agent.capabilities.rtmpGateway = state.mediaGateway.capabilities.protocols.rtmp ? 'AVAILABLE' : 'NOT AVAILABLE';
+state.agent.capabilities.previewGateway = state.mediaGateway.capabilities.preview;
 
 function nowStamp() {
   return new Date().toISOString();
@@ -291,6 +342,12 @@ function isKnownProgramSource(source) {
   return ['cam1', 'cam2', 'liveu3', 'liveu4', 'replay', 'playout', 'ad'].includes(source);
 }
 
+function isRoutableProgramSource(source) {
+  if (!isKnownProgramSource(source)) return false;
+  if (!state.sources[source]) return true;
+  return ['ONLINE', 'READY', 'STANDBY', 'CUED', 'ON AIR'].includes(state.sources[source].state);
+}
+
 function normalizeContributionSource(source) {
   const aliases = { liveu1: 'cam1', liveu2: 'cam2', cam1: 'cam1', cam2: 'cam2', liveu3: 'liveu3', liveu4: 'liveu4' };
   return aliases[source] || null;
@@ -361,6 +418,7 @@ const commandHandlers = {
   preview(body) {
     const source = body.source;
     if (!isKnownProgramSource(source)) return { status: 400, body: { error: 'Unknown preview source' } };
+    if (!isRoutableProgramSource(source)) return { status: 409, body: { error: `${source} is not routable because its source state is ${state.sources[source]?.state || 'unknown'}.` } };
     return mutate('preview', () => {
       state.routing.preview = source;
       const log = addLog('info', 'ROUTE', `Preview set to ${source}.`, 'preview');
@@ -371,6 +429,7 @@ const commandHandlers = {
   async take(body) {
     const source = body.source || state.routing.preview;
     if (!isKnownProgramSource(source)) return { status: 400, body: { error: 'Unknown take source' } };
+    if (!isRoutableProgramSource(source)) return { status: 409, body: { error: `${source} cannot be taken because its source state is ${state.sources[source]?.state || 'unknown'}.` } };
     const result = mutate('take', () => {
       if (['cam1', 'cam2', 'liveu3', 'liveu4'].includes(state.routing.program)) {
         state.routing.returnLive = state.routing.program;
@@ -622,6 +681,29 @@ function serveStatic(req, res, pathname) {
   });
 }
 
+function serveGatewayMedia(req, res, pathname) {
+  const filePath = mediaGateway.resolveMediaPath(pathname);
+  if (!filePath) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+  fs.readFile(filePath, (error, data) => {
+    if (error) {
+      res.writeHead(404, { 'Cache-Control': 'no-store' });
+      res.end('Not found');
+      return;
+    }
+    const ext = path.extname(filePath);
+    res.writeHead(200, {
+      'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+      'Cache-Control': 'no-store, max-age=0',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(data);
+  });
+}
+
 async function handleApi(req, res, url) {
   if (req.method === 'OPTIONS') return writeJson(res, 204, {});
 
@@ -663,6 +745,10 @@ async function handleApi(req, res, url) {
     return writeJson(res, 200, state.obs);
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/ingest') {
+    return writeJson(res, 200, state.mediaGateway);
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/events') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -688,6 +774,34 @@ async function handleApi(req, res, url) {
       return writeJson(res, result.status || 200, result.body || result);
     } catch (error) {
       return writeJson(res, 400, { error: error.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/ingest/start') {
+    try {
+      const body = await readJson(req);
+      await mediaGateway.start(body);
+      const source = state.mediaGateway.sources.find(item => item.id === String(body.id || 'contribution-main').toLowerCase());
+      const log = addLog('info', 'INGEST', `${source?.label || 'Contribution source'} gateway started on ${source?.slot?.toUpperCase() || 'unassigned slot'} using ${source?.transport?.toUpperCase() || 'media'} transport.`, 'ingest-start');
+      broadcast('state', publicState());
+      return writeJson(res, 200, { ok: true, state: publicState(), source, log });
+    } catch (error) {
+      const log = addLog('alarm', 'INGEST', `Contribution gateway start failed: ${error.message}`, 'ingest-start');
+      broadcast('state', publicState());
+      return writeJson(res, 400, { error: error.message, state: publicState(), log });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/ingest/stop') {
+    try {
+      const body = await readJson(req);
+      const id = String(body.id || 'contribution-main').toLowerCase();
+      await mediaGateway.stop(id);
+      const log = addLog('warning', 'INGEST', `Contribution gateway ${id} stopped.`, 'ingest-stop');
+      broadcast('state', publicState());
+      return writeJson(res, 200, { ok: true, state: publicState(), log });
+    } catch (error) {
+      return writeJson(res, 400, { error: error.message, state: publicState() });
     }
   }
 
@@ -732,10 +846,25 @@ const server = http.createServer((req, res) => {
     handleApi(req, res, url).catch(error => writeJson(res, 500, { error: error.message }));
     return;
   }
+  if (url.pathname.startsWith('/media/')) {
+    serveGatewayMedia(req, res, decodeURIComponent(url.pathname));
+    return;
+  }
   serveStatic(req, res, decodeURIComponent(url.pathname));
 });
 
-server.listen(PORT, () => {
-  console.log(`${state.agent.label} listening on http://127.0.0.1:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`${state.agent.label} listening on http://${HOST}:${PORT}`);
   connectObs().catch(() => {});
 });
+
+async function shutdown(signal) {
+  addLog('warning', 'SYSTEM', `${signal} received; stopping media gateway.`, 'shutdown');
+  await mediaGateway.stopAll();
+  server.close(() => process.exit(0));
+  const forceTimer = setTimeout(() => process.exit(1), 3000);
+  forceTimer.unref?.();
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

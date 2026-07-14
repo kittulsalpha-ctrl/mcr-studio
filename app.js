@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     liveu4: { label: 'LiveU Feed 4', shortLabel: 'LIVEU 4', codec: 'H.264', color: '#a78bfa', rttOffset: 6 }
   };
   const NDI_BRIDGE_ENDPOINT = '/api/ndi/sources';
+  const HLS_RUNTIME_URL = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';
   const DEFAULT_NDI_SOURCES = {
     ndi1: { label: 'NDI-CAM-01 Field TX', shortLabel: 'NDI CAM 1', codec: 'NDI HX3', resolution: '1080p60', bitrate: 7.6, rttOffset: 8, location: 'Stadium Touchline' },
     ndi2: { label: 'NDI-CAM-02 Interview RF', shortLabel: 'NDI CAM 2', codec: 'NDI HX2', resolution: '1080p30', bitrate: 5.8, rttOffset: 14, location: 'Mixed Zone' },
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const MEDIA_DB_NAME = 'mcr-studio-media-store';
   const MEDIA_DB_VERSION = 1;
   const MEDIA_STORE_NAME = 'localVideos';
+  let hlsRuntimePromise = null;
   const REGION_PRESETS = {
     'eu-west-1': { code: 'eu-west-1', label: 'Ireland', encoder: 'Dublin contribution encoder', ingest: 'EU ingest gateway' },
     'eu-west-2': { code: 'eu-west-2', label: 'London', encoder: 'London contribution encoder', ingest: 'UK ingest gateway' },
@@ -205,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     cloudTelemetry: null,
     agent: null,
+    mediaGateway: null,
 
     // Preview / Program state
     previewFeed: null,
@@ -452,6 +455,17 @@ document.addEventListener('DOMContentLoaded', () => {
     obsMapScene: byId("obs-map-scene"),
     btnSaveObsMap: byId("btn-save-obs-map"),
     obsRoutingSummary: byId("obs-routing-summary"),
+    ingestGatewayStatus: byId("ingest-gateway-status"),
+    ingestGatewayTransport: byId("ingest-gateway-transport"),
+    ingestGatewaySlot: byId("ingest-gateway-slot"),
+    ingestGatewayUrl: byId("ingest-gateway-url"),
+    btnIngestGatewayStart: byId("btn-ingest-gateway-start"),
+    btnIngestGatewayStop: byId("btn-ingest-gateway-stop"),
+    ingestGatewayRuntime: byId("ingest-gateway-runtime"),
+    ingestGatewaySrt: byId("ingest-gateway-srt"),
+    ingestGatewayPreview: byId("ingest-gateway-preview"),
+    ingestGatewayMetrics: byId("ingest-gateway-metrics"),
+    ingestGatewayDetail: byId("ingest-gateway-detail"),
     
     // Timecodes
     tcCam1: byId("tc-cam1"),
@@ -879,6 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
       el.controlApiValue.className = `badge-value ${connected ? 'text-green' : state.backend.enabled ? 'text-red' : 'text-amber'}`;
     }
     updateOperatingMode();
+    renderMediaGateway();
   }
 
   function updateOperatingMode() {
@@ -924,6 +939,190 @@ document.addEventListener('DOMContentLoaded', () => {
       el.obsRoutingSummary.textContent = `MCR to OBS follow: ${obs?.followMcrTake ? 'ARMED' : 'DISARMED'} · ${mapped} MAP${mapped === 1 ? '' : 'S'}`;
       el.obsRoutingSummary.className = obs?.followMcrTake ? 'font-fira text-amber' : 'font-fira';
     }
+  }
+
+  function ensureHlsRuntime() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (hlsRuntimePromise) return hlsRuntimePromise;
+    hlsRuntimePromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = HLS_RUNTIME_URL;
+      script.async = true;
+      script.onload = () => window.Hls ? resolve(window.Hls) : reject(new Error('HLS runtime did not initialize.'));
+      script.onerror = () => reject(new Error('HLS runtime could not be loaded.'));
+      document.head.appendChild(script);
+    });
+    return hlsRuntimePromise;
+  }
+
+  function syncGatewayAudio() {
+    const isOperationsPage = document.body.classList.contains('workspace-operations');
+    Object.entries(state.customSources).forEach(([feed, source]) => {
+      if (source?.type !== 'gateway' || !source.videoEl) return;
+      const channel = state.audioMixer.channels[feed];
+      const routeIsAudible = isOperationsPage
+        && state.activeSource === feed
+        && state.audioMixer.programBus === feed
+        && !state.mutedFeeds[feed]
+        && !channel?.mute;
+      source.videoEl.muted = !routeIsAudible;
+      source.videoEl.volume = Math.max(0, Math.min(1, channel?.fader ?? 0.8));
+      if (routeIsAudible) source.videoEl.play().catch(() => {});
+    });
+  }
+
+  async function attachGatewayPreview(source) {
+    const feed = source?.slot;
+    if (!TILE_FEEDS.includes(feed) || !source.previewUrl) return;
+    const existing = state.customSources[feed];
+    if (existing?.type === 'gateway' && existing.gatewaySourceId === source.id && existing.previewUrl === source.previewUrl) {
+      existing.gatewayState = source.status;
+      return;
+    }
+
+    teardownCustomSource(feed);
+    const videoEl = document.createElement('video');
+    videoEl.autoplay = true;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.className = 'hidden-video';
+    document.body.appendChild(videoEl);
+    const gatewaySource = {
+      type: 'gateway',
+      label: source.label || 'Contribution Gateway',
+      url: source.previewUrl,
+      previewUrl: source.previewUrl,
+      gatewaySourceId: source.id,
+      gatewayState: source.status,
+      videoEl,
+      hls: null,
+      ready: false
+    };
+    state.customSources[feed] = gatewaySource;
+    setTileSource(feed, 'custom');
+    const sourceSelect = document.getElementById(`select-source-${feed}`);
+    if (sourceSelect) {
+      let gatewayOption = sourceSelect.querySelector('option[value="gateway"]');
+      if (!gatewayOption) {
+        gatewayOption = new Option('', 'gateway');
+        sourceSelect.add(gatewayOption);
+      }
+      gatewayOption.textContent = `Gateway - ${gatewaySource.label}`;
+      sourceSelect.value = 'gateway';
+    }
+
+    const markReady = () => {
+      if (state.customSources[feed] !== gatewaySource) return;
+      gatewaySource.ready = true;
+      updateSourceOverlays();
+      updateSourceInspector();
+      syncGatewayAudio();
+    };
+    videoEl.addEventListener('loadeddata', markReady);
+    videoEl.addEventListener('canplay', markReady);
+    videoEl.addEventListener('error', () => {
+      if (state.customSources[feed] !== gatewaySource) return;
+      gatewaySource.ready = false;
+      updateSourceOverlays();
+    });
+
+    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      videoEl.src = source.previewUrl;
+    } else {
+      try {
+        const Hls = await ensureHlsRuntime();
+        if (!Hls.isSupported()) throw new Error('This browser does not support Media Source HLS playback.');
+        const hls = new Hls({
+          lowLatencyMode: true,
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 5,
+          backBufferLength: 6
+        });
+        gatewaySource.hls = hls;
+        hls.loadSource(source.previewUrl);
+        hls.attachMedia(videoEl);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => videoEl.play().catch(() => {}));
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data?.fatal || state.customSources[feed] !== gatewaySource) return;
+          gatewaySource.ready = false;
+          addLog('alarm', 'INGEST', `${gatewaySource.label} preview failed: ${data.details || data.type}.`);
+          updateSourceOverlays();
+        });
+      } catch (error) {
+        gatewaySource.ready = false;
+        addLog('alarm', 'INGEST', `Contribution preview unavailable: ${error.message}`);
+      }
+    }
+    videoEl.play().catch(() => {});
+    addLog('info', 'INGEST', `${gatewaySource.label} attached to ${getTileName(feed)}.`);
+  }
+
+  function syncMediaGatewayState(gatewayState) {
+    state.mediaGateway = gatewayState || null;
+    const activeSources = (gatewayState?.sources || []).filter(source => ['STARTING', 'ONLINE'].includes(source.status));
+    activeSources.forEach(source => {
+      if (source.status === 'ONLINE') attachGatewayPreview(source);
+    });
+    Object.entries(state.customSources).forEach(([feed, source]) => {
+      if (source?.type !== 'gateway') return;
+      const remote = (gatewayState?.sources || []).find(item => item.id === source.gatewaySourceId);
+      source.gatewayState = remote?.status || 'OFFLINE';
+      if (!remote || ['STOPPED', 'FAILED'].includes(remote.status)) {
+        teardownCustomSource(feed);
+        state.tileSourceIds[feed] = 'none';
+        state.tileSources[feed] = 'none';
+        const sourceSelect = document.getElementById(`select-source-${feed}`);
+        if (sourceSelect) sourceSelect.value = 'none';
+        updateSourceOverlays();
+      }
+    });
+    renderMediaGateway();
+  }
+
+  function renderMediaGateway() {
+    if (!hasElement(el.ingestGatewayStatus)) return;
+    const gateway = state.mediaGateway;
+    const capability = gateway?.capabilities;
+    const source = (gateway?.sources || []).find(item => ['STARTING', 'ONLINE'].includes(item.status))
+      || (gateway?.sources || [])[0];
+    const connected = state.backend.enabled && state.backend.connected;
+    const status = connected ? gateway?.status || 'READY' : 'BACKEND REQUIRED';
+    el.ingestGatewayStatus.textContent = status;
+    el.ingestGatewayStatus.className = `${status === 'ONLINE' ? 'badge-green' : status === 'STARTING' || status === 'READY' ? 'badge-blue' : status === 'UNAVAILABLE' ? 'badge-red' : 'badge-amber'} font-fira`;
+    el.ingestGatewayRuntime.textContent = capability?.status === 'AVAILABLE' ? `FFMPEG ${capability.version || 'AVAILABLE'}` : capability?.status || 'NOT CONNECTED';
+    el.ingestGatewaySrt.textContent = capability?.protocols?.srt ? 'AVAILABLE' : capability ? 'RUNTIME REQUIRED' : 'UNKNOWN';
+    el.ingestGatewaySrt.className = capability?.protocols?.srt ? 'text-green' : capability ? 'text-amber' : 'text-muted';
+    el.ingestGatewayPreview.textContent = source ? `${source.status} · ${source.slot.toUpperCase()}` : 'OFFLINE';
+    el.ingestGatewayPreview.className = source?.status === 'ONLINE' ? 'text-green' : source?.status === 'FAILED' ? 'text-red' : source ? 'text-amber' : 'text-muted';
+    const metrics = source?.metrics || {};
+    el.ingestGatewayMetrics.textContent = source
+      ? `${Math.round(metrics.fps || 0)} fps · ${Math.round(metrics.bitrateKbps || 0)} kbps · ${Number(metrics.speed || 0).toFixed(2)}x`
+      : '—';
+    el.ingestGatewayDetail.textContent = source?.detail || capability?.detail || 'Run the local Edge Agent with ?backend=1 to use the contribution gateway.';
+    const srtOption = el.ingestGatewayTransport.querySelector('option[value="srt"]');
+    if (srtOption) srtOption.disabled = !!capability && !capability.protocols?.srt;
+    const isRunning = !!source && ['STARTING', 'ONLINE'].includes(source.status);
+    el.btnIngestGatewayStart.disabled = !connected || isRunning || (el.ingestGatewayTransport.value === 'srt' && !capability?.protocols?.srt);
+    el.btnIngestGatewayStop.disabled = !connected || !isRunning;
+  }
+
+  function updateIngestGatewayInput() {
+    if (!hasElement(el.ingestGatewayTransport) || !hasElement(el.ingestGatewayUrl)) return;
+    const transport = el.ingestGatewayTransport.value;
+    if (transport === 'test') {
+      el.ingestGatewayUrl.value = '';
+      el.ingestGatewayUrl.placeholder = 'Generated locally; no URL required';
+      el.ingestGatewayUrl.disabled = true;
+    } else if (transport === 'srt') {
+      el.ingestGatewayUrl.disabled = false;
+      el.ingestGatewayUrl.value = 'srt://0.0.0.0:9001?mode=listener&latency=200000';
+      el.ingestGatewayUrl.placeholder = 'srt://0.0.0.0:9001?mode=listener';
+    } else {
+      el.ingestGatewayUrl.disabled = false;
+      el.ingestGatewayUrl.value = 'rtmp://0.0.0.0:1935/live/main?listen=1';
+      el.ingestGatewayUrl.placeholder = 'rtmp://0.0.0.0:1935/live/main?listen=1';
+    }
+    renderMediaGateway();
   }
 
   function hydratePageSwitcherLinks() {
@@ -995,6 +1194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.cloudTelemetry = remoteState.telemetry || state.cloudTelemetry;
     state.obs = remoteState.obs || state.obs;
     state.agent = remoteState.agent || state.agent;
+    syncMediaGatewayState(remoteState.mediaGateway);
     renderObsControl();
     updateOperatingMode();
 
@@ -1065,6 +1265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAudioMixer();
     renderLogs();
     renderAIOpsAssistant();
+    renderEngineeringDashboard();
     if (el.pgmActiveSource) {
       el.pgmActiveSource.textContent = `SOURCE: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'NONE'}`;
     }
@@ -1484,6 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!src) return false;
 
     try {
+      src.hls?.destroy?.();
       if (src.videoEl) {
         src.videoEl.srcObject?.getTracks?.().forEach(track => track.stop());
         src.videoEl.pause();
@@ -2319,7 +2521,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const assignment = getFeedAssignment(feed);
     if (assignment === 'webcam') return 'Browser Cam';
     if (assignment === 'localVideo') return getLocalVideo(feed)?.fileName || 'Local File';
-    if (assignment === 'custom') return state.customSources[feed]?.type === 'youtube' ? 'YouTube Live' : state.customSources[feed]?.type === 'obs' ? 'OBS Virtual Camera' : 'Custom Source';
+    if (assignment === 'custom') {
+      const custom = state.customSources[feed];
+      if (custom?.type === 'youtube') return 'YouTube Live';
+      if (custom?.type === 'obs') return 'OBS Virtual Camera';
+      if (custom?.type === 'gateway') return custom.label || 'Contribution Gateway';
+      return 'Custom Source';
+    }
     if (assignment === 'ndi') return NDI_SOURCES[getTileNdiSourceId(feed)]?.label || 'NDI Bridge';
     if (feed === 'vod') return 'CG Key/Fill Engine';
     if (LIVEU_SOURCE_IDS.includes(state.tileSourceIds[feed])) return SOURCE_DETAILS[state.tileSourceIds[feed]].label;
@@ -2390,6 +2598,17 @@ document.addEventListener('DOMContentLoaded', () => {
           resolution: 'Embedded Player',
           bitrate: 'Adaptive',
           rtt: 'HTTP'
+        };
+      }
+      if (src?.type === 'gateway') {
+        const remote = (state.mediaGateway?.sources || []).find(source => source.id === src.gatewaySourceId);
+        const bitrateKbps = Number(remote?.metrics?.bitrateKbps || 0);
+        return {
+          codec: `${String(remote?.transport || 'gateway').toUpperCase()} / H.264`,
+          source: src.label || 'Contribution Gateway',
+          resolution: src.ready ? getVideoResolution(src.videoEl) : 'WAITING FOR LOCK',
+          bitrate: bitrateKbps > 0 ? `${(bitrateKbps / 1000).toFixed(1)} Mbps` : src.ready ? 'LIVE' : '0.0 Mbps',
+          rtt: remote?.status || 'OFFLINE'
         };
       }
       return {
@@ -3372,13 +3591,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.engInputDetail) el.engInputDetail.textContent = onlineInputs >= 3
       ? 'Contribution pool is available for Preview and Program routing.'
       : 'Investigate offline contribution sources before taking them to air.';
-    const gatewayState = state.ndiBridge.backendConnected ? 'BRIDGE CONNECTED' : state.ndiBridge.discovered ? 'SIMULATION' : 'NO TELEMETRY';
-    setMetricText(el.engGatewayStatus, gatewayState, state.ndiBridge.backendConnected ? 'text-green' : state.ndiBridge.discovered ? 'text-amber' : 'text-muted');
-    if (el.engGatewayDetail) el.engGatewayDetail.textContent = state.ndiBridge.backendConnected
-      ? 'Live source discovery is available through the connected gateway.'
-      : state.ndiBridge.discovered
-        ? 'Demo sources are available. Connect a bridge for live discovery.'
-        : 'Connect an NDI/SRT/WebRTC bridge to receive live gateway health.';
+    const liveGateway = state.backend.connected ? state.mediaGateway : null;
+    const gatewayState = liveGateway?.status || (state.ndiBridge.backendConnected ? 'BRIDGE CONNECTED' : state.ndiBridge.discovered ? 'SIMULATION' : 'NO TELEMETRY');
+    const gatewayClass = liveGateway?.status === 'ONLINE' ? 'text-green' : liveGateway?.status === 'UNAVAILABLE' ? 'text-red' : liveGateway ? 'text-blue' : state.ndiBridge.backendConnected ? 'text-green' : state.ndiBridge.discovered ? 'text-amber' : 'text-muted';
+    setMetricText(el.engGatewayStatus, gatewayState, gatewayClass);
+    if (el.engGatewayDetail) el.engGatewayDetail.textContent = liveGateway
+      ? `${liveGateway.capabilities?.detail || 'Local contribution preview gateway connected.'} ${(liveGateway.sources || []).length} source session(s).`
+      : state.ndiBridge.backendConnected
+        ? 'Live source discovery is available through the connected gateway.'
+        : state.ndiBridge.discovered
+          ? 'Demo sources are available. Connect a bridge for live discovery.'
+          : 'Connect an NDI/SRT/WebRTC bridge to receive live gateway health.';
     const obs = state.obs;
     const obsConnected = obs?.status === 'CONNECTED';
     setMetricText(el.engObsStatus, obsConnected ? 'CONNECTED' : obs?.status || 'NOT CONNECTED', obsConnected ? 'text-green' : obs?.enabled ? 'text-red' : 'text-muted');
@@ -3426,8 +3649,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el.routeSummaryProgram) el.routeSummaryProgram.textContent = `ON AIR: ${state.activeSource ? getProgramRouteLabel(state.activeSource) : 'OFF AIR'}`;
     if (el.routeSummaryPreview) el.routeSummaryPreview.textContent = `PREVIEW: ${state.previewFeed ? getProgramRouteLabel(state.previewFeed) : '—'}`;
     if (el.routeSummaryPath) el.routeSummaryPath.textContent = `RESILIENCE: ${state.primaryFailed ? 'PRIMARY FAILED / BACKUP ACTIVE' : 'PRIMARY + BACKUP READY'}`;
-    setMetricText(el.svcSrtStatus, state.primaryFailed ? 'BACKUP' : state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : 'HEALTHY', state.primaryFailed || state.rttMs >= 160 || state.lossPercent >= 5 ? 'text-amber' : 'text-green');
-    if (el.svcSrtMetric) el.svcSrtMetric.textContent = `RTT ${state.rttMs}ms · ${state.lossPercent.toFixed(1)}% loss · ${state.primaryFailed ? 'Backup' : 'Primary'}`;
+    const realSrtSource = (liveGateway?.sources || []).find(source => source.transport === 'srt');
+    const srtRuntimeAvailable = !!liveGateway?.capabilities?.protocols?.srt;
+    const srtStatus = realSrtSource?.status || (liveGateway && !srtRuntimeAvailable ? 'RUNTIME REQUIRED' : state.primaryFailed ? 'BACKUP' : state.rttMs >= 160 || state.lossPercent >= 5 ? 'DEGRADED' : 'HEALTHY');
+    const srtClass = realSrtSource?.status === 'ONLINE' ? 'text-green' : realSrtSource?.status === 'FAILED' ? 'text-red' : liveGateway && !srtRuntimeAvailable ? 'text-amber' : state.primaryFailed || state.rttMs >= 160 || state.lossPercent >= 5 ? 'text-amber' : 'text-green';
+    setMetricText(el.svcSrtStatus, srtStatus, srtClass);
+    if (el.svcSrtMetric) el.svcSrtMetric.textContent = realSrtSource
+      ? `${Math.round(realSrtSource.metrics?.bitrateKbps || 0)} kbps · ${realSrtSource.slot.toUpperCase()} · ${realSrtSource.status}`
+      : liveGateway && !srtRuntimeAvailable
+        ? 'Install SRT-enabled FFmpeg or GStreamer'
+        : `RTT ${state.rttMs}ms · ${state.lossPercent.toFixed(1)}% loss · ${state.primaryFailed ? 'Backup' : 'Primary'}`;
     setMetricText(el.svcMediaConnectStatus, mediaConnectTelemetry?.status || delivery.mediaConnectStatus, mediaConnectTelemetry ? serviceStatusClass(mediaConnectTelemetry.status) : state.primaryFailed ? 'text-amber' : delivery.hasProgram ? 'text-green' : 'text-blue');
     if (el.svcMediaConnectMetric) el.svcMediaConnectMetric.textContent = `${state.primaryFailed ? 'Flow B active' : 'Flow A/B ready'} · ${selectedRegion.code}`;
     setMetricText(el.svcMediaLiveStatus, mediaLiveTelemetry?.status || delivery.mediaLiveStatus, mediaLiveTelemetry ? serviceStatusClass(mediaLiveTelemetry.status) : delivery.hasProgram && delivery.programHealthy ? 'text-green' : delivery.hasProgram ? 'text-red' : 'text-blue');
@@ -3550,6 +3781,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (el.audioPgmMeterL) el.audioPgmMeterL.style.height = `${vuState.pgm.l * 100}%`;
     if (el.audioPgmMeterR) el.audioPgmMeterR.style.height = `${vuState.pgm.r * 100}%`;
+    syncGatewayAudio();
   }
 
   function renderTxSafety() {
@@ -4266,6 +4498,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isProgramSource) state.programEmbedFrame = src.frameEl;
       applyYouTubeMute(feed);
     });
+    syncGatewayAudio();
   }
 
   function setSvgLinkState(path, stateName, color) {
@@ -4701,6 +4934,28 @@ document.addEventListener('DOMContentLoaded', () => {
     renderEngineeringDashboard();
   });
 
+  el.ingestGatewayTransport?.addEventListener('change', updateIngestGatewayInput);
+  el.btnIngestGatewayStart?.addEventListener('click', async () => {
+    const transport = el.ingestGatewayTransport.value || 'test';
+    const slot = el.ingestGatewaySlot.value || 'cam1';
+    const inputUrl = el.ingestGatewayUrl.value.trim();
+    const result = await backendCommand('/api/ingest/start', {
+      id: 'contribution-main',
+      label: transport === 'test' ? 'Gateway Test Signal' : `${transport.toUpperCase()} Contribution Main`,
+      transport,
+      slot,
+      inputUrl
+    });
+    if (result?.ok) addLog('info', 'INGEST', `${transport.toUpperCase()} gateway assigned to ${getTileName(slot)}.`);
+    renderMediaGateway();
+  });
+  el.btnIngestGatewayStop?.addEventListener('click', async () => {
+    const source = (state.mediaGateway?.sources || []).find(item => ['STARTING', 'ONLINE'].includes(item.status));
+    const result = await backendCommand('/api/ingest/stop', { id: source?.id || 'contribution-main' });
+    if (result?.ok) addLog('warning', 'INGEST', 'Contribution preview gateway stopped.');
+    renderMediaGateway();
+  });
+
   el.btnObsTakeScene?.addEventListener('click', async () => {
     const sceneName = el.obsSceneSelect?.value;
     if (!sceneName) return;
@@ -4821,6 +5076,10 @@ document.addEventListener('DOMContentLoaded', () => {
           ejectLocalVideo(feed);
           addLog('info', 'ROUTE', `Local video unassigned from ${feed.toUpperCase()}.`);
         }
+        const customSource = state.customSources[feed];
+        if (customSource?.type === 'gateway') {
+          backendCommand('/api/ingest/stop', { id: customSource.gatewaySourceId });
+        }
         const hadCustomSource = teardownCustomSource(feed);
         if (hadCustomSource) {
           addLog('info', 'ROUTE', `Custom source detached from ${feed.toUpperCase()}.`);
@@ -4854,6 +5113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.mutedFeeds[feed] = !cur;
         muteBtn.classList.toggle('btn-active-mute', !cur);
         applyYouTubeMute(feed);
+        syncGatewayAudio();
         updateSourceInspector();
         addLog('info', 'AUDIO', `${feed.toUpperCase()} ${!cur ? 'muted' : 'unmuted'}.`);
         saveWorkspaceState();
@@ -6073,5 +6333,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   pruneWorkspaceDomForPage();
+  updateIngestGatewayInput();
+  renderMediaGateway();
 
 });

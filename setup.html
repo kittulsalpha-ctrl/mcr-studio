@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css?v=mcr-flow-22" />
+  <link rel="stylesheet" href="styles.css?v=mcr-flow-23" />
 </head>
 
 <body class="workspace-setup">
@@ -467,6 +467,46 @@
       </section>
 
       <section class="controls-container setup-only-container">
+        <div class="control-panel panel-ingest-gateway" data-workspace-panel="setup">
+          <div class="panel-header">
+            <h3>Contribution Preview Gateway</h3>
+            <span class="badge-amber font-fira" id="ingest-gateway-status">BACKEND REQUIRED</span>
+          </div>
+          <div class="panel-body ingest-gateway-body">
+            <div class="ingest-gateway-form">
+              <label>Transport
+                <select id="ingest-gateway-transport">
+                  <option value="test" selected>Generated test contribution</option>
+                  <option value="srt">SRT contribution</option>
+                  <option value="rtmp">RTMP contribution</option>
+                </select>
+              </label>
+              <label>Target monitor
+                <select id="ingest-gateway-slot">
+                  <option value="cam1" selected>MULTIVIEW 1</option>
+                  <option value="cam2">MULTIVIEW 2</option>
+                  <option value="liveu3">MULTIVIEW 3</option>
+                  <option value="liveu4">MULTIVIEW 4</option>
+                </select>
+              </label>
+              <label class="ingest-gateway-url-field">Contribution input URL
+                <input id="ingest-gateway-url" type="url" value="" placeholder="Generated locally; no URL required" spellcheck="false" />
+              </label>
+              <div class="ingest-gateway-actions">
+                <button class="btn btn-secondary" id="btn-ingest-gateway-start" type="button">START GATEWAY</button>
+                <button class="btn btn-secondary" id="btn-ingest-gateway-stop" type="button" disabled>STOP</button>
+              </div>
+            </div>
+            <div class="ingest-gateway-runtime">
+              <div><span>RUNTIME</span><strong id="ingest-gateway-runtime">NOT CONNECTED</strong></div>
+              <div><span>SRT</span><strong id="ingest-gateway-srt">UNKNOWN</strong></div>
+              <div><span>PREVIEW</span><strong id="ingest-gateway-preview">OFFLINE</strong></div>
+              <div><span>METRICS</span><strong id="ingest-gateway-metrics">—</strong></div>
+            </div>
+            <p class="ingest-gateway-detail font-fira" id="ingest-gateway-detail">Run the local Edge Agent with ?backend=1 to use the contribution gateway.</p>
+          </div>
+        </div>
+
         <div class="control-panel panel-obs-control" data-workspace-panel="setup">
           <div class="panel-header"><h3>OBS / Local Production Mapping</h3><span class="badge-blue font-fira" id="obs-control-status">LOCAL ENGINE</span></div>
           <div class="panel-body obs-control-body">
@@ -811,6 +851,6 @@
 
   <video id="video-cam1" autoplay muted playsinline class="hidden-video"></video>
   <video id="video-cam2" autoplay muted playsinline loop class="hidden-video"></video>
-  <script src="app.js?v=mcr-flow-22"></script>
+  <script src="app.js?v=mcr-flow-23"></script>
 </body>
 </html>
